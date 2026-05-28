@@ -22,25 +22,13 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "user",
-          content: `You are an expert web developer. Create a complete, beautiful, modern HTML page based on this request: "${prompt}"
-          
-Rules:
-- Return ONLY the HTML code, nothing else
-- Include all CSS inline in <style> tags
-- Include all JavaScript inline in <script> tags  
-- Make it visually stunning with modern design
-- Use gradients, animations, and beautiful colors
-- Make it fully functional and interactive
-- No external dependencies - everything self contained
-- Mobile responsive design
-
-Return only the HTML code starting with <!DOCTYPE html>`,
+          content: `You are an expert web developer. Create a complete, beautiful HTML page for: "${prompt}". Return ONLY HTML code starting with <!DOCTYPE html>. Include all CSS in <style> tags and JS in <script> tags. Make it stunning and mobile responsive.`,
         },
       ],
     });
 
-    const html = message.content[0].type === "text" 
-      ? message.content[0].text 
+    const html = message.content[0].type === "text"
+      ? message.content[0].text
       : "";
 
     return NextResponse.json({ html });
