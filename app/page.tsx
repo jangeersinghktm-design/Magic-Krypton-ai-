@@ -1,59 +1,83 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
 
-export default function Home() {
-  const [user, setUser] = useState<any>(null);
-  const supabase = createClient();
+export default function CreatePage() {
+  const [prompt, setPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState("");
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, []);
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+    setLoading(true);
+    setResult("");
+    setError("");
+    
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.html) {
+        setResult(data.html);
+      } else if (data.error) {
+        setError(data.error);
+      }
+    } catch (err: any) {
+      setError("Failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div style={{minHeight: "100vh", background: "#000", color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px"}}>
+    <div style={{minHeight:"100vh",background:"#000",color:"#fff",display:"flex",flexDirection:"column"}}>
       
-      {/* Logo */}
-      <div style={{marginBottom: "20px", fontSize: "48px"}}>⚡</div>
-      
-      <h1 style={{fontSize: "48px", fontWeight: "bold", textAlign: "center", background: "linear-gradient(to right, #7c3aed, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: "16px"}}>
-        KRYPTON AI
-      </h1>
-      
-      <p style={{fontSize: "20px", color: "#999", textAlign: "center", maxWidth: "500px", marginBottom: "40px"}}>
-        Build websites, games, apps, images and videos with AI. No code needed.
-      </p>
-
-      <div style={{display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center"}}>
-        {user ? (
-          <Link href="/dashboard" style={{padding: "14px 32px", background: "#7c3aed", color: "white", borderRadius: "8px", fontWeight: "600", textDecoration: "none", fontSize: "16px"}}>
-            Go to Dashboard
-          </Link>
-        ) : (
-          <>
-            <Link href="/auth/signup" style={{padding: "14px 32px", background: "#7c3aed", color: "white", borderRadius: "8px", fontWeight: "600", textDecoration: "none", fontSize: "16px"}}>
-              Get Started Free
-            </Link>
-            <Link href="/auth/login" style={{padding: "14px 32px", background: "transparent", color: "#7c3aed", borderRadius: "8px", fontWeight: "600", textDecoration: "none", fontSize: "16px", border: "2px solid #7c3aed"}}>
-              Sign In
-            </Link>
-          </>
-        )}
+      <div style={{padding:"16px 24px",borderBottom:"1px solid rgba(255,255,255,0.1)",display:"flex",alignItems:"center",gap:"16px"}}>
+        <span style={{fontSize:"24px"}}>⚡</span>
+        <h1 style={{fontSize:"18px",fontWeight:"bold"}}>Krypton AI</h1>
+        <a href="/dashboard" style={{marginLeft:"auto",padding:"8px 16px",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"8px",color:"#fff",textDecoration:"none"}}>
+          Dashboard
+        </a>
       </div>
 
-      {/* Features */}
-      <div style={{display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", marginTop: "80px", maxWidth: "700px"}}>
-        {["🌐 Websites", "🎮 Games", "🖼️ Images", "📱 Apps", "🎬 Videos", "📊 Analysis"].map((f, i) => (
-          <div key={i} style={{background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", padding: "20px", textAlign: "center", fontSize: "14px"}}>
-            {f}
+      <div style={{flex:1,display:"flex",flexDirection:"column",padding:"20px",gap:"16px"}}>
+        
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="Describe what you want to build... e.g. Make a snake game"
+          style={{width:"100%",height:"120px",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"8px",color:"#fff",padding:"12px",fontSize:"14px",resize:"none",outline:"none",boxSizing:"border-box"}}
+        />
+
+        <button
+          onClick={handleGenerate}
+          disabled={loading || !prompt.trim()}
+          style={{padding:"14px",background:loading?"#4a4a4a":"#7c3aed",color:"white",borderRadius:"8px",fontWeight:"600",border:"none",cursor:loading?"not-allowed":"pointer",fontSize:"16px"}}
+        >
+          {loading ? "⚡ Generating... Please wait 30 seconds" : "⚡ Generate"}
+        </button>
+
+        {error && (
+          <div style={{padding:"12px",background:"rgba(255,0,0,0.1)",border:"1px solid red",borderRadius:"8px",color:"#ff6b6b"}}>
+            Error: {error}
           </div>
-        ))}
+        )}
+
+        {result && (
+          <div style={{flex:1,minHeight:"500px",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"8px",overflow:"hidden"}}>
+            <iframe
+              srcDoc={result}
+              style={{width:"100%",height:"500px",border:"none"}}
+              title="preview"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
