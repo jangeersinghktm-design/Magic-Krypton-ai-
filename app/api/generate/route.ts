@@ -7,8 +7,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Prompt required" }, { status: 400 });
     }
 
-    const systemPrompt = `Create a complete beautiful HTML page for: "${prompt}". Return ONLY HTML starting with <!DOCTYPE html>. Include CSS in style tags and JS in script tags. Make it stunning and mobile responsive.`;
-
+     const systemPrompt = `Create a complete beautiful HTML page for: "${prompt}". 
+IMPORTANT RULES:
+- Return ONLY raw HTML code starting with <!DOCTYPE html>
+- NO markdown, NO backticks, NO explanation
+- Use WHITE or LIGHT background colors
+- Include ALL CSS inside <style> tags
+- Include ALL JavaScript inside <script> tags  
+- Make it visually stunning with modern design
+- Mobile responsive design
+- Use beautiful colors, gradients, animations`;
     // Try Claude first
     const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
