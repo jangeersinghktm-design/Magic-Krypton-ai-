@@ -189,7 +189,7 @@ export default function CreatePage() {
             ) : result ? (
               <iframe
                 srcDoc={result}
-                style={{width:"100%",height:"100%",border:"none"}}
+                style={{width:"100%",height:"80vh",minHeight:"400px",border:"none"}}
                 title="Krypton AI Preview"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
               />
