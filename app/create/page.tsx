@@ -232,8 +232,8 @@ useEffect(() => {
   return (
     <div
   style={{
-    height: "100vh"
-    height: "-webkit-fill-available",
+    height: "100vh",
+    minHeight: "-webkit-fill-available",
     display: "flex",
     background: "#0a0a0a",
     color: "#fff",
