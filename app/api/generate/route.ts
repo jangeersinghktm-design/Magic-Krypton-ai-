@@ -34,6 +34,16 @@ DETECT & BUILD THE RIGHT THING:
 - Sound effects using Web Audio API
 - Beautiful colorful game UI
 
+GAME VALIDATION RULES:
+- NEVER create a landing page about the game
+- NEVER create a website describing the game
+- NEVER create a marketing page for the game
+- MUST include a <canvas> element
+- MUST include requestAnimationFrame game loop
+- MUST include keyboard controls
+- MUST include score system
+- MUST be immediately playable when opened
+
 📱 IF APP REQUESTED:
 - Build a FULLY FUNCTIONAL app — all features working
 - LocalStorage for data persistence
@@ -204,6 +214,32 @@ Make it so impressive that users say "WOW!"`;
         
         // Force white background
         html = html.replace(/<body/i, '<body style="background-color:#ffffff;color:#111111;"');
+
+        html = html.replace(
+          /<body/i,
+          '<body style="background-color:#ffffff;color:#111111;"'
+        );
+
+        const isValidHtml =
+          html.startsWith("<!DOCTYPE html") &&
+          html.includes("</html>");
+
+        if (!isValidHtml) {
+          throw new Error("AI returned no usable HTML");
+        }
+
+        const isGameRequest =
+          /game|snake|tetris|pong|flappy|platformer|racing/i.test(prompt);
+
+        if (
+          isGameRequest &&
+          (!html.includes("<canvas") ||
+           !html.includes("requestAnimationFrame"))
+        ) {
+          throw new Error("Game validation failed");
+        }
+
+        console.log("Claude success!");
         
         console.log("Claude success!");
         return NextResponse.json({ html, model: "claude" });
@@ -242,6 +278,33 @@ Make it so impressive that users say "WOW!"`;
         
         // Force white background
         html = html.replace(/<body/i, '<body style="background-color:#ffffff;color:#111111;"');
+
+        html = html.replace(
+          /<body/i,
+          '<body style="background-color:#ffffff;color:#111111;"'
+        );
+
+        const isValidHtml =
+          html.startsWith("<!DOCTYPE html") &&
+          html.includes("</html>");
+
+        if (!isValidHtml) {
+          throw new Error("AI returned no usable HTML");
+        }
+
+        const isGameRequest =
+          /game|snake|tetris|pong|flappy|platformer|racing/i.test(prompt);
+
+        if (
+          isGameRequest &&
+          (!html.includes("<canvas") ||
+           !html.includes("requestAnimationFrame"))
+        ) {
+          throw new Error("Game validation failed");
+        }
+
+        console.log("Gemini success!");
+        return NextResponse.json({ html, model: "gemini" });
         
         console.log("Gemini success!");
         return NextResponse.json({ html, model: "gemini" });
