@@ -17,8 +17,14 @@ export default function CreatePage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const isMobile =
-    typeof window !== "undefined" ? window.innerWidth < 768 : false;
+  const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 768);
+  check();
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -110,28 +116,26 @@ export default function CreatePage() {
       </p>
 
       <textarea
-        ref={inputRef}
-        value={uiPrompt}
-        onChange={handlePromptChange}
-        placeholder="e.g. Make a restaurant website..."
-        style={{
-          width: "100%",
-          height: "130px",
-          background: "#111",
-          border: "1px solid #333",
-          borderRadius: "8px",
-          color: "#fff",
-          padding: "10px",
-          fontSize: "13px",
-          resize: "none",
-          outline: "none",
-          lineHeight: "1.5",
-        }}
-        inputMode="text"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck={false}
-      />
+  value={prompt}
+  onChange={(e) => setPrompt(e.target.value)}
+  placeholder="Type your prompt..."
+  style={{
+    width: "100%",
+    height: "130px",
+    background: "#111",
+    border: "1px solid #333",
+    borderRadius: "8px",
+    color: "#fff",
+    padding: "10px",
+    fontSize: "16px",
+    outline: "none",
+    resize: "none",
+  }}
+  inputMode="text"
+  autoComplete="off"
+  autoCorrect="off"
+  autoCapitalize="none"
+/>
 
       <button
         onClick={handleGenerate}
@@ -227,13 +231,23 @@ export default function CreatePage() {
   // ================= UI =================
   return (
     <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        background: "#0a0a0a",
-        color: "#fff",
-      }}
-    >
+  style={{
+    height: "100vh"
+    height: "-webkit-fill-available",
+    display: "flex",
+    background: "#0a0a0a",
+    color: "#fff",
+
+    /* 🚀 CRITICAL FIXES */
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    overflow: "hidden",
+  }}
+>
       <div style={{ width: "320px", borderRight: "1px solid #222" }}>
         <LeftPanel />
       </div>
