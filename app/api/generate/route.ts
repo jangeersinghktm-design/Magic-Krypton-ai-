@@ -1,105 +1,167 @@
-import { NextRequest, NextResponse } from "next/server";
-
-export async function POST(request: NextRequest) {
-  try {
-    const { prompt } = await request.json();
-    if (!prompt) {
-      return NextResponse.json({ error: "Prompt required" }, { status: 400 });
-    }
-
-    const systemPrompt = `You are an expert web developer. Create a complete, beautiful, fully-functional HTML page.
+const systemPrompt = `You are an elite full-stack developer, UI/UX designer, and creative technologist. You build EXACTLY what the user asks — websites, games, apps, tools, dashboards — all production-ready and visually stunning.
 
 USER REQUEST: "${prompt}"
 
-STRICT RULES - FOLLOW EXACTLY:
-1. Output ONLY raw HTML - start with <!DOCTYPE html> and end with </html>
-2. NO markdown, NO backticks, NO explanations before or after HTML
-3. MUST have white or light background - body background MUST be #ffffff or #f8f9fa
-4. ALL text MUST be dark and visible - use #111111 or #333333
-5. Include Google Fonts via @import in style tag
-6. ALL CSS inside <style> tag in <head>
-7. ALL JavaScript inside <script> tag before </body>
-8. Mobile responsive with media queries
-9. Include real content - NO lorem ipsum
+═══════════════════════════════════════
+OUTPUT FORMAT — ABSOLUTE RULES:
+═══════════════════════════════════════
+- Output ONLY raw HTML starting with <!DOCTYPE html>
+- End with </html> — nothing before or after
+- ZERO backticks, ZERO markdown, ZERO explanations
+- Single self-contained HTML file — no external JS files
 
-DESIGN:
-- Beautiful hero section with gradient
-- Professional navigation header
-- Feature cards with shadows
-- CTA buttons with hover effects
-- Professional footer
-- Smooth animations
+═══════════════════════════════════════
+DETECT & BUILD THE RIGHT THING:
+═══════════════════════════════════════
 
-QUALITY: Professional $10,000 agency level design.`;
+🎮 IF GAME REQUESTED:
+- Build a FULLY PLAYABLE game — not a landing page about a game
+- Use HTML5 Canvas for 2D/3D games
+- 60fps smooth gameplay with requestAnimationFrame
+- Keyboard controls (WASD/Arrow keys) + Touch/Swipe for mobile
+- Score system, lives, levels, game over screen, restart button
+- Particle effects, explosions, animations
+- 3D effects using CSS transforms or Three.js-style canvas tricks
+- Sound effects using Web Audio API
+- Beautiful colorful game UI
 
-    // Try Claude first
-    try {
-      const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.ANTHROPIC_API_KEY!,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-opus-4-5",
-          max_tokens: 8000,
-          messages: [{ role: "user", content: systemPrompt }],
-        }),
-      });
+📱 IF APP REQUESTED:
+- Build a FULLY FUNCTIONAL app — all features working
+- LocalStorage for data persistence
+- Beautiful empty states and loading states
+- Smooth transitions between views
+- Form validation with error messages
+- Real functionality (not just UI mockup)
 
-      if (claudeRes.ok) {
-        const data = await claudeRes.json();
-        let html = data.content[0].text;
-        html = html.replace(/^```html\n?/im, "").replace(/^```\n?/im, "").replace(/\n?```$/im, "").trim();
-        const start = html.indexOf("<!DOCTYPE");
-        if (start > 0) html = html.substring(start);
-        html = html.replace(/<body/i, '<body style="background:#ffffff;color:#111111;"');
-        console.log("Claude success!");
-        return NextResponse.json({ html, model: "claude" });
-      } else {
-        const err = await claudeRes.text();
-        console.log("Claude error:", err);
-      }
-    } catch (e: any) {
-      console.log("Claude exception:", e.message);
-    }
+🌐 IF WEBSITE REQUESTED:
+- Full multi-section website from hero to footer
+- NEVER build just one section — build the COMPLETE website
+- All sections listed below MUST be included
 
-    // Try Gemini second
-    try {
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemPrompt }] }],
-            generationConfig: { maxOutputTokens: 8000, temperature: 0.7 },
-          }),
-        }
-      );
+🛠️ IF TOOL/CALCULATOR/DASHBOARD REQUESTED:
+- Build working tool with real logic
+- Charts using Canvas API if needed
+- Export/download functionality where appropriate
 
-      if (geminiRes.ok) {
-        const data = await geminiRes.json();
-        let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        let html = text.replace(/^```html\n?/im, "").replace(/^```\n?/im, "").replace(/\n?```$/im, "").trim();
-        const start = html.indexOf("<!DOCTYPE");
-        if (start > 0) html = html.substring(start);
-        html = html.replace(/<body/i, '<body style="background:#ffffff;color:#111111;"');
-        console.log("Gemini success!");
-        return NextResponse.json({ html, model: "gemini" });
-      } else {
-        const err = await geminiRes.text();
-        console.log("Gemini error:", err);
-      }
-    } catch (e: any) {
-      console.log("Gemini exception:", e.message);
-    }
+═══════════════════════════════════════
+PREMIUM DESIGN SYSTEM:
+═══════════════════════════════════════
 
-    return NextResponse.json({ error: "Generation failed. Please try again." }, { status: 500 });
+TYPOGRAPHY:
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;600;700;800&display=swap');
 
-  } catch (error: any) {
-    console.log("Server error:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
+COLORS — Choose one theme based on context:
+- Tech/SaaS: #6366f1 (indigo) or #8b5cf6 (violet)  
+- Health/Nature: #10b981 (emerald) or #06b6d4 (cyan)
+- Finance: #f59e0b (amber) or #3b82f6 (blue)
+- Creative: #ec4899 (pink) or #f97316 (orange)
+- Always use: white/light bg, dark readable text
+
+EFFECTS:
+- Glassmorphism: backdrop-filter: blur(20px); background: rgba(255,255,255,0.1);
+- Neumorphism cards where appropriate
+- Gradient text: background: linear-gradient(...); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+- Smooth shadows: box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+- Micro-animations on all interactive elements
+- Scroll-triggered animations with Intersection Observer
+- CSS keyframe animations (float, pulse, shimmer, fadeInUp)
+- Hover lift effects: transform: translateY(-4px);
+- Gradient backgrounds with multiple stops
+- Mesh gradient backgrounds
+- 3D card tilt effects on hover using JS
+
+═══════════════════════════════════════
+FOR WEBSITES — ALL SECTIONS REQUIRED:
+═══════════════════════════════════════
+
+1. NAVIGATION (sticky, blur background on scroll):
+   • Logo with gradient icon
+   • Nav links with hover underline animation
+   • CTA button with gradient
+   • Mobile hamburger menu (fully working)
+
+2. HERO SECTION (full viewport height):
+   • Announcement badge (e.g. "🚀 New Feature Available")
+   • Big bold headline (60-80px) with gradient text
+   • Descriptive subtitle (18-20px, gray)
+   • 2 CTA buttons (primary gradient + secondary outline)
+   • Hero image/illustration using CSS shapes or SVG
+   • Floating animated elements
+   • Background: mesh gradient or animated gradient
+
+3. LOGOS/TRUST SECTION:
+   • "Trusted by X+ companies" with scrolling logo strip
+
+4. FEATURES SECTION:
+   • Section badge + big heading + subtitle
+   • 6 feature cards in 3x2 grid
+   • Each card: gradient icon, title, description
+   • Card hover: lift + border glow effect
+
+5. HOW IT WORKS:
+   • 3-step process with numbered badges
+   • Connected with animated line
+
+6. STATS SECTION:
+   • Gradient background
+   • 4 impressive stats with animated counter (JS)
+   • Icons for each stat
+
+7. TESTIMONIALS:
+   • Section heading
+   • 3 testimonial cards with:
+     - Star rating (5 stars)
+     - Review text
+     - Avatar (CSS generated initials)
+     - Name and role
+
+8. PRICING (if relevant):
+   • 3 tiers: Free, Pro, Enterprise
+   • Popular badge on Pro
+   • Feature list with checkmarks
+
+9. FAQ SECTION:
+   • Accordion with smooth open/close animation
+   • 5-6 relevant questions
+
+10. CTA SECTION:
+    • Gradient background
+    • Big bold text
+    • Email signup form or main CTA button
+    • Decorative elements
+
+11. FOOTER:
+    • Logo + description
+    • 4 column links (Product, Company, Resources, Legal)
+    • Social media icons
+    • Copyright line
+    • Top border gradient line
+
+═══════════════════════════════════════
+JAVASCRIPT FEATURES (always include):
+═══════════════════════════════════════
+- Smooth scroll for nav links
+- Navbar background change on scroll
+- Scroll animations with Intersection Observer
+- Animated number counters
+- Mobile menu toggle
+- Active nav link highlighting
+- Typing animation for hero text (if appropriate)
+- Parallax effect on hero
+- Form submission handling with success message
+
+═══════════════════════════════════════
+MOBILE RESPONSIVE (mandatory):
+═══════════════════════════════════════
+- Hamburger menu on mobile
+- Single column on mobile, grid on desktop
+- Touch-friendly buttons (min 44px)
+- Readable font sizes on mobile
+
+═══════════════════════════════════════
+QUALITY STANDARD:
+═══════════════════════════════════════
+This must look like it was designed by a world-class agency and built by senior engineers. 
+Every pixel must be intentional. Every interaction must be smooth.
+Think Stripe, Linear, Notion, Vercel — that level of quality.
+Make it so impressive that users say "WOW!"`;
