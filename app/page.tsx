@@ -1,323 +1,470 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+
+const PLACEHOLDERS = [
+  "Build a SaaS landing page...",
+  "Build a crypto dashboard...",
+  "Build a portfolio website...",
+  "Build a browser game...",
+  "Build a fitness app...",
+  "Create a business website...",
+  "Create a restaurant website...",
+  "Generate a productivity tool...",
+];
+
+const NAV_ITEMS = [
+  { icon: "⊞", label: "Home", path: "/" },
+  { icon: "◫", label: "Projects", path: "/dashboard" },
+  { icon: "⊟", label: "Templates", path: "/templates" },
+  { icon: "▦", label: "Analytics", path: "/analytics" },
+  { icon: "⚙", label: "Settings", path: "/settings" },
+];
 
 export default function HomePage() {
   const router = useRouter();
   const supabase = createClient();
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [prompt, setPrompt] = useState("");
+  const [buildType, setBuildType] = useState("Website");
+  const [showBuildDropdown, setShowBuildDropdown] = useState(false);
+  const [showPlusDropdown, setShowPlusDropdown] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
+  const [isTyping, setIsTyping] = useState(true);
+  const [recentProjects, setRecentProjects] = useState<any[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [listening, setListening] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const silenceTimer = useRef<any>(null);
 
   useEffect(() => {
-    const check = async () => {
+    const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push("/auth/login"); return; }
       setUser(user);
-      setLoading(false);
+      fetchRecent();
     };
-    check();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
+    getUser();
   }, []);
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#06060A", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: "24px", height: "24px", border: "2px solid #FFC107", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
+  const fetchRecent = async () => {
+    const { data } = await supabase
+      .from("projects")
+      .select("id, title, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setRecentProjects(data || []);
+  };
 
-  return user ? <Dashboard user={user} /> : <Landing />;
-}
+  // Typing animation
+  useEffect(() => {
+    const target = PLACEHOLDERS[placeholderIndex];
+    let i = 0;
+    setDisplayedPlaceholder("");
+    setIsTyping(true);
+    const type = setInterval(() => {
+      if (i < target.length) {
+        setDisplayedPlaceholder(target.slice(0, i + 1));
+        i++;
+      } else {
+        clearInterval(type);
+        setIsTyping(false);
+        setTimeout(() => {
+          setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length);
+        }, 2000);
+      }
+    }, 45);
+    return () => clearInterval(type);
+  }, [placeholderIndex]);
 
-function Landing() {
-  const router = useRouter();
+  const handleGenerate = () => {
+    if (!prompt.trim()) return;
+    const encoded = encodeURIComponent(prompt);
+    router.push(`/create?prompt=${encoded}&type=${buildType}`);
+  };
 
-  const FEATURES = [
-    { emoji: "🌐", title: "Website Builder", subtitle: "Describe idea → get full website", badge: "Most Popular", badgeColor: "#FFC107", route: "/create" },
-    { emoji: "🎮", title: "Game/App Builder", subtitle: "Build playable games & interactive apps", badge: "New", badgeColor: "#f97316", route: "/create" },
-    { emoji: "✨", title: "AI Image Studio", subtitle: "Generate stunning AI images instantly", badge: "Stability AI", badgeColor: "#a855f7", route: "/create" },
-    { emoji: "📊", title: "Website Analysis", subtitle: "Deep AI analysis of any website", badge: "Insights", badgeColor: "#14b8a6", route: "/create" },
-    { emoji: "🧠", title: "AI Plan Builder", subtitle: "Ask anything — get a detailed plan", badge: "GPT + Claude", badgeColor: "#6366f1", route: "/create" },
-  ];
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#06060A", color: "#fff", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", overflowX: "hidden" }}>
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% -10%, #1a1408 0%, #06060A 55%, #000000 100%)" }} />
-        <div style={{ position: "absolute", top: "-160px", left: "-160px", width: "720px", height: "720px", borderRadius: "50%", background: "radial-gradient(closest-side, rgba(255,193,7,0.22), transparent 70%)", filter: "blur(60px)", animation: "floatSlow 14s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", top: "20%", right: "-160px", width: "640px", height: "640px", borderRadius: "50%", background: "radial-gradient(closest-side, rgba(0,255,149,0.16), transparent 70%)", filter: "blur(60px)", animation: "float 9s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", inset: 0, opacity: 0.15, backgroundImage: "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
-      </div>
-
-      <header style={{ position: "sticky", top: 0, zIndex: 40, backdropFilter: "blur(20px)", background: "rgba(6,6,10,0.7)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 24px", height: "64px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg, #FFC107, #ff8c00)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", boxShadow: "0 0 20px rgba(255,193,7,0.4)" }}>⚡</div>
-            <span style={{ fontSize: "18px", fontWeight: "700", letterSpacing: "-0.02em" }}>Krypton AI</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <button onClick={() => router.push("/auth/login")} style={{ padding: "8px 16px", background: "transparent", border: "none", color: "#d1d5db", cursor: "pointer", fontSize: "14px" }}>Sign in</button>
-            <button onClick={() => router.push("/auth/signup")} style={{ padding: "8px 20px", background: "#FFC107", color: "#000", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer", fontSize: "14px", boxShadow: "0 0 28px rgba(255,193,7,0.35)" }}>Start Free</button>
-          </div>
-        </div>
-      </header>
-
-      <section style={{ position: "relative", zIndex: 1, maxWidth: "1280px", margin: "0 auto", padding: "140px 24px 100px", textAlign: "center" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "6px 14px", borderRadius: "100px", border: "1px solid rgba(255,193,7,0.3)", background: "rgba(255,193,7,0.06)", fontSize: "11px", letterSpacing: "0.18em", textTransform: "uppercase", color: "#FFC107", marginBottom: "32px" }}>
-          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00FF95", boxShadow: "0 0 8px #00FF95", animation: "pulse 1.6s ease-in-out infinite", display: "inline-block" }} />
-          Krypton OS · Online · Claude AI
-        </div>
-        <h1 style={{ fontSize: "clamp(44px, 8vw, 88px)", fontWeight: "600", lineHeight: "0.95", letterSpacing: "-0.045em", marginBottom: "28px" }}>
-          Describe your idea.
-          <br />
-          <span style={{ background: "linear-gradient(135deg, #FFC107 0%, #00FF95 50%, #6366f1 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-            Krypton builds it.
-          </span>
-        </h1>
-        <p style={{ fontSize: "clamp(16px, 2vw, 20px)", color: "#9ca3af", maxWidth: "640px", margin: "0 auto 40px", lineHeight: "1.6" }}>
-          Build websites, apps, AI tools, games, and dashboards with world-class AI — cinematic design, production-ready code, instant preview.
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "40px" }}>
-          <button onClick={() => router.push("/auth/signup")} style={{ padding: "14px 28px", background: "#FFC107", color: "#000", border: "none", borderRadius: "12px", fontWeight: "700", fontSize: "15px", cursor: "pointer", boxShadow: "0 0 60px rgba(255,193,7,0.35)" }}>
-            Start Building Free →
-          </button>
-          <button onClick={() => router.push("/auth/login")} style={{ padding: "14px 28px", background: "transparent", color: "#e5e7eb", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", fontSize: "15px", cursor: "pointer" }}>
-            Sign In
-          </button>
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: "24px", fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#6b7280" }}>
-          {["✓ No credit card", "✓ Deploy in 10s", "✓ Claude · GPT · Gemini"].map((t) => <span key={t}>{t}</span>)}
-        </div>
-      </section>
-
-      <section style={{ position: "relative", zIndex: 1, maxWidth: "1280px", margin: "0 auto", padding: "0 24px 80px" }}>
-        <div style={{ textAlign: "center", marginBottom: "48px" }}>
-          <div style={{ fontSize: "11px", letterSpacing: "0.24em", textTransform: "uppercase", color: "#FFC107", fontWeight: "600", marginBottom: "16px" }}>What can you build</div>
-          <h2 style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: "600", letterSpacing: "-0.03em" }}>Everything you need to ship fast.</h2>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-          {FEATURES.map((f) => (
-            <div
-              key={f.title}
-              onClick={() => router.push("/auth/signup")}
-              style={{ position: "relative", borderRadius: "16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", padding: "20px", cursor: "pointer", transition: "all 0.2s" }}
-            >
-              <span style={{ position: "absolute", top: "12px", right: "12px", fontSize: "9px", fontWeight: "600", padding: "3px 8px", borderRadius: "100px", color: f.badgeColor, border: `1px solid ${f.badgeColor}55`, background: `${f.badgeColor}1a` }}>
-                {f.badge}
-              </span>
-              <div style={{ width: "44px", height: "44px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", background: `${f.badgeColor}26`, boxShadow: `0 0 18px ${f.badgeColor}33`, marginBottom: "16px" }}>
-                {f.emoji}
-              </div>
-              <div style={{ fontWeight: "700", fontSize: "14px", marginBottom: "6px" }}>{f.title}</div>
-              <div style={{ fontSize: "12px", color: "#888", lineHeight: "1.5" }}>{f.subtitle}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section style={{ position: "relative", zIndex: 1, maxWidth: "1280px", margin: "0 auto", padding: "0 24px 80px" }}>
-        <div style={{ textAlign: "center", marginBottom: "48px" }}>
-          <div style={{ fontSize: "11px", letterSpacing: "0.24em", textTransform: "uppercase", color: "#FFC107", fontWeight: "600", marginBottom: "16px" }}>Loved by builders</div>
-          <h2 style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: "600", letterSpacing: "-0.03em" }}>People who shipped with Krypton.</h2>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
-          {[
-            { name: "Maya Patel", role: "Founder, Nebula", color: "#a78bfa", quote: "Krypton replaced an entire design + dev sprint. It feels less like a tool and more like a co-founder." },
-            { name: "Jordan Reyes", role: "Indie hacker", color: "#FFC107", quote: "I shipped a real product on a flight. Krypton is the closest thing to magic I've used in years." },
-            { name: "Aisha Karim", role: "Design lead, Helix", color: "#00FF95", quote: "The output is genuinely premium. Typography, motion, hierarchy — all considered. Wild." },
-          ].map((t) => (
-            <div key={t.name} style={{ borderRadius: "16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", padding: "24px" }}>
-              <div style={{ marginBottom: "16px" }}>{[0,1,2,3,4].map((i) => <span key={i} style={{ color: "#FFC107" }}>★</span>)}</div>
-              <p style={{ fontSize: "14px", color: "#e5e7eb", lineHeight: "1.6", marginBottom: "20px" }}>"{t.quote}"</p>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: `linear-gradient(135deg, ${t.color}, #1a1a1a)` }} />
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: "600" }}>{t.name}</div>
-                  <div style={{ fontSize: "12px", color: "#6b7280" }}>{t.role}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section style={{ position: "relative", zIndex: 1, maxWidth: "960px", margin: "0 auto", padding: "0 24px 128px", textAlign: "center" }}>
-        <h2 style={{ fontSize: "clamp(32px, 5vw, 60px)", fontWeight: "600", letterSpacing: "-0.035em", background: "linear-gradient(135deg, #FFC107, #00FF95)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", display: "inline-block", marginBottom: "24px" }}>
-          The future of building is a sentence away.
-        </h2>
-        <p style={{ color: "#9ca3af", maxWidth: "480px", margin: "0 auto 40px", lineHeight: "1.6" }}>
-          Join thousands of founders, designers, and engineers shipping at impossible speed.
-        </p>
-        <button onClick={() => router.push("/auth/signup")} style={{ padding: "16px 32px", background: "#FFC107", color: "#000", border: "none", borderRadius: "12px", fontWeight: "700", fontSize: "16px", cursor: "pointer", boxShadow: "0 0 60px rgba(255,193,7,0.35)" }}>
-          Start Free — No credit card required →
-        </button>
-      </section>
-
-      <footer style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,6,10,0.8)" }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "40px 24px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "28px", height: "28px", background: "linear-gradient(135deg, #FFC107, #ff8c00)", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>⚡</div>
-            <span style={{ fontSize: "16px", fontWeight: "700" }}>Krypton AI</span>
-          </div>
-          <p style={{ fontSize: "12px", color: "#4b5563" }}>© {new Date().getFullYear()} Krypton AI — Describe your idea. Krypton builds it.</p>
-        </div>
-      </footer>
-
-      <style>{`
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
-        @keyframes floatSlow { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-30px); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-      `}</style>
-    </div>
-  );
-}
-
-function Dashboard({ user }: { user: any }) {
-  const router = useRouter();
-  const supabase = createClient();
-
-  const FEATURES = [
-    { emoji: "🌐", title: "Website Builder", subtitle: "Describe idea → get full website", badge: "Most Popular", badgeColor: "#FFC107", route: "/create" },
-    { emoji: "🎮", title: "Game/App Builder", subtitle: "Build playable games & interactive apps", badge: "New", badgeColor: "#f97316", route: "/create" },
-    { emoji: "✨", title: "AI Image Studio", subtitle: "Generate stunning AI images instantly", badge: "Stability AI", badgeColor: "#a855f7", route: "/create" },
-    { emoji: "📊", title: "Website Analysis", subtitle: "Deep AI analysis of any website", badge: "Insights", badgeColor: "#14b8a6", route: "/create" },
-    { emoji: "🧠", title: "AI Plan Builder", subtitle: "Ask anything — get a detailed plan", badge: "GPT + Claude", badgeColor: "#6366f1", route: "/create" },
-  ];
-
-  const greet = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 18) return "Good afternoon";
-    return "Good evening";
-  })();
-
-  const name = user?.email?.split("@")[0] || "there";
+  const handleVoice = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return alert("Voice not supported in this browser");
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onstart = () => setListening(true);
+    recognition.onresult = (e: any) => {
+      const transcript = Array.from(e.results).map((r: any) => r[0].transcript).join("");
+      setPrompt(transcript);
+      clearTimeout(silenceTimer.current);
+      silenceTimer.current = setTimeout(() => { recognition.stop(); }, 5000);
+    };
+    recognition.onend = () => setListening(false);
+    recognition.start();
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/");
+    router.push("/auth/login");
   };
 
+  const firstName = user?.user_metadata?.first_name || user?.email?.split("@")[0] || "there";
+
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   return (
-    <div style={{ minHeight: "100vh", background: "#06060A", color: "#fff", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 20% -10%, #1a1408 0%, #06060A 50%, #000000 100%)" }} />
-        <div style={{ position: "absolute", top: "-160px", left: "-160px", width: "520px", height: "520px", borderRadius: "50%", background: "radial-gradient(closest-side, rgba(255,193,7,0.12), transparent 70%)", filter: "blur(60px)", animation: "floatSlow 14s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", top: "30%", right: "-160px", width: "480px", height: "480px", borderRadius: "50%", background: "radial-gradient(closest-side, rgba(0,255,149,0.08), transparent 70%)", filter: "blur(60px)", animation: "float 9s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", inset: 0, opacity: 0.12, backgroundImage: "linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
-      </div>
+    <div style={{
+      display: "flex",
+      height: "100vh",
+      background: "#080808",
+      color: "#fff",
+      fontFamily: "'DM Sans', sans-serif",
+      overflow: "hidden",
+    }}>
 
-      <header style={{ position: "sticky", top: 0, zIndex: 30, borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(6,6,10,0.8)", backdropFilter: "blur(20px)" }}>
-        <div style={{ padding: "0 16px", height: "56px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div style={{ width: "28px", height: "28px", background: "linear-gradient(135deg, #FFC107, #ff8c00)", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", boxShadow: "0 0 16px rgba(255,193,7,0.35)" }}>⚡</div>
-            <span style={{ fontSize: "15px", fontWeight: "700", color: "#FFC107" }}>Krypton AI</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <button onClick={() => router.push("/create")} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#FFC107", color: "#000", border: "none", borderRadius: "100px", fontWeight: "700", fontSize: "12px", padding: "6px 14px", cursor: "pointer", boxShadow: "0 0 18px rgba(255,193,7,0.28)" }}>
-              + New Project
-            </button>
-            <button onClick={handleLogout} style={{ padding: "6px 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#9ca3af", cursor: "pointer", fontSize: "12px" }}>
-              Sign out
-            </button>
-          </div>
+      {/* SIDEBAR */}
+      <div style={{
+        width: sidebarOpen ? "240px" : "0px",
+        minWidth: sidebarOpen ? "240px" : "0px",
+        height: "100vh",
+        background: "#0C0C0C",
+        borderRight: "1px solid #1c1c1c",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        transition: "all 0.25s ease",
+        flexShrink: 0,
+      }}>
+
+        {/* Logo + Dropdown */}
+        <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid #1c1c1c", position: "relative" }}>
+          <button
+            onClick={() => setShowUserDropdown(!showUserDropdown)}
+            style={{
+              display: "flex", alignItems: "center", gap: "10px",
+              background: "none", border: "none", cursor: "pointer", width: "100%", padding: "6px 8px",
+              borderRadius: "10px",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "#161616"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+          >
+            <div style={{
+              width: "28px", height: "28px", background: "#FFC107",
+              borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#080808" />
+                <path d="M10 6l-4 3v2l4 3 4-3V9L10 6z" fill="#FFC107" opacity="0.8" />
+              </svg>
+            </div>
+            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "14px", color: "#fff", flex: 1, textAlign: "left" }}>
+              Krypton <span style={{ color: "#FFC107" }}>AI</span>
+            </span>
+            <span style={{ color: "#555", fontSize: "12px" }}>▾</span>
+          </button>
+
+          {showUserDropdown && (
+            <div style={{
+              position: "absolute", top: "64px", left: "12px", right: "12px",
+              background: "#141414", border: "1px solid #1c1c1c", borderRadius: "12px",
+              padding: "6px", zIndex: 100,
+            }}>
+              {["Profile", "Billing", "API Keys", "Notifications", "Theme"].map((item) => (
+                <button key={item} style={{
+                  width: "100%", textAlign: "left", padding: "9px 12px",
+                  background: "none", border: "none", color: "#9ca3af",
+                  fontSize: "13px", cursor: "pointer", borderRadius: "8px",
+                }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#1c1c1c"; e.currentTarget.style.color = "#fff"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#9ca3af"; }}
+                >
+                  {item}
+                </button>
+              ))}
+              <div style={{ height: "1px", background: "#1c1c1c", margin: "4px 0" }} />
+              <button onClick={handleLogout} style={{
+                width: "100%", textAlign: "left", padding: "9px 12px",
+                background: "none", border: "none", color: "#ff4d4d",
+                fontSize: "13px", cursor: "pointer", borderRadius: "8px",
+              }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "#1c1c1c"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
-      </header>
 
-      <div style={{ display: "flex" }}>
-        <aside style={{ width: "220px", flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.05)", minHeight: "calc(100vh - 56px)", padding: "12px", display: "flex", flexDirection: "column", gap: "4px", position: "relative", zIndex: 1 }}>
-          {[
-            { icon: "🏠", label: "Home", route: "/" },
-            { icon: "✨", label: "New Project", route: "/create" },
-            { icon: "📁", label: "My Projects", route: "/dashboard" },
-            { icon: "⚙️", label: "Settings", route: "/dashboard" },
-            { icon: "💳", label: "Billing", route: "/dashboard" },
-          ].map((item) => (
+        {/* Nav Items */}
+        <div style={{ padding: "12px 10px", display: "flex", flexDirection: "column", gap: "2px" }}>
+          {NAV_ITEMS.map((item) => (
             <button
               key={item.label}
-              onClick={() => router.push(item.route)}
-              style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", borderRadius: "10px", background: "transparent", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: "13px", textAlign: "left", width: "100%" }}
+              onClick={() => router.push(item.path)}
+              style={{
+                display: "flex", alignItems: "center", gap: "10px",
+                padding: "9px 12px", borderRadius: "9px",
+                background: item.path === "/" ? "#161616" : "none",
+                border: "none", color: item.path === "/" ? "#fff" : "#9ca3af",
+                fontSize: "13px", cursor: "pointer", textAlign: "left", width: "100%",
+                fontWeight: item.path === "/" ? 600 : 400,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#161616"; e.currentTarget.style.color = "#fff"; }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = item.path === "/" ? "#161616" : "none";
+                e.currentTarget.style.color = item.path === "/" ? "#fff" : "#9ca3af";
+              }}
             >
-              <span>{item.icon}</span>
+              <span style={{ fontSize: "15px" }}>{item.icon}</span>
               {item.label}
             </button>
           ))}
-        </aside>
+        </div>
 
-        <main style={{ flex: 1, padding: "40px 32px", maxWidth: "960px", position: "relative", zIndex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.2em", color: "#00FF95", fontWeight: "600", marginBottom: "12px" }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00FF95", animation: "pulse 1.6s ease-in-out infinite", display: "inline-block" }} />
-            Krypton OS · Online
+        {/* Recent Projects */}
+        <div style={{ padding: "0 10px", flex: 1, overflowY: "auto" }}>
+          <p style={{ fontSize: "10px", color: "#444", textTransform: "uppercase", letterSpacing: "0.08em", padding: "8px 12px 6px" }}>
+            Recent
+          </p>
+          {recentProjects.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => router.push("/dashboard")}
+              style={{
+                width: "100%", textAlign: "left", padding: "8px 12px",
+                background: "none", border: "none", color: "#9ca3af",
+                fontSize: "12px", cursor: "pointer", borderRadius: "8px",
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#161616"; e.currentTarget.style.color = "#fff"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#9ca3af"; }}
+            >
+              {p.title}
+            </button>
+          ))}
+        </div>
+
+        {/* User Card */}
+        <div style={{
+          padding: "12px", borderTop: "1px solid #1c1c1c",
+          display: "flex", alignItems: "center", gap: "10px",
+        }}>
+          <div style={{
+            width: "32px", height: "32px", borderRadius: "50%",
+            background: "linear-gradient(135deg, #FFC107, #ff6b00)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "13px", fontWeight: 700, color: "#080808", flexShrink: 0,
+          }}>
+            {firstName[0]?.toUpperCase()}
           </div>
-
-          <h1 style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: "600", letterSpacing: "-0.03em", marginBottom: "8px" }}>
-            {greet},{" "}
-            <span style={{ background: "linear-gradient(135deg, #FFC107, #00FF95)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              {name}
-            </span>.
-          </h1>
-          <p style={{ fontSize: "15px", color: "#9ca3af", marginBottom: "32px" }}>Describe an idea and Krypton will build it — design, code, deploy.</p>
-
-          <button
-            onClick={() => router.push("/create")}
-            style={{ width: "100%", textAlign: "left", position: "relative", overflow: "hidden", borderRadius: "16px", border: "1px solid rgba(255,193,7,0.15)", background: "linear-gradient(135deg, rgba(255,193,7,0.1), rgba(255,255,255,0.02), rgba(0,255,149,0.06))", padding: "24px 28px", cursor: "pointer", display: "flex", alignItems: "center", gap: "16px", boxShadow: "0 30px 80px -30px rgba(255,193,7,0.25)", marginBottom: "28px" }}
-          >
-            <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "#FFC107", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", boxShadow: "0 0 30px rgba(255,193,7,0.45)", flexShrink: 0 }}>✨</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "16px", fontWeight: "600", marginBottom: "4px" }}>Start a new project</div>
-              <div style={{ fontSize: "13px", color: "#9ca3af" }}>Describe an idea and Krypton will build it instantly.</div>
-            </div>
-            <span style={{ color: "#9ca3af", fontSize: "18px" }}>→</span>
-          </button>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "32px" }}>
-            {[
-              { label: "Projects", value: "0" },
-              { label: "Deployments", value: "0" },
-              { label: "Credits", value: "100" },
-            ].map((s) => (
-              <div key={s.label} style={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", padding: "16px" }}>
-                <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", color: "#6b7280", marginBottom: "4px" }}>{s.label}</div>
-                <div style={{ fontSize: "24px", fontWeight: "600" }}>{s.value}</div>
-              </div>
-            ))}
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <p style={{ fontSize: "12px", fontWeight: 600, color: "#fff", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {firstName}
+            </p>
+            <p style={{ fontSize: "10px", color: "#555", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              Free Plan
+            </p>
           </div>
-
-          <h2 style={{ fontSize: "17px", fontWeight: "600", marginBottom: "16px" }}>What do you want to build?</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px" }}>
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                onClick={() => router.push(f.route)}
-                style={{ position: "relative", borderRadius: "16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", padding: "16px", cursor: "pointer", transition: "all 0.2s" }}
-              >
-                <span style={{ position: "absolute", top: "8px", right: "8px", fontSize: "9px", fontWeight: "600", padding: "2px 7px", borderRadius: "100px", color: f.badgeColor, border: `1px solid ${f.badgeColor}55`, background: `${f.badgeColor}1a` }}>
-                  {f.badge}
-                </span>
-                <div style={{ width: "40px", height: "40px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", background: `${f.badgeColor}26`, boxShadow: `0 0 18px ${f.badgeColor}33`, marginBottom: "12px" }}>
-                  {f.emoji}
-                </div>
-                <div style={{ fontWeight: "700", fontSize: "13px", marginBottom: "4px" }}>{f.title}</div>
-                <div style={{ fontSize: "11px", color: "#888", lineHeight: "1.5" }}>{f.subtitle}</div>
-              </div>
-            ))}
-          </div>
-        </main>
+        </div>
       </div>
 
-      <style>{`
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
-        @keyframes floatSlow { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-30px); } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-      `}</style>
-    </div>
-  );
-}
+      {/* MAIN AREA */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Top bar */}
+        <div style={{
+          padding: "14px 24px", borderBottom: "1px solid #1c1c1c",
+          display: "flex", alignItems: "center", gap: "12px", flexShrink: 0,
+        }}>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            style={{
+              background: "none", border: "none", color: "#555",
+              cursor: "pointer", fontSize: "18px", padding: "4px",
+            }}
+          >
+            ☰
+          </button>
+          <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+            <button
+              onClick={() => router.push("/dashboard")}
+              style={{
+                padding: "7px 16px", background: "#101010",
+                border: "1px solid #1c1c1c", borderRadius: "9px",
+                color: "#9ca3af", fontSize: "13px", cursor: "pointer",
+              }}
+            >
+              My Projects
+            </button>
+            <button
+              onClick={() => router.push("/create")}
+              style={{
+                padding: "7px 16px", background: "#FFC107",
+                border: "none", borderRadius: "9px",
+                color: "#080808", fontSize: "13px", fontWeight: 700, cursor: "pointer",
+              }}
+            >
+              + New
+            </button>
+          </div>
+        </div>
+
+        {/* Hero + Prompt */}
+        <div style={{
+          flex: 1, overflowY: "auto",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: "2rem 1.5rem",
+        }}>
+          <div style={{ width: "100%", maxWidth: "720px" }}>
+
+            {/* Heading */}
+            <h1 style={{
+              fontFamily: "'Syne', sans-serif",
+              fontSize: "clamp(28px, 5vw, 48px)",
+              fontWeight: 800,
+              color: "#fff",
+              textAlign: "center",
+              marginBottom: "12px",
+              lineHeight: 1.15,
+            }}>
+              Got an idea,{" "}
+              <span style={{ color: "#FFC107" }}>{firstName}?</span>
+            </h1>
+            <p style={{
+              textAlign: "center", color: "#9ca3af",
+              fontSize: "16px", marginBottom: "2rem", lineHeight: 1.6,
+            }}>
+              Describe your idea and Krypton AI will build it instantly.
+            </p>
+
+            {/* Prompt Box */}
+            <div style={{
+              background: "#101010",
+              border: "1px solid #1c1c1c",
+              borderRadius: "18px",
+              padding: "16px",
+              boxShadow: "0 0 40px rgba(255,193,7,0.04)",
+            }}>
+              <textarea
+                ref={textareaRef}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder={displayedPlaceholder + (isTyping ? "|" : "")}
+                rows={4}
+                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleGenerate(); }}
+                style={{
+                  width: "100%", background: "none", border: "none",
+                  color: "#fff", fontSize: "15px", resize: "none",
+                  outline: "none", lineHeight: 1.7,
+                  fontFamily: "'DM Sans', sans-serif",
+                  boxSizing: "border-box",
+                }}
+              />
+
+              {/* Bottom bar */}
+              <div style={{
+                display: "flex", alignItems: "center",
+                justifyContent: "space-between", marginTop: "8px",
+                borderTop: "1px solid #1c1c1c", paddingTop: "12px",
+              }}>
+                {/* Left — Plus button */}
+                <div style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setShowPlusDropdown(!showPlusDropdown)}
+                    style={{
+                      width: "34px", height: "34px", borderRadius: "9px",
+                      background: "#161616", border: "1px solid #1c1c1c",
+                      color: "#9ca3af", fontSize: "18px", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    +
+                  </button>
+                  {showPlusDropdown && (
+                    <div style={{
+                      position: "absolute", bottom: "44px", left: 0,
+                      background: "#141414", border: "1px solid #1c1c1c",
+                      borderRadius: "12px", padding: "6px", zIndex: 100, minWidth: "160px",
+                    }}>
+                      {["Upload Image", "Upload Screenshot", "Upload File"].map((item) => (
+                        <button key={item} style={{
+                          width: "100%", textAlign: "left", padding: "9px 12px",
+                          background: "none", border: "none", color: "#9ca3af",
+                          fontSize: "13px", cursor: "pointer", borderRadius: "8px",
+                        }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "#1c1c1c"; e.currentTarget.style.color = "#fff"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#9ca3af"; }}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right — Build type + Voice + Generate */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  {/* Build dropdown */}
+                  <div style={{ position: "relative" }}>
+                    <button
+                      onClick={() => setShowBuildDropdown(!showBuildDropdown)}
+                      style={{
+                        padding: "8px 14px", background: "#161616",
+                        border: "1px solid #1c1c1c", borderRadius: "9px",
+                        color: "#9ca3af", fontSize: "13px", cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: "6px",
+                      }}
+                    >
+                      {buildType} <span style={{ fontSize: "10px" }}>▾</span>
+                    </button>
+                    {showBuildDropdown && (
+                      <div style={{
+                        position: "absolute", bottom: "44px", right: 0,
+                        background: "#141414", border: "1px solid #1c1c1c",
+                        borderRadius: "12px", padding: "6px", zIndex: 100, minWidth: "120px",
+                      }}>
+                        {["Website", "App", "Game", "Tool"].map((type) => (
+                          <button key={type} onClick={() => { setBuildType(type); setShowBuildDropdown(false); }}
+                            style={{
+                              width: "100%", textAlign: "left", padding: "9px 12px",
+                              background: type === buildType ? "#1c1c1c" : "none",
+                              border: "none", color: type === buildType ? "#FFC107" : "#9ca3af",
+                              fontSize: "13px", cursor: "pointer", borderRadius: "8px",
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "#1c1c1c"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = type === buildType ? "#1c1c1c" : "none"; }}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Voice button */}
+                  <button
+                    onClick={handleVoice}
+                    style={{
+                      width: "36px", height: "36px", borderRadius: "9px",
+                      background: listening ? "rgba(255,193,7,0.15)" : "#161616",
+                      border: listening ? "1px solid rgba(255,193,7,0.3)" : "1px solid #1c1c1c",
+                      color: listening ? "#FFC107" : "#9ca3af",
+                      fontSize: "16px", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    🎤
+                  </button>
+
+                  {/* Generate button */}
+                  <button
+                    onClick={handleGenerate}
+                    disabled={!prompt.trim()}
+                    style={{
+                      width: "36px", height: "36px", borderRadius: "50%",
+                      background: prompt.trim() ? "#FFC107" : "#1c1c1c",
+                      border: "none", cursor: prompt.trim() ? "pointer" : "not-allowed",
+                      display:
