@@ -174,7 +174,7 @@ export default function CreatePage() {
         )}
 
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push("/")}
           style={{
             marginLeft: "auto",
             padding: "5px 12px",
