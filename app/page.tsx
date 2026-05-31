@@ -108,9 +108,7 @@ export default function HomePage() {
     await supabase.auth.signOut();
     router.push("/auth/login");
   };
-
-  const firstName = user?.user_metadata?.first_name || user?.email?.split("@")[0] || "there";
-
+ 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (
