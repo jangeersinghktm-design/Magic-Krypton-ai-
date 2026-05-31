@@ -57,20 +57,32 @@ export default function DashboardPage() {
       fontFamily: "'DM Sans', sans-serif",
       padding: "2rem 1.5rem",
     }}>
-
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2rem" }}>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: "2rem",
+      }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{
-            width: "32px", height: "32px", background: "#FFC107",
-            borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center",
+            width: "32px",
+            height: "32px",
+            background: "#FFC107",
+            borderRadius: "8px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}>
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
               <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#06060A" />
               <path d="M10 6l-4 3v2l4 3 4-3V9L10 6z" fill="#FFC107" opacity="0.7" />
             </svg>
           </div>
-          <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "16px" }}>
+          <span style={{
+            fontFamily: "'Syne', sans-serif",
+            fontWeight: 800,
+            fontSize: "16px",
+          }}>
             KRYPTON <span style={{ color: "#FFC107" }}>AI</span>
           </span>
         </div>
@@ -92,7 +104,12 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 700, marginBottom: "1.5rem" }}>
+      <h2 style={{
+        fontFamily: "'Syne', sans-serif",
+        fontSize: "22px",
+        fontWeight: 700,
+        marginBottom: "1.5rem",
+      }}>
         My Projects
       </h2>
 
@@ -102,8 +119,11 @@ export default function DashboardPage() {
 
       {!loading && projects.length === 0 && (
         <div style={{
-          background: "#0D0D12", border: "1px solid #1e1e2a",
-          borderRadius: "16px", padding: "3rem", textAlign: "center",
+          background: "#0D0D12",
+          border: "1px solid #1e1e2a",
+          borderRadius: "16px",
+          padding: "3rem",
+          textAlign: "center",
         }}>
           <p style={{ color: "#444", fontSize: "15px", marginBottom: "1rem" }}>
             No projects yet!
@@ -111,9 +131,14 @@ export default function DashboardPage() {
           <button
             onClick={() => router.push("/create")}
             style={{
-              padding: "10px 24px", background: "#FFC107",
-              borderRadius: "10px", color: "#06060A",
-              fontWeight: 700, border: "none", cursor: "pointer", fontSize: "14px",
+              padding: "10px 24px",
+              background: "#FFC107",
+              borderRadius: "10px",
+              color: "#06060A",
+              fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+              fontSize: "14px",
             }}
           >
             Create First Project →
@@ -135,29 +160,40 @@ export default function DashboardPage() {
               borderRadius: "16px",
               padding: "1.5rem",
               transition: "border-color 0.2s",
-              cursor: "pointer",
             }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = "#FFC107"}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = "#1e1e2a"}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#FFC107")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1e1e2a")}
           >
             <h3 style={{
               fontFamily: "'Syne', sans-serif",
-              fontSize: "15px", fontWeight: 700, color: "#fff",
-              marginBottom: "8px", whiteSpace: "nowrap",
-              overflow: "hidden", textOverflow: "ellipsis",
+              fontSize: "15px",
+              fontWeight: 700,
+              color: "#fff",
+              marginBottom: "8px",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}>
               {project.title}
             </h3>
 
             <p style={{
-              fontSize: "13px", color: "#555", marginBottom: "1rem",
-              overflow: "hidden", display: "-webkit-box",
-              WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+              fontSize: "13px",
+              color: "#555",
+              marginBottom: "1rem",
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
             }}>
               {project.prompt || "No prompt"}
             </p>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
               <span style={{ fontSize: "11px", color: "#444" }}>
                 {timeAgo(project.created_at)}
               </span>
@@ -168,8 +204,11 @@ export default function DashboardPage() {
                     padding: "6px 14px",
                     background: "rgba(255,193,7,0.1)",
                     border: "1px solid rgba(255,193,7,0.2)",
-                    borderRadius: "8px", color: "#FFC107",
-                    fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                    borderRadius: "8px",
+                    color: "#FFC107",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
                   }}
                 >
                   Open
@@ -179,9 +218,11 @@ export default function DashboardPage() {
                   style={{
                     padding: "6px 10px",
                     background: "rgba(255,77,77,0.08)",
-                    border: "1px solid rgba(255,77,77,0.15)",
-                    borderRadius: "8px", color: "#ff4d4d",
-                    fontSize: "12px", cursor: "pointer", border: "none",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "#ff4d4d",
+                    fontSize: "12px",
+                    cursor: "pointer",
                   }}
                 >
                   ✕
@@ -193,4 +234,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-              }
+                }
