@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { saveProject } from "@/lib/saveProject";
 
 export default function CreatePage() {
   const router = useRouter();
@@ -14,6 +15,8 @@ export default function CreatePage() {
   const [error, setError] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<"input" | "preview">("input");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -41,6 +44,7 @@ export default function CreatePage() {
     setLoading(true);
     setResult("");
     setError("");
+    setSaved(false);
     if (isMobile) setActiveTab("preview");
     try {
       const response = await fetch("/api/generate", {
@@ -60,6 +64,24 @@ export default function CreatePage() {
       if (isMobile) setActiveTab("input");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!result) return;
+    setSaving(true);
+    try {
+      await saveProject({
+        title: promptRef.current.slice(0, 50) || "Untitled Project",
+        prompt: promptRef.current,
+        html_code: result,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -114,7 +136,7 @@ export default function CreatePage() {
         flexShrink: 0,
       }}>
         <span style={{ fontSize: "18px" }}>⚡</span>
-        <span style={{ fontSize: "15px", fontWeight: "700", color: "#a78bfa" }}>Krypton AI</span>
+        <span style={{ fontSize: "15px", fontWeight: "700", color: "#FFC107" }}>Krypton AI</span>
 
         {isMobile && (
           <div style={{ display: "flex", gap: "6px", marginLeft: "8px" }}>
@@ -124,10 +146,11 @@ export default function CreatePage() {
                 padding: "4px 12px",
                 borderRadius: "6px",
                 border: "none",
-                background: activeTab === "input" ? "#7c3aed" : "#1f1f1f",
-                color: "#fff",
+                background: activeTab === "input" ? "#FFC107" : "#1f1f1f",
+                color: activeTab === "input" ? "#06060A" : "#fff",
                 fontSize: "12px",
                 cursor: "pointer",
+                fontWeight: activeTab === "input" ? 700 : 400,
               }}
             >
               Prompt
@@ -138,10 +161,11 @@ export default function CreatePage() {
                 padding: "4px 12px",
                 borderRadius: "6px",
                 border: "none",
-                background: activeTab === "preview" ? "#7c3aed" : "#1f1f1f",
-                color: "#fff",
+                background: activeTab === "preview" ? "#FFC107" : "#1f1f1f",
+                color: activeTab === "preview" ? "#06060A" : "#fff",
                 fontSize: "12px",
                 cursor: "pointer",
+                fontWeight: activeTab === "preview" ? 700 : 400,
               }}
             >
               Preview {result && "✅"}
@@ -167,11 +191,7 @@ export default function CreatePage() {
       </div>
 
       {/* MAIN AREA */}
-      <div style={{
-        flex: 1,
-        display: "flex",
-        overflow: "hidden",
-      }}>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
         {/* LEFT PANEL */}
         <div style={{
@@ -209,6 +229,8 @@ export default function CreatePage() {
               lineHeight: "1.6",
               fontFamily: "inherit",
             }}
+            onFocus={(e) => e.target.style.borderColor = "#FFC107"}
+            onBlur={(e) => e.target.style.borderColor = "#2a2a2a"}
             inputMode="text"
             autoComplete="off"
             autoCorrect="off"
@@ -221,8 +243,8 @@ export default function CreatePage() {
             style={{
               width: "100%",
               padding: "12px",
-              background: loading ? "#1a1a1a" : "linear-gradient(135deg, #7c3aed, #a855f7)",
-              color: loading ? "#555" : "#fff",
+              background: loading ? "#1a1a1a" : "#FFC107",
+              color: loading ? "#555" : "#06060A",
               borderRadius: "8px",
               fontWeight: "700",
               border: "none",
@@ -260,8 +282,8 @@ export default function CreatePage() {
                 style={{
                   textAlign: "left",
                   padding: "7px 10px",
-                  background: "rgba(124,58,237,0.06)",
-                  border: "1px solid rgba(124,58,237,0.12)",
+                  background: "rgba(255,193,7,0.06)",
+                  border: "1px solid rgba(255,193,7,0.12)",
                   borderRadius: "6px",
                   color: "#888",
                   cursor: "pointer",
@@ -305,6 +327,24 @@ export default function CreatePage() {
 
             {result && (
               <div style={{ marginLeft: "auto", display: "flex", gap: "6px" }}>
+                {/* SAVE BUTTON */}
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  style={{
+                    padding: "4px 10px",
+                    background: saved ? "rgba(0,255,149,0.15)" : "rgba(255,193,7,0.15)",
+                    border: saved ? "1px solid rgba(0,255,149,0.3)" : "1px solid rgba(255,193,7,0.3)",
+                    borderRadius: "5px",
+                    color: saved ? "#00FF95" : "#FFC107",
+                    cursor: "pointer",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {saving ? "Saving..." : saved ? "✓ Saved!" : "💾 Save"}
+                </button>
+
                 <button
                   onClick={handleDownload}
                   style={{
@@ -373,4 +413,4 @@ export default function CreatePage() {
       </div>
     </div>
   );
-}
+      }
