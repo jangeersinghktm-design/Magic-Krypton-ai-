@@ -293,110 +293,102 @@ function CreatePage() {
           </div>
 
           {/* Input */}
-          <div style={{ padding: "12px", borderTop: "1px solid #1c1c1c", background: "#0C0C0C" }}>
-            {error && (
-              <div style={{ padding: "8px 12px", background: "rgba(255,77,77,0.08)", border: "1px solid rgba(255,77,77,0.15)", borderRadius: "8px", color: "#ff4d4d", fontSize: "12px", marginBottom: "8px" }}>
-                Error: {error}
-              </div>
-            )}
+<div style={{ padding: "12px 14px", borderTop: "1px solid #1c1c1c", background: "#0C0C0C", flexShrink: 0 }}>
+  {error && (
+    <div style={{ padding: "8px 12px", background: "rgba(255,77,77,0.08)", border: "1px solid rgba(255,77,77,0.15)", borderRadius: "8px", color: "#ff4d4d", fontSize: "12px", marginBottom: "8px" }}>
+      Error: {error}
+    </div>
+  )}
 
-            {/* Input box */}
-            <div style={{ background: "#161616", border: "1px solid #1c1c1c", borderRadius: "14px", padding: "10px 12px" }}>
-              <textarea
-                value={userPrompt}
-                onChange={handlePromptChange}
-                placeholder={result ? "Follow-up instruction..." : "Describe what you want to build..."}
-                rows={3}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                style={{ width: "100%", background: "none", border: "none", color: "#fff", fontSize: "14px", resize: "none", outline: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" }}
-              />
+  <div style={{ background: "#161616", border: "1px solid #2a2a2a", borderRadius: "16px", padding: "12px 14px" }}>
+    <textarea
+      value={userPrompt}
+      onChange={handlePromptChange}
+      placeholder={result ? "Follow-up instruction..." : "Describe what you want to build..."}
+      rows={3}
+      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
+      style={{
+        width: "100%", background: "none", border: "none",
+        color: "#fff", fontSize: "14px", resize: "none",
+        outline: "none", fontFamily: "'DM Sans', sans-serif",
+        lineHeight: 1.6, boxSizing: "border-box",
+      }}
+    />
 
-              {/* Bottom row */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
-                {/* File upload */}
-                <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,.txt,.html,.css,.js"
-                    onChange={handleFileUpload}
-                    style={{ display: "none" }}
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#1c1c1c", border: "1px solid #2a2a2a", color: "#9ca3af", fontSize: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}
-                  >
-                    +
-                  </button>
-                </div>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #1c1c1c" }}>
+      
+      {/* Left — + upload */}
+      <div style={{ position: "relative" }}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.txt,.html,.css,.js,.pdf"
+          onChange={handleFileUpload}
+          style={{ display: "none" }}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          title="Upload file"
+          style={{
+            width: "34px", height: "34px", borderRadius: "10px",
+            background: "#1c1c1c", border: "1px solid #2a2a2a",
+            color: "#9ca3af", fontSize: "20px", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontWeight: 400, lineHeight: 1,
+          }}
+        >
+          +
+        </button>
+      </div>
 
-                {/* Generate button */}
-                <button
-                  onClick={handleGenerate}
-                  disabled={loading || !userPrompt.trim()}
-                  style={{ width: "36px", height: "36px", borderRadius: "50%", background: userPrompt.trim() && !loading ? "#FFC107" : "#2a2a2a", border: "none", cursor: userPrompt.trim() && !loading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 19V5M5 12l7-7 7 7" stroke={userPrompt.trim() && !loading ? "#080808" : "#555"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <p style={{ fontSize: "10px", color: "#2a2a2a", margin: "6px 0 0", textAlign: "center" }}>Enter to send · Shift+Enter for new line</p>
-          </div>
-        </div>
+      {/* Right — Voice + Generate */}
+      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
 
-        {/* RIGHT - Preview */}
-        <div style={{ flex: 1, display: isMobile ? (activeTab === "preview" ? "flex" : "none") : "flex", flexDirection: "column", background: "#111", overflow: "hidden" }}>
+        {/* Voice button — mic icon */}
+        <button
+          onClick={handleVoice}
+          title="Voice input"
+          style={{
+            width: "34px", height: "34px", borderRadius: "10px",
+            background: "#1c1c1c", border: "1px solid #2a2a2a",
+            color: "#9ca3af", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="9" y="2" width="6" height="11" rx="3" fill="#9ca3af"/>
+            <path d="M5 10a7 7 0 0 0 14 0" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="12" y1="19" x2="12" y2="22" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="9" y1="22" x2="15" y2="22" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
 
-          <div style={{ padding: "8px 14px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "8px", background: "#0C0C0C", flexShrink: 0 }}>
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: loading ? "#FFC107" : result ? "#22c55e" : "#374151" }} />
-            <span style={{ fontSize: "12px", color: "#555" }}>
-              {loading ? "Building..." : result ? "Preview ready" : "Preview"}
-            </span>
-            {result && (
-              <div style={{ display: "flex", gap: "4px", marginLeft: "auto" }}>
-                {(["desktop", "tablet", "mobile"] as PreviewMode[]).map((mode) => (
-                  <button key={mode} onClick={() => setPreviewMode(mode)} style={{ padding: "4px 10px", borderRadius: "6px", border: "none", background: previewMode === mode ? "#FFC107" : "#161616", color: previewMode === mode ? "#080808" : "#9ca3af", fontSize: "11px", cursor: "pointer", fontWeight: previewMode === mode ? 700 : 400 }}>
-                    {mode === "desktop" ? "Desktop" : mode === "tablet" ? "Tablet" : "Mobile"}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", background: "#0d0d0d", padding: result && previewMode !== "desktop" ? "20px" : "0" }}>
-            {result ? (
-              <div style={{ width: previewWidth, height: "100%", transition: "width 0.3s ease", flexShrink: 0 }}>
-                <iframe
-                  key={result.substring(0, 50) + previewMode}
-                  srcDoc={result}
-                  style={{ width: "100%", height: "100%", border: "none", display: "block", background: "#ffffff" }}
-                  title="Krypton AI Preview"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-                />
-              </div>
-            ) : (
-              <div style={{ height: "100%", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "16px" }}>
-                <div style={{ width: "56px", height: "56px", background: "#111", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #1c1c1c" }}>
-                  <svg width="28" height="28" viewBox="0 0 20 20" fill="none" opacity={0.3}>
-                    <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#FFC107" />
-                  </svg>
-                </div>
-                <p style={{ color: "#2a2a2a", margin: 0, fontSize: "14px" }}>Your creation will appear here</p>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Generate button — round arrow like Claude */}
+        <button
+          onClick={handleGenerate}
+          disabled={loading || !userPrompt.trim()}
+          title="Generate"
+          style={{
+            width: "34px", height: "34px", borderRadius: "50%",
+            background: userPrompt.trim() && !loading ? "#FFC107" : "#2a2a2a",
+            border: "none",
+            cursor: userPrompt.trim() && !loading ? "pointer" : "not-allowed",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.2s", flexShrink: 0,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 19V5M5 12l7-7 7 7"
+              stroke={userPrompt.trim() && !loading ? "#080808" : "#555"}
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       </div>
     </div>
-  );
-}
+  </div>
 
-export default function CreatePageWrapper() {
-  return (
-    <Suspense fallback={<div style={{ background: "#080808", height: "100vh" }} />}>
-      <CreatePage />
-    </Suspense>
-  );
-}
+  <p style={{ fontSize: "10px", color: "#2a2a2a", margin: "6px 0 0", textAlign: "center" }}>
+    Enter to send · Shift+Enter for new line
+  </p>
+</div>
