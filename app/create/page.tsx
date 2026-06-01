@@ -313,25 +313,48 @@ function CreatePage() {
                 style={{ width: "100%", background: "none", border: "none", color: "#fff", fontSize: "14px", resize: "none", outline: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" }}
               />
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #1c1c1c" }}>
+
+                {/* + Upload button */}
                 <div>
                   <input ref={fileInputRef} type="file" accept="image/*,.txt,.html,.css,.js,.pdf" onChange={handleFileUpload} style={{ display: "none" }} />
-                  <button onClick={() => fileInputRef.current?.click()} style={{ width: "34px", height: "34px", borderRadius: "10px", background: "#1c1c1c", border: "1px solid #2a2a2a", color: "#9ca3af", fontSize: "20px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button onClick={() => fileInputRef.current?.click()} style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#2a2a2a", border: "none", color: "#9ca3af", fontSize: "22px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 300, lineHeight: 1 }}>
                     +
                   </button>
                 </div>
+
+                {/* Voice + Generate */}
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <button onClick={handleVoice} style={{ width: "34px", height: "34px", borderRadius: "10px", background: listening ? "rgba(255,193,7,0.15)" : "#1c1c1c", border: listening ? "1px solid rgba(255,193,7,0.3)" : "1px solid #2a2a2a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <rect x="9" y="2" width="6" height="11" rx="3" fill={listening ? "#FFC107" : "#9ca3af"} />
-                      <path d="M5 10a7 7 0 0 0 14 0" stroke={listening ? "#FFC107" : "#9ca3af"} strokeWidth="2" strokeLinecap="round" />
-                      <line x1="12" y1="19" x2="12" y2="22" stroke={listening ? "#FFC107" : "#9ca3af"} strokeWidth="2" strokeLinecap="round" />
-                      <line x1="9" y1="22" x2="15" y2="22" stroke={listening ? "#FFC107" : "#9ca3af"} strokeWidth="2" strokeLinecap="round" />
-                    </svg>
+
+                  {/* Voice button */}
+                  <button onClick={handleVoice} style={{ width: "36px", height: "36px", borderRadius: "50%", background: listening ? "#FFC107" : "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                    {listening ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="8" width="3" height="8" rx="1.5" fill="#080808"/>
+                        <rect x="7" y="5" width="3" height="14" rx="1.5" fill="#080808"/>
+                        <rect x="12" y="3" width="3" height="18" rx="1.5" fill="#080808"/>
+                        <rect x="17" y="6" width="3" height="12" rx="1.5" fill="#080808"/>
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="9" y="2" width="6" height="11" rx="3" fill="#9ca3af"/>
+                        <path d="M5 11a7 7 0 0 0 14 0" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+                        <line x1="12" y1="18" x2="12" y2="22" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+                        <line x1="8" y1="22" x2="16" y2="22" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    )}
                   </button>
-                  <button onClick={handleGenerate} disabled={loading || !userPrompt.trim()} style={{ width: "34px", height: "34px", borderRadius: "50%", background: userPrompt.trim() && !loading ? "#FFC107" : "#2a2a2a", border: "none", cursor: userPrompt.trim() && !loading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 19V5M5 12l7-7 7 7" stroke={userPrompt.trim() && !loading ? "#080808" : "#555"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+
+                  {/* Generate button */}
+                  <button onClick={handleGenerate} disabled={loading || !userPrompt.trim()} style={{ width: "36px", height: "36px", borderRadius: "50%", background: userPrompt.trim() && !loading ? "#FFC107" : "#1a1a1a", border: "none", cursor: userPrompt.trim() && !loading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                    {loading ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <rect x="7" y="7" width="10" height="10" rx="2" fill="#555"/>
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 19V5M5 12l7-7 7 7" stroke={userPrompt.trim() ? "#080808" : "#444"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
