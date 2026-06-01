@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { saveProject } from "@/lib/saveProject";
@@ -353,5 +353,13 @@ export default function CreatePage() {
         }
       `}</style>
     </div>
+  );
+  } 
+
+  export default function CreatePageWrapper() {
+  return (
+    <Suspense fallback={<div style={{ background: "#080808", height: "100vh" }} />}>
+      <CreatePage />
+    </Suspense>
   );
   }
