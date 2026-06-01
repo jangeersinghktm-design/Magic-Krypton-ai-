@@ -354,5 +354,35 @@ function CreatePage() {
                     {mode === "desktop" ? "Desktop" : mode === "tablet" ? "Tablet" : "Mobile"}
                   </button>
                 ))}
-              </d
-                
+              </div>
+            )}
+          </div>
+          <div style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", background: "#0d0d0d", padding: result && previewMode !== "desktop" ? "20px" : "0" }}>
+            {result ? (
+              <div style={{ width: previewWidth, height: "100%", transition: "width 0.3s ease", flexShrink: 0 }}>
+                <iframe key={result.substring(0, 50) + previewMode} srcDoc={result} style={{ width: "100%", height: "100%", border: "none", display: "block", background: "#ffffff" }} title="Krypton AI Preview" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals" />
+              </div>
+            ) : (
+              <div style={{ height: "100%", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "16px" }}>
+                <div style={{ width: "56px", height: "56px", background: "#111", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #1c1c1c" }}>
+                  <svg width="28" height="28" viewBox="0 0 20 20" fill="none" opacity={0.3}>
+                    <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#FFC107" />
+                  </svg>
+                </div>
+                <p style={{ color: "#2a2a2a", margin: 0, fontSize: "14px" }}>Your creation will appear here</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CreatePageWrapper() {
+  return (
+    <Suspense fallback={<div style={{ background: "#080808", height: "100vh" }} />}>
+      <CreatePage />
+    </Suspense>
+  );
+}
