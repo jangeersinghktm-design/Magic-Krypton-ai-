@@ -395,4 +395,8 @@ function CreatePage() {
 
 export default function CreatePageWrapper() {
   return (
-  
+    <Suspense fallback={<div style={{ background: "#080808", height: "100vh" }} />}>
+      <CreatePage />
+    </Suspense>
+  );
+}
