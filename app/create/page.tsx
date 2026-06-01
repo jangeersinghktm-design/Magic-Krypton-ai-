@@ -13,7 +13,7 @@ type Message = {
 
 type PreviewMode = "desktop" | "tablet" | "mobile";
 
-export default function CreatePage() {
+function CreatePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -48,7 +48,6 @@ export default function CreatePage() {
     checkAuth();
   }, []);
 
-  // Auto-generate if prompt passed from home page
   useEffect(() => {
     const p = searchParams.get("prompt");
     const t = searchParams.get("type");
@@ -165,13 +164,9 @@ export default function CreatePage() {
 
       {/* TOP BAR */}
       <div style={{ padding: "10px 16px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "10px", background: "#0C0C0C", flexShrink: 0 }}>
-
-        {/* Back */}
         <button onClick={() => router.push("/")} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: "18px", padding: "4px 8px" }}>
           ←
         </button>
-
-        {/* Logo */}
         <div style={{ width: "24px", height: "24px", background: "#FFC107", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
             <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#080808" />
@@ -179,7 +174,6 @@ export default function CreatePage() {
           </svg>
         </div>
 
-        {/* Project Name */}
         {editingName ? (
           <input
             autoFocus
@@ -198,7 +192,6 @@ export default function CreatePage() {
           </button>
         )}
 
-        {/* Mobile tabs */}
         {isMobile && (
           <div style={{ display: "flex", gap: "6px", marginLeft: "8px" }}>
             <button onClick={() => setActiveTab("chat")} style={{ padding: "4px 12px", borderRadius: "6px", border: "none", background: activeTab === "chat" ? "#FFC107" : "#1c1c1c", color: activeTab === "chat" ? "#080808" : "#fff", fontSize: "12px", cursor: "pointer", fontWeight: activeTab === "chat" ? 700 : 400 }}>
@@ -210,7 +203,6 @@ export default function CreatePage() {
           </div>
         )}
 
-        {/* Right actions */}
         <div style={{ marginLeft: "auto", display: "flex", gap: "6px", alignItems: "center" }}>
           {result && (
             <>
@@ -231,13 +223,12 @@ export default function CreatePage() {
       {/* MAIN */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
-        {/* LEFT — Chat Panel */}
+        {/* LEFT — Chat */}
         <div style={{ width: isMobile ? "100%" : "340px", display: isMobile ? (activeTab === "chat" ? "flex" : "none") : "flex", flexDirection: "column", borderRight: isMobile ? "none" : "1px solid #1c1c1c", background: "#0A0A0A", flexShrink: 0 }}>
 
-          {/* Chat messages */}
           <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
             {messages.length === 0 && (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px", opacity: 0.4 }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px", opacity: 0.4, minHeight: "200px" }}>
                 <span style={{ fontSize: "40px" }}>⚡</span>
                 <p style={{ color: "#555", fontSize: "13px", textAlign: "center", margin: 0 }}>Describe what you want to build</p>
               </div>
@@ -267,7 +258,7 @@ export default function CreatePage() {
                   </div>
                   <div style={{ display: "flex", gap: "4px" }}>
                     {[0, 1, 2].map((i) => (
-                      <div key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FFC107", animation: `bounce 1s ease-in-out ${i * 0.2}s infinite` }} />
+                      <div key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FFC107" }} />
                     ))}
                   </div>
                 </div>
@@ -276,7 +267,6 @@ export default function CreatePage() {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Input area */}
           <div style={{ padding: "12px", borderTop: "1px solid #1c1c1c", background: "#0C0C0C" }}>
             {error && (
               <div style={{ padding: "8px 12px", background: "rgba(255,77,77,0.08)", border: "1px solid rgba(255,77,77,0.15)", borderRadius: "8px", color: "#ff4d4d", fontSize: "12px", marginBottom: "8px" }}>
@@ -302,17 +292,14 @@ export default function CreatePage() {
           </div>
         </div>
 
-        {/* RIGHT — Preview Panel */}
+        {/* RIGHT — Preview */}
         <div style={{ flex: 1, display: isMobile ? (activeTab === "preview" ? "flex" : "none") : "flex", flexDirection: "column", background: "#111", overflow: "hidden" }}>
 
-          {/* Preview header */}
           <div style={{ padding: "8px 14px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "8px", background: "#0C0C0C", flexShrink: 0 }}>
             <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: loading ? "#f59e0b" : result ? "#22c55e" : "#374151" }} />
             <span style={{ fontSize: "12px", color: "#555" }}>
               {loading ? "⚡ Building..." : result ? "✅ Preview ready" : "Preview"}
             </span>
-
-            {/* Preview mode tabs */}
             {result && (
               <div style={{ display: "flex", gap: "4px", marginLeft: "auto" }}>
                 {(["desktop", "tablet", "mobile"] as PreviewMode[]).map((mode) => (
@@ -324,7 +311,6 @@ export default function CreatePage() {
             )}
           </div>
 
-          {/* Preview content */}
           <div style={{ flex: 1, overflow: "auto", display: "flex", justifyContent: "center", background: "#0d0d0d", padding: result && previewMode !== "desktop" ? "20px" : "0" }}>
             {result ? (
               <div style={{ width: previewWidth, height: "100%", transition: "width 0.3s ease", flexShrink: 0 }}>
@@ -345,21 +331,14 @@ export default function CreatePage() {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); opacity: 0.4; }
-          50% { transform: translateY(-4px); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
-  } 
+}
 
-  export default function CreatePage() {
+export default function CreatePageWrapper() {
   return (
     <Suspense fallback={<div style={{ background: "#080808", height: "100vh" }} />}>
       <CreatePage />
     </Suspense>
   );
-  }
+                                                      }
