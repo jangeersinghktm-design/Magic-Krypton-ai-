@@ -32,6 +32,7 @@ function CreatePage() {
   const [previewMode, setPreviewMode] = useState<PreviewMode>("desktop");
   const [messages, setMessages] = useState<Message[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -89,7 +90,7 @@ function CreatePage() {
         if (!overridePrompt) setProjectName(p.slice(0, 40) || "Untitled Project");
         const aiMsg: Message = {
           role: "ai",
-          content: "Done! Your project is ready. You can preview it on the right, download it, or save it to your dashboard.",
+          content: "Done! Your project is ready. Preview it on the right, download or save to dashboard.",
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, aiMsg]);
@@ -154,26 +155,41 @@ function CreatePage() {
     if (w) { w.document.write(result); w.document.close(); }
   };
 
-  const previewWidth = previewMode === "desktop" ? "100%" : previewMode === "tablet" ? "768px" : "375px";
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = `[Uploaded file: ${file.name}]\n` + (reader.result as string).slice(0, 500);
+      setUserPrompt((prev) => prev + "\n" + text);
+      promptRef.current = userPrompt + "\n" + text;
+    };
+    reader.readAsText(file);
+  };
 
-  const formatTime = (d: Date) =>
-    d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const previewWidth = previewMode === "desktop" ? "100%" : previewMode === "tablet" ? "768px" : "375px";
+  const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#080808", color: "#fff", fontFamily: "'DM Sans', sans-serif", overflow: "hidden", position: "fixed", inset: 0, width: "100%" }}>
 
       {/* TOP BAR */}
       <div style={{ padding: "10px 16px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "10px", background: "#0C0C0C", flexShrink: 0 }}>
-        <button onClick={() => router.push("/")} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: "18px", padding: "4px 8px" }}>
-          ←
+
+        {/* Back button */}
+        <button onClick={() => router.push("/")} style={{ background: "#161616", border: "1px solid #1c1c1c", borderRadius: "8px", color: "#fff", cursor: "pointer", fontSize: "16px", padding: "6px 12px", fontWeight: 700, lineHeight: 1 }}>
+          &larr;
         </button>
-        <div style={{ width: "24px", height: "24px", background: "#FFC107", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+
+        {/* Logo */}
+        <div style={{ width: "26px", height: "26px", background: "#FFC107", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
             <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#080808" />
             <path d="M10 6l-4 3v2l4 3 4-3V9L10 6z" fill="#FFC107" opacity="0.8" />
           </svg>
         </div>
 
+        {/* Project name */}
         {editingName ? (
           <input
             autoFocus
@@ -184,14 +200,16 @@ function CreatePage() {
             style={{ background: "#161616", border: "1px solid #FFC107", borderRadius: "7px", color: "#fff", padding: "4px 10px", fontSize: "13px", fontWeight: 600, outline: "none", width: "200px" }}
           />
         ) : (
-          <button onClick={() => setEditingName(true)} style={{ background: "none", border: "none", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer", padding: "4px 8px", borderRadius: "7px" }}
+          <button onClick={() => setEditingName(true)} style={{ background: "none", border: "none", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer", padding: "4px 8px", borderRadius: "7px", display: "flex", alignItems: "center", gap: "6px" }}
             onMouseEnter={(e) => e.currentTarget.style.background = "#161616"}
             onMouseLeave={(e) => e.currentTarget.style.background = "none"}
           >
-            {projectName} ✏️
+            {projectName}
+            <span style={{ fontSize: "12px", color: "#555" }}>✏</span>
           </button>
         )}
 
+        {/* Mobile tabs */}
         {isMobile && (
           <div style={{ display: "flex", gap: "6px", marginLeft: "8px" }}>
             <button onClick={() => setActiveTab("chat")} style={{ padding: "4px 12px", borderRadius: "6px", border: "none", background: activeTab === "chat" ? "#FFC107" : "#1c1c1c", color: activeTab === "chat" ? "#080808" : "#fff", fontSize: "12px", cursor: "pointer", fontWeight: activeTab === "chat" ? 700 : 400 }}>
@@ -203,17 +221,18 @@ function CreatePage() {
           </div>
         )}
 
+        {/* Right actions */}
         <div style={{ marginLeft: "auto", display: "flex", gap: "6px", alignItems: "center" }}>
           {result && (
             <>
               <button onClick={handleSave} disabled={saving} style={{ padding: "6px 12px", background: saved ? "rgba(0,255,149,0.15)" : "rgba(255,193,7,0.15)", border: saved ? "1px solid rgba(0,255,149,0.3)" : "1px solid rgba(255,193,7,0.3)", borderRadius: "7px", color: saved ? "#00FF95" : "#FFC107", cursor: "pointer", fontSize: "12px", fontWeight: 600 }}>
-                {saving ? "Saving..." : saved ? "✓ Saved!" : "💾 Save"}
+                {saving ? "Saving..." : saved ? "✓ Saved!" : "Save"}
               </button>
               <button onClick={handleDownload} style={{ padding: "6px 12px", background: "#161616", border: "1px solid #1c1c1c", borderRadius: "7px", color: "#9ca3af", cursor: "pointer", fontSize: "12px" }}>
-                ⬇ Export
+                Export
               </button>
               <button onClick={handleOpenTab} style={{ padding: "6px 12px", background: "#161616", border: "1px solid #1c1c1c", borderRadius: "7px", color: "#9ca3af", cursor: "pointer", fontSize: "12px" }}>
-                🔗 Open
+                Open
               </button>
             </>
           )}
@@ -223,13 +242,19 @@ function CreatePage() {
       {/* MAIN */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
-        {/* LEFT — Chat */}
+        {/* LEFT - Chat */}
         <div style={{ width: isMobile ? "100%" : "340px", display: isMobile ? (activeTab === "chat" ? "flex" : "none") : "flex", flexDirection: "column", borderRight: isMobile ? "none" : "1px solid #1c1c1c", background: "#0A0A0A", flexShrink: 0 }}>
 
+          {/* Messages */}
           <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
             {messages.length === 0 && (
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px", opacity: 0.4, minHeight: "200px" }}>
-                <span style={{ fontSize: "40px" }}>⚡</span>
+                <div style={{ width: "40px", height: "40px", background: "#FFC107", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#080808" />
+                    <path d="M10 6l-4 3v2l4 3 4-3V9L10 6z" fill="#FFC107" opacity="0.8" />
+                  </svg>
+                </div>
                 <p style={{ color: "#555", fontSize: "13px", textAlign: "center", margin: 0 }}>Describe what you want to build</p>
               </div>
             )}
@@ -239,7 +264,7 @@ function CreatePage() {
                 <div style={{ maxWidth: "85%", padding: "10px 14px", borderRadius: msg.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px", background: msg.role === "user" ? "#FFC107" : "#161616", color: msg.role === "user" ? "#080808" : "#fff", fontSize: "13px", lineHeight: 1.6, border: msg.role === "ai" ? "1px solid #1c1c1c" : "none" }}>
                   {msg.role === "ai" && (
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                      <div style={{ width: "16px", height: "16px", background: "#FFC107", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px" }}>K</div>
+                      <div style={{ width: "16px", height: "16px", background: "#FFC107", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "#080808", fontWeight: 700 }}>K</div>
                       <span style={{ fontSize: "11px", color: "#555" }}>Krypton AI</span>
                     </div>
                   )}
@@ -252,13 +277,13 @@ function CreatePage() {
             {loading && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px" }}>
                 <div style={{ padding: "10px 14px", borderRadius: "14px 14px 14px 4px", background: "#161616", border: "1px solid #1c1c1c" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                    <div style={{ width: "16px", height: "16px", background: "#FFC107", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px" }}>K</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                    <div style={{ width: "16px", height: "16px", background: "#FFC107", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "9px", color: "#080808", fontWeight: 700 }}>K</div>
                     <span style={{ fontSize: "11px", color: "#555" }}>Krypton AI</span>
                   </div>
-                  <div style={{ display: "flex", gap: "4px" }}>
+                  <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
                     {[0, 1, 2].map((i) => (
-                      <div key={i} style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FFC107" }} />
+                      <div key={i} style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#FFC107", opacity: 0.6 }} />
                     ))}
                   </div>
                 </div>
@@ -267,44 +292,73 @@ function CreatePage() {
             <div ref={chatEndRef} />
           </div>
 
+          {/* Input */}
           <div style={{ padding: "12px", borderTop: "1px solid #1c1c1c", background: "#0C0C0C" }}>
             {error && (
               <div style={{ padding: "8px 12px", background: "rgba(255,77,77,0.08)", border: "1px solid rgba(255,77,77,0.15)", borderRadius: "8px", color: "#ff4d4d", fontSize: "12px", marginBottom: "8px" }}>
-                ❌ {error}
+                Error: {error}
               </div>
             )}
-            <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
+
+            {/* Input box */}
+            <div style={{ background: "#161616", border: "1px solid #1c1c1c", borderRadius: "14px", padding: "10px 12px" }}>
               <textarea
                 value={userPrompt}
                 onChange={handlePromptChange}
                 placeholder={result ? "Follow-up instruction..." : "Describe what you want to build..."}
-                rows={2}
+                rows={3}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                style={{ flex: 1, background: "#161616", border: "1px solid #1c1c1c", borderRadius: "10px", color: "#fff", padding: "10px 12px", fontSize: "13px", resize: "none", outline: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}
-                onFocus={(e) => e.target.style.borderColor = "#FFC107"}
-                onBlur={(e) => e.target.style.borderColor = "#1c1c1c"}
+                style={{ width: "100%", background: "none", border: "none", color: "#fff", fontSize: "14px", resize: "none", outline: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" }}
               />
-              <button onClick={handleGenerate} disabled={loading || !userPrompt.trim()} style={{ width: "38px", height: "38px", borderRadius: "50%", background: userPrompt.trim() ? "#FFC107" : "#1c1c1c", border: "none", cursor: userPrompt.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", color: userPrompt.trim() ? "#080808" : "#333", flexShrink: 0 }}>
-                ↑
-              </button>
+
+              {/* Bottom row */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
+                {/* File upload */}
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,.txt,.html,.css,.js"
+                    onChange={handleFileUpload}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#1c1c1c", border: "1px solid #2a2a2a", color: "#9ca3af", fontSize: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Generate button */}
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading || !userPrompt.trim()}
+                  style={{ width: "36px", height: "36px", borderRadius: "50%", background: userPrompt.trim() && !loading ? "#FFC107" : "#2a2a2a", border: "none", cursor: userPrompt.trim() && !loading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 19V5M5 12l7-7 7 7" stroke={userPrompt.trim() && !loading ? "#080808" : "#555"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <p style={{ fontSize: "10px", color: "#333", margin: "6px 0 0", textAlign: "center" }}>Enter to send · Shift+Enter for new line</p>
+            <p style={{ fontSize: "10px", color: "#2a2a2a", margin: "6px 0 0", textAlign: "center" }}>Enter to send · Shift+Enter for new line</p>
           </div>
         </div>
 
-        {/* RIGHT — Preview */}
+        {/* RIGHT - Preview */}
         <div style={{ flex: 1, display: isMobile ? (activeTab === "preview" ? "flex" : "none") : "flex", flexDirection: "column", background: "#111", overflow: "hidden" }}>
 
           <div style={{ padding: "8px 14px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "8px", background: "#0C0C0C", flexShrink: 0 }}>
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: loading ? "#f59e0b" : result ? "#22c55e" : "#374151" }} />
+            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: loading ? "#FFC107" : result ? "#22c55e" : "#374151" }} />
             <span style={{ fontSize: "12px", color: "#555" }}>
-              {loading ? "⚡ Building..." : result ? "✅ Preview ready" : "Preview"}
+              {loading ? "Building..." : result ? "Preview ready" : "Preview"}
             </span>
             {result && (
               <div style={{ display: "flex", gap: "4px", marginLeft: "auto" }}>
                 {(["desktop", "tablet", "mobile"] as PreviewMode[]).map((mode) => (
                   <button key={mode} onClick={() => setPreviewMode(mode)} style={{ padding: "4px 10px", borderRadius: "6px", border: "none", background: previewMode === mode ? "#FFC107" : "#161616", color: previewMode === mode ? "#080808" : "#9ca3af", fontSize: "11px", cursor: "pointer", fontWeight: previewMode === mode ? 700 : 400 }}>
-                    {mode === "desktop" ? "🖥" : mode === "tablet" ? "📱" : "📲"}
+                    {mode === "desktop" ? "Desktop" : mode === "tablet" ? "Tablet" : "Mobile"}
                   </button>
                 ))}
               </div>
@@ -324,8 +378,12 @@ function CreatePage() {
               </div>
             ) : (
               <div style={{ height: "100%", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "16px" }}>
-                <span style={{ fontSize: "64px", opacity: 0.08 }}>⚡</span>
-                <p style={{ color: "#2a2a2a", margin: 0, fontSize: "15px" }}>Your creation will appear here</p>
+                <div style={{ width: "56px", height: "56px", background: "#111", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #1c1c1c" }}>
+                  <svg width="28" height="28" viewBox="0 0 20 20" fill="none" opacity={0.3}>
+                    <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#FFC107" />
+                  </svg>
+                </div>
+                <p style={{ color: "#2a2a2a", margin: 0, fontSize: "14px" }}>Your creation will appear here</p>
               </div>
             )}
           </div>
@@ -337,8 +395,4 @@ function CreatePage() {
 
 export default function CreatePageWrapper() {
   return (
-    <Suspense fallback={<div style={{ background: "#080808", height: "100vh" }} />}>
-      <CreatePage />
-    </Suspense>
-  );
-                                                      }
+  
