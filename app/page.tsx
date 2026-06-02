@@ -43,10 +43,7 @@ export default function HomePage() {
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/auth/login");
-        return;
-      }
+      if (!user) { router.push("/auth/login"); return; }
       setUser(user);
       fetchRecent();
     };
@@ -118,7 +115,6 @@ export default function HomePage() {
       {/* SIDEBAR */}
       <div style={{ width: sidebarOpen ? "240px" : "0px", minWidth: sidebarOpen ? "240px" : "0px", height: "100vh", background: "#0C0C0C", borderRight: "1px solid #1c1c1c", display: "flex", flexDirection: "column", overflow: "hidden", transition: "all 0.25s ease", flexShrink: 0 }}>
 
-        {/* Logo */}
         <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid #1c1c1c", position: "relative" }}>
           <button onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ display: "flex", alignItems: "center", gap: "10px", background: "none", border: "none", cursor: "pointer", width: "100%", padding: "6px 8px", borderRadius: "10px" }}>
             <div style={{ width: "28px", height: "28px", background: "#FFC107", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -130,7 +126,7 @@ export default function HomePage() {
             <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "14px", color: "#fff", flex: 1, textAlign: "left" }}>
               Krypton <span style={{ color: "#FFC107" }}>AI</span>
             </span>
-            <span style={{ color: "#555", fontSize: "12px" }}>▾</span>
+            <span style={{ color: "#555", fontSize: "12px" }}>&#9660;</span>
           </button>
 
           {showUserDropdown && (
@@ -148,7 +144,6 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Nav Items */}
         <div style={{ padding: "12px 10px", display: "flex", flexDirection: "column", gap: "2px" }}>
           {NAV_ITEMS.map((item) => (
             <button key={item.label} onClick={() => router.push(item.path)} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "9px", background: item.path === "/" ? "#161616" : "none", border: "none", color: item.path === "/" ? "#fff" : "#9ca3af", fontSize: "13px", cursor: "pointer", textAlign: "left", width: "100%", fontWeight: item.path === "/" ? 600 : 400 }}>
@@ -158,7 +153,6 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Recent Projects */}
         <div style={{ padding: "0 10px", flex: 1, overflowY: "auto" }}>
           <p style={{ fontSize: "10px", color: "#444", textTransform: "uppercase", letterSpacing: "0.08em", padding: "8px 12px 6px" }}>Recent</p>
           {recentProjects.map((p) => (
@@ -168,7 +162,6 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* User Card */}
         <div style={{ padding: "12px", borderTop: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg, #FFC107, #ff6b00)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: "#080808", flexShrink: 0 }}>
             {firstName[0]?.toUpperCase()}
@@ -183,10 +176,9 @@ export default function HomePage() {
       {/* MAIN AREA */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-        {/* Topbar */}
         <div style={{ padding: "14px 24px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: "18px", padding: "4px" }}>
-            ☰
+            &#9776;
           </button>
           <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
             <button onClick={() => router.push("/dashboard")} style={{ padding: "7px 16px", background: "#101010", border: "1px solid #1c1c1c", borderRadius: "9px", color: "#9ca3af", fontSize: "13px", cursor: "pointer" }}>
@@ -198,7 +190,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Hero */}
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem 1.5rem" }}>
           <div style={{ width: "100%", maxWidth: "720px" }}>
 
@@ -222,9 +213,9 @@ export default function HomePage() {
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", borderTop: "1px solid #1c1c1c", paddingTop: "12px" }}>
 
-                {/* Plus button */}
+                {/* Plus button — round Claude style */}
                 <div style={{ position: "relative" }}>
-                  <button onClick={() => setShowPlusDropdown(!showPlusDropdown)} style={{ width: "34px", height: "34px", borderRadius: "9px", background: "#161616", border: "1px solid #1c1c1c", color: "#9ca3af", fontSize: "18px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button onClick={() => setShowPlusDropdown(!showPlusDropdown)} style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#2a2a2a", border: "none", color: "#9ca3af", fontSize: "22px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 300 }}>
                     +
                   </button>
                   {showPlusDropdown && (
@@ -240,9 +231,11 @@ export default function HomePage() {
 
                 {/* Right controls */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+
+                  {/* Build type dropdown */}
                   <div style={{ position: "relative" }}>
                     <button onClick={() => setShowBuildDropdown(!showBuildDropdown)} style={{ padding: "8px 14px", background: "#161616", border: "1px solid #1c1c1c", borderRadius: "9px", color: "#9ca3af", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                      {buildType} <span style={{ fontSize: "10px" }}>▾</span>
+                      {buildType} <span style={{ fontSize: "10px" }}>&#9660;</span>
                     </button>
                     {showBuildDropdown && (
                       <div style={{ position: "absolute", bottom: "44px", right: 0, background: "#141414", border: "1px solid #1c1c1c", borderRadius: "12px", padding: "6px", zIndex: 100, minWidth: "120px" }}>
@@ -255,12 +248,30 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  <button onClick={handleVoice} style={{ width: "36px", height: "36px", borderRadius: "9px", background: listening ? "rgba(255,193,7,0.15)" : "#161616", border: listening ? "1px solid rgba(255,193,7,0.3)" : "1px solid #1c1c1c", color: listening ? "#FFC107" : "#9ca3af", fontSize: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    🎤
+                  {/* Voice button — round Claude style */}
+                  <button onClick={handleVoice} style={{ width: "36px", height: "36px", borderRadius: "50%", background: listening ? "#FFC107" : "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                    {listening ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="8" width="3" height="8" rx="1.5" fill="#080808"/>
+                        <rect x="7" y="5" width="3" height="14" rx="1.5" fill="#080808"/>
+                        <rect x="12" y="3" width="3" height="18" rx="1.5" fill="#080808"/>
+                        <rect x="17" y="6" width="3" height="12" rx="1.5" fill="#080808"/>
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="9" y="2" width="6" height="11" rx="3" fill="#9ca3af"/>
+                        <path d="M5 11a7 7 0 0 0 14 0" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+                        <line x1="12" y1="18" x2="12" y2="22" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+                        <line x1="8" y1="22" x2="16" y2="22" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    )}
                   </button>
 
-                  <button onClick={handleGenerate} disabled={!prompt.trim()} style={{ width: "36px", height: "36px", borderRadius: "50%", background: prompt.trim() ? "#FFC107" : "#1c1c1c", border: "none", cursor: prompt.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, color: prompt.trim() ? "#080808" : "#333", transition: "all 0.2s" }}>
-                    ↑
+                  {/* Generate button — round Claude style */}
+                  <button onClick={handleGenerate} disabled={!prompt.trim()} style={{ width: "36px", height: "36px", borderRadius: "50%", background: prompt.trim() ? "#FFC107" : "#1a1a1a", border: "none", cursor: prompt.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 19V5M5 12l7-7 7 7" stroke={prompt.trim() ? "#080808" : "#444"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -291,5 +302,5 @@ export default function HomePage() {
         </div>
       </div>
     </div>
-  );
-                          }
+  ); 
+ }
