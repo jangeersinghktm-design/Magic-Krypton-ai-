@@ -155,7 +155,6 @@ export default function HomePage() {
           <button onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ display: "flex", alignItems: "center", gap: "10px", background: "none", border: "none", cursor: "pointer", width: "100%", padding: "6px 8px", borderRadius: "10px" }}>
              <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "28px", width: "auto", objectFit: "contain", flexShrink: 0 }} />
             <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "14px", color: "#fff", flex: 1, textAlign: "left" }}>
-              Krypton <span style={{ color: "#FFC107" }}>AI</span>
             </span>
             <span style={{ color: "#555", fontSize: "12px" }}>&#9660;</span>
           </button>
