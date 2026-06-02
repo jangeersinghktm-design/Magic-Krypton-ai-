@@ -226,6 +226,8 @@ export default function HomePage() {
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1.5rem 1rem" }}>
           <div style={{ width: "100%", maxWidth: "680px" }}>
             
+             <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(24px, 5vw, 48px)", fontWeight: 800, color: "#fff", textAlign: "center", marginBottom: "10px", lineHeight: 1.15 }}>
+              Got an idea, <span style={{ color: "#FFC107" }}>{firstName}?</span>
             </h1>
             <p style={{ textAlign: "center", color: "#9ca3af", fontSize: "clamp(13px, 2vw, 16px)", marginBottom: "1.5rem", lineHeight: 1.6 }}>
               Describe your idea and Krypton AI will build it instantly.
