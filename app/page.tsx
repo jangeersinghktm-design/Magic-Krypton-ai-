@@ -153,12 +153,7 @@ export default function HomePage() {
       }}>
         <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid #1c1c1c", position: "relative" }}>
           <button onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ display: "flex", alignItems: "center", gap: "10px", background: "none", border: "none", cursor: "pointer", width: "100%", padding: "6px 8px", borderRadius: "10px" }}>
-            <div style={{ width: "28px", height: "28px", background: "#FFC107", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#080808" />
-                <path d="M10 6l-4 3v2l4 3 4-3V9L10 6z" fill="#FFC107" opacity="0.8" />
-              </svg>
-            </div>
+             <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "28px", width: "auto", objectFit: "contain", flexShrink: 0 }} />
             <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "14px", color: "#fff", flex: 1, textAlign: "left" }}>
               Krypton <span style={{ color: "#FFC107" }}>AI</span>
             </span>
