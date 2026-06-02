@@ -36,9 +36,21 @@ export default function HomePage() {
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState("");
   const [isTyping, setIsTyping] = useState(true);
   const [recentProjects, setRecentProjects] = useState<any[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [listening, setListening] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const silenceTimer = useRef<any>(null);
+
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setSidebarOpen(!mobile);
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     const getUser = async () => {
@@ -110,11 +122,30 @@ export default function HomePage() {
   const firstName = user?.user_metadata?.first_name || user?.email?.split("@")[0] || "there";
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#080808", color: "#fff", fontFamily: "'DM Sans', sans-serif", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", background: "#080808", color: "#fff", fontFamily: "'DM Sans', sans-serif", overflow: "hidden", position: "relative" }}>
+
+      {/* Mobile overlay */}
+      {isMobile && sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 40 }} />
+      )}
 
       {/* SIDEBAR */}
-      <div style={{ width: sidebarOpen ? "240px" : "0px", minWidth: sidebarOpen ? "240px" : "0px", height: "100vh", background: "#0C0C0C", borderRight: "1px solid #1c1c1c", display: "flex", flexDirection: "column", overflow: "hidden", transition: "all 0.25s ease", flexShrink: 0 }}>
-
+      <div style={{
+        width: "240px",
+        height: "100vh",
+        background: "#0C0C0C",
+        borderRight: "1px solid #1c1c1c",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        transition: "transform 0.25s ease",
+        flexShrink: 0,
+        position: isMobile ? "fixed" : "relative",
+        left: 0,
+        top: 0,
+        zIndex: 50,
+        transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+      }}>
         <div style={{ padding: "20px 16px 12px", borderBottom: "1px solid #1c1c1c", position: "relative" }}>
           <button onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ display: "flex", alignItems: "center", gap: "10px", background: "none", border: "none", cursor: "pointer", width: "100%", padding: "6px 8px", borderRadius: "10px" }}>
             <div style={{ width: "28px", height: "28px", background: "#FFC107", borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -146,7 +177,7 @@ export default function HomePage() {
 
         <div style={{ padding: "12px 10px", display: "flex", flexDirection: "column", gap: "2px" }}>
           {NAV_ITEMS.map((item) => (
-            <button key={item.label} onClick={() => router.push(item.path)} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "9px", background: item.path === "/" ? "#161616" : "none", border: "none", color: item.path === "/" ? "#fff" : "#9ca3af", fontSize: "13px", cursor: "pointer", textAlign: "left", width: "100%", fontWeight: item.path === "/" ? 600 : 400 }}>
+            <button key={item.label} onClick={() => { router.push(item.path); if (isMobile) setSidebarOpen(false); }} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "9px", background: item.path === "/" ? "#161616" : "none", border: "none", color: item.path === "/" ? "#fff" : "#9ca3af", fontSize: "13px", cursor: "pointer", textAlign: "left", width: "100%", fontWeight: item.path === "/" ? 600 : 400 }}>
               <span style={{ fontSize: "15px" }}>{item.icon}</span>
               {item.label}
             </button>
@@ -174,34 +205,36 @@ export default function HomePage() {
       </div>
 
       {/* MAIN AREA */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
 
-        <div style={{ padding: "14px 24px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: "18px", padding: "4px" }}>
+        {/* Topbar */}
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: "20px", padding: "4px", flexShrink: 0 }}>
             &#9776;
           </button>
           <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-            <button onClick={() => router.push("/dashboard")} style={{ padding: "7px 16px", background: "#101010", border: "1px solid #1c1c1c", borderRadius: "9px", color: "#9ca3af", fontSize: "13px", cursor: "pointer" }}>
-              My Projects
+            <button onClick={() => router.push("/dashboard")} style={{ padding: "7px 12px", background: "#101010", border: "1px solid #1c1c1c", borderRadius: "9px", color: "#9ca3af", fontSize: "12px", cursor: "pointer", whiteSpace: "nowrap" }}>
+              Projects
             </button>
-            <button onClick={() => router.push("/create")} style={{ padding: "7px 16px", background: "#FFC107", border: "none", borderRadius: "9px", color: "#080808", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+            <button onClick={() => router.push("/create")} style={{ padding: "7px 12px", background: "#FFC107", border: "none", borderRadius: "9px", color: "#080808", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
               + New
             </button>
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem 1.5rem" }}>
-          <div style={{ width: "100%", maxWidth: "720px" }}>
+        {/* Hero */}
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1.5rem 1rem" }}>
+          <div style={{ width: "100%", maxWidth: "680px" }}>
 
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(28px, 5vw, 48px)", fontWeight: 800, color: "#fff", textAlign: "center", marginBottom: "12px", lineHeight: 1.15 }}>
+            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "clamp(24px, 5vw, 48px)", fontWeight: 800, color: "#fff", textAlign: "center", marginBottom: "10px", lineHeight: 1.15 }}>
               Got an idea, <span style={{ color: "#FFC107" }}>{firstName}?</span>
             </h1>
-            <p style={{ textAlign: "center", color: "#9ca3af", fontSize: "16px", marginBottom: "2rem", lineHeight: 1.6 }}>
+            <p style={{ textAlign: "center", color: "#9ca3af", fontSize: "clamp(13px, 2vw, 16px)", marginBottom: "1.5rem", lineHeight: 1.6 }}>
               Describe your idea and Krypton AI will build it instantly.
             </p>
 
             {/* Prompt Box */}
-            <div style={{ background: "#101010", border: "1px solid #1c1c1c", borderRadius: "18px", padding: "16px" }}>
+            <div style={{ background: "#101010", border: "1px solid #1c1c1c", borderRadius: "18px", padding: "14px" }}>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -211,9 +244,9 @@ export default function HomePage() {
                 style={{ width: "100%", background: "none", border: "none", color: "#fff", fontSize: "15px", resize: "none", outline: "none", lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }}
               />
 
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", borderTop: "1px solid #1c1c1c", paddingTop: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", borderTop: "1px solid #1c1c1c", paddingTop: "10px" }}>
 
-                {/* Plus button — round Claude style */}
+                {/* Plus */}
                 <div style={{ position: "relative" }}>
                   <button onClick={() => setShowPlusDropdown(!showPlusDropdown)} style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#2a2a2a", border: "none", color: "#9ca3af", fontSize: "22px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 300 }}>
                     +
@@ -231,11 +264,9 @@ export default function HomePage() {
 
                 {/* Right controls */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-
-                  {/* Build type dropdown */}
                   <div style={{ position: "relative" }}>
-                    <button onClick={() => setShowBuildDropdown(!showBuildDropdown)} style={{ padding: "8px 14px", background: "#161616", border: "1px solid #1c1c1c", borderRadius: "9px", color: "#9ca3af", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                      {buildType} <span style={{ fontSize: "10px" }}>&#9660;</span>
+                    <button onClick={() => setShowBuildDropdown(!showBuildDropdown)} style={{ padding: "7px 12px", background: "#161616", border: "1px solid #1c1c1c", borderRadius: "9px", color: "#9ca3af", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+                      {buildType} <span style={{ fontSize: "9px" }}>&#9660;</span>
                     </button>
                     {showBuildDropdown && (
                       <div style={{ position: "absolute", bottom: "44px", right: 0, background: "#141414", border: "1px solid #1c1c1c", borderRadius: "12px", padding: "6px", zIndex: 100, minWidth: "120px" }}>
@@ -248,7 +279,6 @@ export default function HomePage() {
                     )}
                   </div>
 
-                  {/* Voice button — round Claude style */}
                   <button onClick={handleVoice} style={{ width: "36px", height: "36px", borderRadius: "50%", background: listening ? "#FFC107" : "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                     {listening ? (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -267,7 +297,6 @@ export default function HomePage() {
                     )}
                   </button>
 
-                  {/* Generate button — round Claude style */}
                   <button onClick={handleGenerate} disabled={!prompt.trim()} style={{ width: "36px", height: "36px", borderRadius: "50%", background: prompt.trim() ? "#FFC107" : "#1a1a1a", border: "none", cursor: prompt.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                       <path d="M12 19V5M5 12l7-7 7 7" stroke={prompt.trim() ? "#080808" : "#444"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -277,24 +306,24 @@ export default function HomePage() {
               </div>
             </div>
 
-            <p style={{ textAlign: "center", color: "#333", fontSize: "11px", marginTop: "12px" }}>
+            <p style={{ textAlign: "center", color: "#333", fontSize: "11px", marginTop: "10px" }}>
               Ctrl+Enter to generate · Krypton AI may make mistakes
             </p>
 
             {/* Bottom cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "12px", marginTop: "2.5rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "10px", marginTop: "2rem" }}>
               {[
                 { title: "Recent Projects", desc: "Continue where you left off", icon: "◫", path: "/dashboard" },
                 { title: "Templates", desc: "Start from a ready-made design", icon: "⊟", path: "/templates" },
                 { title: "Continue Building", desc: "Pick up your last project", icon: "→", path: "/dashboard" },
               ].map((card) => (
-                <button key={card.title} onClick={() => router.push(card.path)} style={{ background: "#101010", border: "1px solid #1c1c1c", borderRadius: "14px", padding: "1.2rem", textAlign: "left", cursor: "pointer", transition: "border-color 0.2s" }}
+                <button key={card.title} onClick={() => router.push(card.path)} style={{ background: "#101010", border: "1px solid #1c1c1c", borderRadius: "14px", padding: "1rem", textAlign: "left", cursor: "pointer", transition: "border-color 0.2s" }}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#FFC107")}
                   onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1c1c1c")}
                 >
-                  <div style={{ fontSize: "20px", marginBottom: "8px", color: "#FFC107" }}>{card.icon}</div>
-                  <p style={{ color: "#fff", fontWeight: 600, fontSize: "13px", margin: "0 0 4px" }}>{card.title}</p>
-                  <p style={{ color: "#555", fontSize: "12px", margin: 0 }}>{card.desc}</p>
+                  <div style={{ fontSize: "18px", marginBottom: "6px", color: "#FFC107" }}>{card.icon}</div>
+                  <p style={{ color: "#fff", fontWeight: 600, fontSize: "12px", margin: "0 0 3px" }}>{card.title}</p>
+                  <p style={{ color: "#555", fontSize: "11px", margin: 0 }}>{card.desc}</p>
                 </button>
               ))}
             </div>
@@ -302,5 +331,5 @@ export default function HomePage() {
         </div>
       </div>
     </div>
-  ); 
- }
+  );
+      }
