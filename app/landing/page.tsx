@@ -136,7 +136,7 @@ const EXAMPLES = [
     <img
       src="/logo.jpeg"
       alt="Krypton AI"
-      style={{ height: "32px", width: "auto", objectFit: "contain" }}
+      style={{ height: "44px", width: "auto", objectFit: "contain" }}
     />
   );
   }
@@ -611,7 +611,7 @@ export default function LandingPage() {
           </div>
           <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <KryptonLogo size={40} />
+              <KryptonLogo size={56} />
               <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "14px", background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Krypton AI</span>
             </div>
             <p style={{ color: T.muted, fontSize: "12px", margin: 0 }}>© 2026 Krypton AI. All rights reserved.</p>
