@@ -131,10 +131,15 @@ const EXAMPLES = [
   { title: "CRM Tool", color: "rgba(255,138,0,0.1)" },
 ];
 
-function KryptonLogo({ size = 32 }: { size?: number }) {
-  const id = `kl${size}`;
+ function KryptonLogo({ size = 32 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+    <img
+      src="/copilot_image_1780395177914.jpeg"
+      alt="Krypton AI"
+      style={{ width: size, height: size, objectFit: "contain" }}
+    />
+  );
+ }
       <defs>
         <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#F5C542" />
