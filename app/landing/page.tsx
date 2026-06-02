@@ -131,7 +131,7 @@ const EXAMPLES = [
   { title: "CRM Tool", color: "rgba(255,138,0,0.1)" },
 ];
 
- function KryptonLogo({ size = 32 }: { size?: number }) {
+  function KryptonLogo({ size = 32 }: { size?: number }) {
   return (
     <img
       src="/copilot_image_1780395177914.jpeg"
@@ -139,20 +139,7 @@ const EXAMPLES = [
       style={{ width: size, height: size, objectFit: "contain" }}
     />
   );
- }
-      <defs>
-        <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#F5C542" />
-          <stop offset="50%" stopColor="#FF8A00" />
-          <stop offset="100%" stopColor="#00D084" />
-        </linearGradient>
-      </defs>
-      <polygon points="16,2 28,9 28,23 16,30 4,23 4,9" fill="none" stroke={`url(#${id})`} strokeWidth="2" />
-      <polygon points="16,7 24,11.5 24,20.5 16,25 8,20.5 8,11.5" fill="rgba(0,208,132,0.08)" stroke={`url(#${id})`} strokeWidth="1" />
-      <text x="16" y="21" textAnchor="middle" fill={`url(#${id})`} fontSize="10" fontWeight="bold" fontFamily="sans-serif">Kr</text>
-    </svg>
-  );
-}
+  }
 
 function GradText({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
