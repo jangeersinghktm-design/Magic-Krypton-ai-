@@ -222,11 +222,10 @@ export default function LandingPage() {
       {/* NAVBAR */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, borderBottom: `1px solid ${T.border}`, background: "rgba(5,5,5,0.94)", backdropFilter: "blur(20px)", padding: "0 20px", height: "60px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
         <div ref={dropdownRef} style={{ position: "relative", display: "flex", alignItems: "center", gap: "6px" }}>
-          <KryptonLogo size={28} />
-          <button aria-label="Krypton AI menu" aria-expanded={showDropdown} onClick={(e) => { e.stopPropagation(); setShowDropdown((v) => !v); }} style={{ display: "flex", alignItems: "center", gap: "5px", background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: "8px" }}>
-            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "15px", background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Krypton AI</span>
+           <button aria-label="Krypton AI menu" aria-expanded={showDropdown} onClick={(e) => { e.stopPropagation(); setShowDropdown((v) => !v); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: "8px" }}>
+            <KryptonLogo size={28} />
             <span style={{ color: "#666", fontSize: "10px" }}>&#9660;</span>
-          </button>
+            </button>
           {showDropdown && (
             <div style={{ position: "absolute", top: "48px", left: 0, background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: "14px", padding: "8px", minWidth: "190px", zIndex: 200, boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(245,197,66,0.05)` }}>
               {[["Settings", "⚙"], ["Billing", "💳"], ["API Keys", "🔑"], ["Roadmap", "🗺"], ["Changelog", "📋"]].map(([label, icon]) => (
