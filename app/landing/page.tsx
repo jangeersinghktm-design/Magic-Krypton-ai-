@@ -278,94 +278,72 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* ── HERO ── */}
-      <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", padding: isMobile ? "80px 20px 40px" : "80px 24px 60px", position: "relative", zIndex: 1 }}>
-        <div style={{ position: "absolute", top: "25%", left: "15%", width: "500px", height: "500px", background: "radial-gradient(circle, rgba(245,197,66,0.07) 0%, transparent 65%)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: "35%", right: "15%", width: "400px", height: "400px", background: "radial-gradient(circle, rgba(0,208,132,0.05) 0%, transparent 65%)", pointerEvents: "none" }} />
+      {/* ── HERO ── */} 
+  <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", padding: isMobile ? "70px 20px 30px" : "70px 24px 40px", position: "relative", zIndex: 1 }}>
+  <div style={{ position: "absolute", top: "30%", left: "20%", width: "500px", height: "400px", background: "radial-gradient(circle, rgba(245,197,66,0.07) 0%, transparent 65%)", pointerEvents: "none" }} />
+  <div style={{ position: "absolute", top: "40%", right: "20%", width: "400px", height: "350px", background: "radial-gradient(circle, rgba(0,208,132,0.05) 0%, transparent 65%)", pointerEvents: "none" }} />
 
-        <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? "40px" : "60px", alignItems: "center" }}>
+  <div style={{ maxWidth: "860px", margin: "0 auto", width: "100%", textAlign: "center" }}>
 
-          {/* Left */}
-          <div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(245,197,66,0.07)", border: `1px solid ${T.border}`, borderRadius: "20px", padding: "5px 14px", marginBottom: "1.5rem", fontSize: "11px" }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.green, display: "inline-block" }} />
-              <GradText>Powered by Claude AI · Now Live</GradText>
-            </div>
+    {/* Badge */}
+    <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(245,197,66,0.07)", border: `1px solid ${T.border}`, borderRadius: "20px", padding: "5px 14px", marginBottom: "1.5rem", fontSize: "11px" }}>
+      <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.green, display: "inline-block" }} />
+      <GradText>Powered by Claude AI · Now Live</GradText>
+    </div>
 
-            <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? "clamp(28px, 8vw, 40px)" : "clamp(32px, 4vw, 56px)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1.2rem" }}>
-              Build production-ready<br />software with AI.
-              <br />
-              <GradText>in minutes, not weeks.</GradText>
-            </h1>
+    {/* Heading */}
+    <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? "clamp(28px, 7vw, 40px)" : "clamp(38px, 5vw, 62px)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1.2rem", textAlign: "center" }}>
+      Build Websites, Apps &amp; Games with AI.{" "}
+      <br />
+      <GradText>Go from Idea to Production in Minutes.</GradText>
+    </h1>
 
-            <p style={{ color: T.sub, fontSize: "16px", lineHeight: 1.7, marginBottom: "2rem", maxWidth: "480px" }}>
-              Describe your idea in plain English. Krypton AI generates websites, apps, dashboards, tools and games instantly.
-            </p>
+    {/* Subheading */}
+    <p style={{ color: T.sub, fontSize: isMobile ? "15px" : "18px", lineHeight: 1.7, marginBottom: "2.5rem", maxWidth: "620px", margin: "0 auto 2.5rem" }}>
+      Turn your ideas into production-ready websites, apps, dashboards, and games with a single prompt.
+    </p>
 
-            {/* Prompt Box */}
-            <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "14px 16px", marginBottom: "1.5rem", boxShadow: "0 0 40px rgba(245,197,66,0.04)" }}>
-              <textarea
-                aria-label="Describe what you want to build"
-                rows={3}
-                placeholder={displayed + (isTyping ? "|" : "")}
-                style={{ width: "100%", background: "none", border: "none", color: T.text, fontSize: "15px", resize: "none", outline: "none", lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }}
-              />
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", borderTop: `1px solid ${T.border}`, paddingTop: "10px" }}>
-                <button aria-label="Upload file" style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, color: T.muted, fontSize: "20px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 300 }}>+</button>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <button aria-label="Select build mode" style={{ padding: "7px 12px", background: "#1a1a1a", border: `1px solid ${T.border}`, borderRadius: "9px", color: T.muted, fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
-                    Website <span style={{ fontSize: "9px" }}>&#9660;</span>
-                  </button>
-                  <button aria-label="Voice input" style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <rect x="9" y="2" width="6" height="11" rx="3" fill={T.muted} />
-                      <path d="M5 11a7 7 0 0 0 14 0" stroke={T.muted} strokeWidth="2" strokeLinecap="round" />
-                      <line x1="12" y1="18" x2="12" y2="22" stroke={T.muted} strokeWidth="2" strokeLinecap="round" />
-                      <line x1="8" y1="22" x2="16" y2="22" stroke={T.muted} strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </button>
-                  <button aria-label="Generate" onClick={() => router.push("/auth/signup")} style={{ width: "34px", height: "34px", borderRadius: "50%", background: T.grad, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 19V5M5 12l7-7 7 7" stroke="#050505" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Trust bar */}
-            <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
-              {["No credit card required", "Export HTML", "Mobile responsive", "Browser games"].map((item) => (
-                <span key={item} style={{ fontSize: "12px", color: T.muted, display: "flex", alignItems: "center", gap: "5px" }}>
-                  <span style={{ color: T.green }}>✓</span> {item}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Right demo — desktop only */}
-          {!isMobile && (
-            <div style={{ position: "relative" }}>
-              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", overflow: "hidden", boxShadow: "0 0 60px rgba(245,197,66,0.07)" }}>
-                <div style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: "6px" }}>
-                  {["#ff5f57", "#ffbd2e", "#28c940"].map((c) => <div key={c} style={{ width: "8px", height: "8px", borderRadius: "50%", background: c }} />)}
-                  <span style={{ fontSize: "11px", color: T.muted, marginLeft: "6px" }}>Live Preview</span>
-                </div>
-                <div style={{ padding: "20px", minHeight: "260px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ height: "12px", background: `linear-gradient(90deg, rgba(245,197,66,0.4), rgba(0,208,132,0.2))`, borderRadius: "6px", width: "65%" }} />
-                  <div style={{ height: "8px", background: "#1a1a1a", borderRadius: "4px", width: "88%" }} />
-                  <div style={{ height: "8px", background: "#1a1a1a", borderRadius: "4px", width: "75%" }} />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "6px" }}>
-                    {[1, 2, 3, 4].map((i) => <div key={i} style={{ height: "55px", background: "#1a1a1a", borderRadius: "8px", border: `1px solid ${T.border}` }} />)}
-                  </div>
-                  <div style={{ height: "30px", background: T.grad, borderRadius: "8px", width: "38%", marginTop: "6px", opacity: 0.85 }} />
-                </div>
-              </div>
-              <div style={{ position: "absolute", bottom: "-16px", left: "50%", transform: "translateX(-50%)", width: "75%", height: "36px", background: "radial-gradient(ellipse, rgba(245,197,66,0.18) 0%, transparent 70%)", filter: "blur(8px)" }} />
-            </div>
-          )}
+    {/* Prompt Box */}
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "18px", padding: isMobile ? "14px" : "18px 20px", marginBottom: "1.5rem", boxShadow: "0 0 60px rgba(245,197,66,0.05)", maxWidth: "720px", margin: "0 auto 1.5rem", textAlign: "left" }}>
+      <textarea
+        aria-label="Describe what you want to build"
+        rows={isMobile ? 3 : 4}
+        placeholder={displayed + (isTyping ? "|" : "")}
+        style={{ width: "100%", background: "none", border: "none", color: T.text, fontSize: isMobile ? "15px" : "16px", resize: "none", outline: "none", lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }}
+      />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", borderTop: `1px solid ${T.border}`, paddingTop: "12px" }}>
+        <button aria-label="Upload file" style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, color: T.muted, fontSize: "22px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 300 }}>+</button>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <button aria-label="Select build mode" style={{ padding: "8px 14px", background: "#1a1a1a", border: `1px solid ${T.border}`, borderRadius: "9px", color: T.muted, fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+            Website <span style={{ fontSize: "9px" }}>&#9660;</span>
+          </button>
+          <button aria-label="Voice input" style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <rect x="9" y="2" width="6" height="11" rx="3" fill={T.muted} />
+              <path d="M5 11a7 7 0 0 0 14 0" stroke={T.muted} strokeWidth="2" strokeLinecap="round" />
+              <line x1="12" y1="18" x2="12" y2="22" stroke={T.muted} strokeWidth="2" strokeLinecap="round" />
+              <line x1="8" y1="22" x2="16" y2="22" stroke={T.muted} strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+          <button aria-label="Generate" onClick={() => router.push("/auth/signup")} style={{ width: "36px", height: "36px", borderRadius: "50%", background: T.grad, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 19V5M5 12l7-7 7 7" stroke="#050505" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
-      </section>
+      </div>
+    </div>
+
+    {/* Trust bar */}
+    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center" }}>
+      {["No credit card required", "Export HTML", "Mobile responsive", "Browser games"].map((item) => (
+        <span key={item} style={{ fontSize: "12px", color: T.muted, display: "flex", alignItems: "center", gap: "5px" }}>
+          <span style={{ color: T.green }}>✓</span> {item}
+        </span>
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* ── FEATURES ── */}
       <section id="features" style={{ ...sectionStyle({ padding: isMobile ? "60px 20px" : "80px 24px" }) }}>
