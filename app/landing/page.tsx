@@ -279,7 +279,7 @@ export default function LandingPage() {
       )}
 
       {/* ── HERO ── */} 
-   <section style={{ minHeight: "100svh", display: "flex", alignItems: "center", padding: isMobile ? "60px 20px 20px" : "60px 24px 30px",
+   <section style={{ minHeight: "100svh", display: "flex", alignItems: "center", padding: isMobile ? "60px 20px 20px" : "60px 24px 20px",
   <div style={{ position: "absolute", top: "30%", left: "20%", width: "500px", height: "400px", background: "radial-gradient(circle, rgba(245,197,66,0.07) 0%, transparent 65%)", pointerEvents: "none" }} />
   <div style={{ position: "absolute", top: "40%", right: "20%", width: "400px", height: "350px", background: "radial-gradient(circle, rgba(0,208,132,0.05) 0%, transparent 65%)", pointerEvents: "none" }} />
 
