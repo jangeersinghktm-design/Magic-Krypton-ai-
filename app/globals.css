@@ -60,3 +60,13 @@ body {
   border-radius: 12px;
   padding: 24px;
 }
+@media (min-width: 768px) {
+  .desktop-nav {
+    visibility: visible !important;
+  }
+}
+@media (max-width: 767px) {
+  .desktop-nav {
+    display: none !important;
+  }
+}
