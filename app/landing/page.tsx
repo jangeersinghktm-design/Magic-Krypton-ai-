@@ -279,7 +279,7 @@ export default function LandingPage() {
       )}
 
       {/* ── HERO ── */} 
-  <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", padding: isMobile ? "70px 20px 30px" : "70px 24px 40px", position: "relative", zIndex: 1 }}>
+   <section style={{ minHeight: "100svh", display: "flex", alignItems: "center", padding: isMobile ? "60px 20px 20px" : "60px 24px 30px",
   <div style={{ position: "absolute", top: "30%", left: "20%", width: "500px", height: "400px", background: "radial-gradient(circle, rgba(245,197,66,0.07) 0%, transparent 65%)", pointerEvents: "none" }} />
   <div style={{ position: "absolute", top: "40%", right: "20%", width: "400px", height: "350px", background: "radial-gradient(circle, rgba(0,208,132,0.05) 0%, transparent 65%)", pointerEvents: "none" }} />
 
@@ -293,9 +293,9 @@ export default function LandingPage() {
 
     {/* Heading */}
     <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? "clamp(28px, 7vw, 40px)" : "clamp(38px, 5vw, 62px)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1.2rem", textAlign: "center" }}>
-      Build Websites, Apps &amp; Games with AI.{" "}
-      <br />
-      <GradText>Go from Idea to Production in Minutes.</GradText>
+       Build Websites, Apps &amp; Games with AI.
+       <br />
+       <GradText>Go from Idea to Production in Minutes.</GradText>
     </h1>
 
     {/* Subheading */}
