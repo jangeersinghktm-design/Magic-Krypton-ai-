@@ -54,11 +54,16 @@ export default function HomePage() {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/landing"); return; }
-      setUser(user);
-      fetchRecent();
-    };
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/landing"); return; }
+    setUser(user);
+  } else {
+    setUser(session.user);
+  }
+  fetchRecent();
+};
     getUser();
   }, []);
 
