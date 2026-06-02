@@ -178,7 +178,7 @@ function CreatePage() {
   const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#080808", color: "#fff", fontFamily: "'DM Sans', sans-serif", overflow: "hidden", position: "fixed", inset: 0, width: "100%" }}>
+    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", background: "#080808", color: "#fff", fontFamily: "'DM Sans', sans-serif", overflow: "hidden", position: "fixed", inset: 0, width: "100%" }}>
 
       {/* TOP BAR */}
       <div style={{ padding: "10px 12px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "8px", background: "#0C0C0C", flexShrink: 0, minHeight: "52px" }}>
