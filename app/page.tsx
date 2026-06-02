@@ -43,7 +43,7 @@ export default function HomePage() {
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/auth/login"); return; }
+      if (!user) { router.push("/landing"); return; }
       setUser(user);
       fetchRecent();
     };
