@@ -611,7 +611,7 @@ export default function LandingPage() {
           </div>
           <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "14px", background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+              <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "14px", background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Krypton AI</span>
             </div>
             <p style={{ color: T.muted, fontSize: "12px", margin: 0 }}>© 2026 Krypton AI. All rights reserved.</p>
           </div>
