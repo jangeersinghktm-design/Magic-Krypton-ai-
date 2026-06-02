@@ -289,7 +289,7 @@ export default function LandingPage() {
               { name: "Pro", price: "₹499", period: "/month", features: ["Unlimited generations", "Priority AI model", "Save projects", "Export code", "Email support"], cta: "Start Pro", highlight: true },
               { name: "Business", price: "₹1499", period: "/month", features: ["Everything in Pro", "Team workspace", "API access", "Custom domain", "Priority support"], cta: "Contact Us", highlight: false },
             ].map((plan) => (
-              <div key={plan.name} style={{ background: plan.highlight ? "rgba(255,193,7,0.05)" : "#101010", border: plan.highlight ? "1px solid rgba(255,193,7,0.3)" : "1px solid #1c1c1c", borderRadius: "16px", padding: "28px", position: "relative" }}>
+              <div key={plan.name} style={{ background: plan.highlight ? "rgba(255,193,7,0.05)" : "#101010", border: plan.highlight ? "1px solid rgba(255,193,7,0.3)" : "1px solid #1c1c1c", borderRadius: "16px", padding: "28px", position: "relative" as "relative" }}>
                 {plan.highlight && (
                   <div style={{ position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)", background: "#FFC107", color: "#080808", fontSize: "11px", fontWeight: 700, padding: "4px 14px", borderRadiu: "20px" }}>
                     Most Popular
