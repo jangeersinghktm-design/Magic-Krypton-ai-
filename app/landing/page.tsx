@@ -288,7 +288,7 @@ export default function LandingPage() {
     {/* Badge */}
     <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(245,197,66,0.07)", border: `1px solid ${T.border}`, borderRadius: "20px", padding: "5px 14px", marginBottom: "1.5rem", fontSize: "11px" }}>
       <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.green, display: "inline-block" }} />
-      <GradText>Powered by Claude AI · Now Live</GradText>
+      <GradText>✨ Build Websites, Apps & Games in Seconds · Now Live</GradText>
     </div>
 
     {/* Heading */}
