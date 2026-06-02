@@ -136,7 +136,7 @@ const EXAMPLES = [
     <img
       src="/logo.jpeg"
       alt="Krypton AI"
-      style={{ height: "40px", width: "auto", objectFit: "contain" }}
+      style={{ height: "32px", width: "auto", objectFit: "contain" }}
     />
   );
   }
