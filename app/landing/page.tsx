@@ -134,7 +134,7 @@ const EXAMPLES = [
   function KryptonLogo({ size = 32 }: { size?: number }) {
   return (
     <img
-      src="/copilot_image_1780395177914.jpeg"
+      src="/logo.jpeg"
       alt="Krypton AI"
       style={{ width: size, height: size, objectFit: "contain" }}
     />
