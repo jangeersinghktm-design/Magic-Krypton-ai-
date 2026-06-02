@@ -45,9 +45,12 @@ function CreatePage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) router.push("/auth/login");
-    };
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) router.push("/auth/login");
+  }
+};
     checkAuth();
   }, []);
 
