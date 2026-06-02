@@ -5,59 +5,25 @@ import { useRouter } from "next/navigation";
 
 const G = "linear-gradient(135deg, #F5C542 0%, #00D084 100%)";
 const T = {
-  gold: "#F5C542",
-  green: "#00D084",
-  bg: "#050505",
-  card: "#0D0D0D",
-  border: "rgba(245,197,66,0.12)",
-  text: "#FFFFFF",
-  sub: "#B3B3B3",
-  muted: "#6B7280",
+  gold: "#F5C542", green: "#00D084", bg: "#050505", card: "#0D0D0D",
+  border: "rgba(245,197,66,0.12)", text: "#FFFFFF", sub: "#B3B3B3", muted: "#6B7280",
 };
 
-const PROMPTS = [
-  "Build a SaaS dashboard...",
-  "Create a portfolio website...",
-  "Build an invoice generator...",
-  "Create a CRM system...",
-  "Build a browser game...",
-  "Create a fitness app...",
-];
-
+const PROMPTS = ["Build a SaaS dashboard...", "Create a portfolio website...", "Build an invoice generator...", "Create a CRM system...", "Build a browser game...", "Create a fitness app..."];
 const NAV_LINKS = ["Features", "Pricing", "Examples", "Roadmap"];
 
 const FEATURES = [
-  { title: "Websites", desc: "Landing pages, portfolios, business sites — pixel-perfect and responsive.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> },
-  { title: "Web Apps", desc: "Dashboards, CRM tools, productivity apps with full interactivity.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="1.5" strokeLinecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> },
-  { title: "Browser Games", desc: "Snake, 2048, puzzle games — fully playable in the browser.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="1.5" strokeLinecap="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="11" r="1" fill="#F5C542"/><circle cx="17" cy="13" r="1" fill="#F5C542"/><path d="M21 6H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"/></svg> },
-  { title: "Business Tools", desc: "Calculators, forms, trackers — tools that actually work.", icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F5C542" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> },
+  { title: "Websites", desc: "Landing pages, portfolios, business sites — pixel-perfect and responsive." },
+  { title: "Web Apps", desc: "Dashboards, CRM tools, productivity apps with full interactivity." },
+  { title: "Browser Games", desc: "Snake, 2048, puzzle games — fully playable in the browser." },
+  { title: "Business Tools", desc: "Calculators, forms, trackers — tools that actually work." },
 ];
 
 const PLANS = [
-  {
-    name: "Free", emoji: "🟢", monthlyPrice: "$0", yearlyPrice: "$0", credits: "5 Generations / Day",
-    highlight: false, cta: "Get Started Free",
-    included: ["Website Generator", "App Generator", "Game Generator", "Live Preview", "Mobile Responsive Output", "Download HTML", "Community Support"],
-    locked: ["Save Projects", "Project History", "Advanced AI Model", "Unlimited Generations", "Team Workspace", "API Access"],
-  },
-  {
-    name: "Pro", emoji: "🔥", monthlyPrice: "$25", yearlyPrice: "$20", credits: "100 Generations / Month",
-    highlight: true, cta: "Start Pro",
-    included: ["Everything in Free", "Save Projects", "Project History", "Faster Generation Speed", "Better AI Quality", "Export Full Source Code", "Private Projects", "Premium Templates", "Priority Queue", "Email Support"],
-    locked: ["Team Workspace", "API Access", "Unlimited Usage"],
-  },
-  {
-    name: "Premium", emoji: "💎", monthlyPrice: "$69", yearlyPrice: "$55", credits: "300 Generations / Month",
-    highlight: false, cta: "Start Premium",
-    included: ["Everything in Pro", "Fastest AI Model", "Unlimited Project Saves", "Advanced App Generation", "Advanced Game Generation", "Version History", "Team Collaboration (5 Users)", "Priority Support"],
-    locked: ["API Access"],
-  },
-  {
-    name: "Business", emoji: "🏢", monthlyPrice: "$149", yearlyPrice: "$119", credits: "100 Generations / Day",
-    highlight: false, cta: "Contact Us",
-    included: ["Everything in Premium", "API Access", "Unlimited Team Members", "Team Workspace", "Admin Dashboard", "Usage Analytics", "White Label Support", "Business Support SLA"],
-    locked: [],
-  },
+  { name: "Free", emoji: "🟢", monthlyPrice: "$0", yearlyPrice: "$0", credits: "5 Generations / Day", highlight: false, cta: "Get Started Free", included: ["Website Generator", "App Generator", "Game Generator", "Live Preview", "Mobile Responsive Output", "Download HTML", "Community Support"], locked: ["Save Projects", "Project History", "Advanced AI Model", "Team Workspace", "API Access"] },
+  { name: "Pro", emoji: "🔥", monthlyPrice: "$25", yearlyPrice: "$20", credits: "100 Generations / Month", highlight: true, cta: "Start Pro", included: ["Everything in Free", "Save Projects", "Project History", "Faster Generation", "Better AI Quality", "Export Full Source Code", "Private Projects", "Premium Templates", "Email Support"], locked: ["Team Workspace", "API Access"] },
+  { name: "Premium", emoji: "💎", monthlyPrice: "$69", yearlyPrice: "$55", credits: "300 Generations / Month", highlight: false, cta: "Start Premium", included: ["Everything in Pro", "Fastest AI Model", "Unlimited Project Saves", "Version History", "Team Collaboration (5 Users)", "Priority Support"], locked: ["API Access"] },
+  { name: "Business", emoji: "🏢", monthlyPrice: "$149", yearlyPrice: "$119", credits: "100 Generations / Day", highlight: false, cta: "Contact Us", included: ["Everything in Premium", "API Access", "Unlimited Team Members", "Admin Dashboard", "White Label Support", "Business SLA"], locked: [] },
 ];
 
 const TESTIMONIALS = [
@@ -75,23 +41,8 @@ const FAQS = [
   { q: "Do I need coding skills?", a: "No. Just describe what you want in plain English and Krypton AI generates it instantly." },
 ];
 
-const STEPS = [
-  { step: "01", title: "Describe Your Idea", desc: "Type what you want to build in plain English. No technical knowledge needed." },
-  { step: "02", title: "AI Generates Project", desc: "Krypton AI builds your project instantly — complete HTML, CSS, and JavaScript." },
-  { step: "03", title: "Download & Launch", desc: "Preview live, download the code, or share directly. Ready to deploy." },
-];
-
-const EXAMPLES = [
-  { title: "SaaS Dashboard", color: "rgba(245,197,66,0.12)" },
-  { title: "Restaurant Site", color: "rgba(0,208,132,0.12)" },
-  { title: "Portfolio", color: "rgba(245,197,66,0.08)" },
-  { title: "Calculator", color: "rgba(0,208,132,0.08)" },
-  { title: "Snake Game", color: "rgba(245,197,66,0.1)" },
-  { title: "CRM Tool", color: "rgba(0,208,132,0.1)" },
-];
-
 function GradText({ children }: { children: React.ReactNode }) {
-  return <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{children}</span>;
+  return <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{children}</span>;
 }
 
 function SectionLabel({ children }: { children: string }) {
@@ -146,25 +97,48 @@ export default function LandingPage() {
   return (
     <div style={{ background: T.bg, color: T.text, fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", overflowX: "hidden", position: "relative" }}>
 
-      {/* Premium background */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", top: "-5%", left: "-10%", width: "55vw", height: "55vw", background: "radial-gradient(circle, rgba(245,197,66,0.07) 0%, transparent 65%)", borderRadius: "50%" }} />
-        <div style={{ position: "absolute", top: "20%", right: "-10%", width: "45vw", height: "45vw", background: "radial-gradient(circle, rgba(0,208,132,0.06) 0%, transparent 65%)", borderRadius: "50%" }} />
-        <div style={{ position: "absolute", bottom: "10%", left: "20%", width: "40vw", height: "40vw", background: "radial-gradient(circle, rgba(245,197,66,0.04) 0%, transparent 65%)", borderRadius: "50%" }} />
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(rgba(245,197,66,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,66,0.018) 1px, transparent 1px)`, backgroundSize: "48px 48px" }} />
+      {/* Animated gradient background */}
+      <style>{`
+        @keyframes gradMove {
+          0% { transform: translate(0%, 0%) scale(1); }
+          33% { transform: translate(3%, -3%) scale(1.05); }
+          66% { transform: translate(-3%, 3%) scale(0.97); }
+          100% { transform: translate(0%, 0%) scale(1); }
+        }
+        @keyframes gradMove2 {
+          0% { transform: translate(0%, 0%) scale(1); }
+          50% { transform: translate(-4%, 4%) scale(1.08); }
+          100% { transform: translate(0%, 0%) scale(1); }
+        }
+        @keyframes gradMove3 {
+          0% { transform: translate(0%, 0%) scale(1); }
+          50% { transform: translate(4%, -2%) scale(1.06); }
+          100% { transform: translate(0%, 0%) scale(1); }
+        }
+        .desktop-nav { display: none; }
+        @media (min-width: 768px) { .desktop-nav { display: flex !important; } }
+      `}</style>
+
+      {/* Animated background glows */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "-20%", left: "-15%", width: "70vw", height: "70vw", background: "radial-gradient(circle, rgba(245,197,66,0.12) 0%, transparent 60%)", borderRadius: "50%", animation: "gradMove 12s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", top: "30%", right: "-20%", width: "60vw", height: "60vw", background: "radial-gradient(circle, rgba(0,208,132,0.10) 0%, transparent 60%)", borderRadius: "50%", animation: "gradMove2 15s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", bottom: "-10%", left: "20%", width: "50vw", height: "50vw", background: "radial-gradient(circle, rgba(245,197,66,0.08) 0%, transparent 60%)", borderRadius: "50%", animation: "gradMove3 10s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", bottom: "20%", right: "10%", width: "40vw", height: "40vw", background: "radial-gradient(circle, rgba(0,208,132,0.07) 0%, transparent 60%)", borderRadius: "50%", animation: "gradMove 18s ease-in-out infinite reverse" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(rgba(245,197,66,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,66,0.015) 1px, transparent 1px)`, backgroundSize: "48px 48px" }} />
       </div>
 
       {/* NAVBAR */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, borderBottom: `1px solid ${T.border}`, background: "rgba(5,5,5,0.94)", backdropFilter: "blur(20px)", padding: "0 20px", height: "60px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
 
         <div ref={dropdownRef} style={{ position: "relative", display: "flex", alignItems: "center" }}>
-          <button aria-label="Krypton AI menu" onClick={(e) => { e.stopPropagation(); setShowDropdown((v) => !v); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: "8px" }}>
-            <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
+          <button onClick={(e) => { e.stopPropagation(); setShowDropdown((v) => !v); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: "8px" }}>
+            <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "34px", width: "auto", objectFit: "contain" }} />
             <span style={{ color: "#555", fontSize: "10px" }}>&#9660;</span>
           </button>
 
           {showDropdown && (
-            <div style={{ position: "absolute", top: "50px", left: 0, background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: "14px", padding: "8px", minWidth: "190px", zIndex: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+            <div style={{ position: "absolute", top: "50px", left: 0, background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: "14px", padding: "8px", minWidth: "190px", zIndex: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.7)" }}>
               {[["Settings", "⚙"], ["Billing", "💳"], ["API Keys", "🔑"], ["Roadmap", "🗺"], ["Changelog", "📋"]].map(([label, icon]) => (
                 <button key={String(label)} style={{ width: "100%", textAlign: "left", padding: "9px 12px", background: "none", border: "none", color: T.muted, fontSize: "13px", cursor: "pointer", borderRadius: "8px", display: "flex", alignItems: "center", gap: "8px" }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = T.text; }}
@@ -173,9 +147,7 @@ export default function LandingPage() {
                 </button>
               ))}
               <div style={{ height: "1px", background: T.border, margin: "6px 0" }} />
-              <button onClick={() => router.push("/auth/login")} style={{ width: "100%", textAlign: "left", padding: "9px 12px", background: "none", border: "none", color: "#ef4444", fontSize: "13px", cursor: "pointer", borderRadius: "8px" }}>
-                Login →
-              </button>
+              <button onClick={() => router.push("/auth/login")} style={{ width: "100%", textAlign: "left", padding: "9px 12px", background: "none", border: "none", color: "#ef4444", fontSize: "13px", cursor: "pointer", borderRadius: "8px" }}>Login →</button>
             </div>
           )}
         </div>
@@ -212,28 +184,21 @@ export default function LandingPage() {
       {mobileMenu && (
         <div style={{ position: "fixed", top: "60px", left: 0, right: 0, background: "#0A0A0A", borderBottom: `1px solid ${T.border}`, padding: "16px 20px", zIndex: 99, display: "flex", flexDirection: "column", gap: "4px" }}>
           {NAV_LINKS.map((item) => (
-            <button key={item} onClick={() => scrollTo(item.toLowerCase())} style={{ background: "none", border: "none", color: T.sub, fontSize: "15px", cursor: "pointer", padding: "10px 0", textAlign: "left", fontWeight: 500 }}>
-              {item}
-            </button>
+            <button key={item} onClick={() => scrollTo(item.toLowerCase())} style={{ background: "none", border: "none", color: T.sub, fontSize: "15px", cursor: "pointer", padding: "10px 0", textAlign: "left", fontWeight: 500 }}>{item}</button>
           ))}
-          <button onClick={() => { router.push("/auth/login"); setMobileMenu(false); }} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: "9px", color: T.text, fontSize: "14px", cursor: "pointer", padding: "10px", marginTop: "8px" }}>
-            Login
-          </button>
+          <button onClick={() => { router.push("/auth/login"); setMobileMenu(false); }} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: "9px", color: T.text, fontSize: "14px", cursor: "pointer", padding: "10px", marginTop: "8px" }}>Login</button>
         </div>
       )}
 
-      {/* HERO */}
-      <section style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: isMobile ? "80px 20px 40px" : "0 24px", textAlign: "center" }}>
-
-        {/* Big logo in hero */}
-        <img src="/logo.jpeg" alt="Krypton AI" style={{ height: isMobile ? "80px" : "120px", width: "auto", objectFit: "contain", marginBottom: "2rem" }} />
+      {/* HERO - NO logo here, just text + prompt */}
+      <section style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: isMobile ? "80px 20px 40px" : "60px 24px", textAlign: "center" }}>
 
         <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(245,197,66,0.07)", border: `1px solid ${T.border}`, borderRadius: "20px", padding: "5px 16px", marginBottom: "1.5rem", fontSize: "12px" }}>
           <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.green, display: "inline-block" }} />
           <GradText>✨ Websites, Apps & Games Generated in Seconds</GradText>
         </div>
 
-        <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? "clamp(26px, 7vw, 38px)" : "clamp(38px, 5vw, 60px)", fontWeight: 800, lineHeight: 1.1, marginBottom: "1.2rem", maxWidth: "820px" }}>
+        <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? "clamp(26px, 7vw, 38px)" : "clamp(40px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.08, marginBottom: "1.2rem", maxWidth: "860px" }}>
           Build Websites, Apps & Games with AI.
           <br />
           <GradText>Go from Idea to Production in Minutes.</GradText>
@@ -243,15 +208,11 @@ export default function LandingPage() {
           Turn your ideas into production-ready websites, apps, dashboards, and games with a single prompt.
         </p>
 
-        {/* Prompt Box */}
         <div style={{ background: "rgba(13,13,13,0.95)", border: `1px solid rgba(245,197,66,0.2)`, borderRadius: "18px", padding: isMobile ? "14px" : "18px 20px", width: "100%", maxWidth: "700px", textAlign: "left", boxShadow: "0 0 60px rgba(245,197,66,0.06)" }}>
-          <textarea
-            rows={isMobile ? 3 : 4}
-            placeholder={displayed + (isTyping ? "|" : "")}
-            style={{ width: "100%", background: "none", border: "none", color: T.text, fontSize: "15px", resize: "none", outline: "none", lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }}
-          />
+          <textarea rows={isMobile ? 3 : 4} placeholder={displayed + (isTyping ? "|" : "")}
+            style={{ width: "100%", background: "none", border: "none", color: T.text, fontSize: "15px", resize: "none", outline: "none", lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", borderTop: `1px solid ${T.border}`, paddingTop: "12px" }}>
-            <button style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, color: T.muted, fontSize: "22px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 300 }}>+</button>
+            <button style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, color: T.muted, fontSize: "22px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <button style={{ padding: "8px 14px", background: "#1a1a1a", border: `1px solid ${T.border}`, borderRadius: "9px", color: T.muted, fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
                 Website <span style={{ fontSize: "9px" }}>&#9660;</span>
@@ -279,7 +240,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-        {/* FEATURES */}
+       {/* FEATURES */}
       <section id="features" style={{ scrollMarginTop: "80px", padding: isMobile ? "60px 20px" : "80px 24px", position: "relative", zIndex: 1 }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <SectionLabel>What You Can Build</SectionLabel>
@@ -289,12 +250,9 @@ export default function LandingPage() {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: "14px" }}>
             {FEATURES.map((c) => (
               <div key={c.title} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px", transition: "all 0.3s" }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 8px 28px rgba(245,197,66,0.1)`; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(245,197,66,0.1)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
-                <div style={{ marginBottom: "14px" }}>{c.icon}</div>
-                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "16px", fontWeight: 700, marginBottom: "8px" }}>
-                  <GradText>{c.title}</GradText>
-                </h3>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "16px", fontWeight: 700, marginBottom: "8px" }}><GradText>{c.title}</GradText></h3>
                 <p style={{ color: T.sub, fontSize: "13px", lineHeight: 1.6, margin: 0 }}>{c.desc}</p>
               </div>
             ))}
@@ -310,12 +268,16 @@ export default function LandingPage() {
             <GradText>How It Works</GradText>
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: "16px" }}>
-            {STEPS.map((s) => (
+            {[
+              { step: "01", title: "Describe Your Idea", desc: "Type what you want to build in plain English. No technical knowledge needed." },
+              { step: "02", title: "AI Generates Project", desc: "Krypton AI builds your project instantly — complete HTML, CSS, and JavaScript." },
+              { step: "03", title: "Download & Launch", desc: "Preview live, download the code, or share directly. Ready to deploy." },
+            ].map((s) => (
               <div key={s.step} style={{ position: "relative", padding: "24px", background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", transition: "all 0.3s" }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.green; e.currentTarget.style.transform = "translateY(-2px)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "none"; }}>
                 <div style={{ fontFamily: "'Syne', sans-serif", fontSize: "42px", fontWeight: 800, position: "absolute", top: "12px", right: "16px", opacity: 0.08, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{s.step}</div>
-                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "16px", fontWeight: 700, marginBottom: "10px", color: T.text }}>{s.title}</h3>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "16px", fontWeight: 700, marginBottom: "10px" }}>{s.title}</h3>
                 <p style={{ color: T.sub, fontSize: "13px", lineHeight: 1.6, margin: 0 }}>{s.desc}</p>
               </div>
             ))}
@@ -331,9 +293,16 @@ export default function LandingPage() {
             <GradText>Examples Gallery</GradText>
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: "12px" }}>
-            {EXAMPLES.map((item) => (
+            {[
+              { title: "SaaS Dashboard", color: "rgba(245,197,66,0.12)" },
+              { title: "Restaurant Site", color: "rgba(0,208,132,0.12)" },
+              { title: "Portfolio", color: "rgba(245,197,66,0.08)" },
+              { title: "Calculator", color: "rgba(0,208,132,0.08)" },
+              { title: "Snake Game", color: "rgba(245,197,66,0.1)" },
+              { title: "CRM Tool", color: "rgba(0,208,132,0.1)" },
+            ].map((item) => (
               <div key={item.title} style={{ background: item.color, border: `1px solid ${T.border}`, borderRadius: "14px", padding: "36px 20px", textAlign: "center", cursor: "pointer", transition: "all 0.3s" }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 8px 24px rgba(245,197,66,0.1)`; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(245,197,66,0.1)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
                 <p style={{ fontFamily: "'Syne', sans-serif", color: T.text, fontWeight: 700, fontSize: "14px", margin: 0 }}>{item.title}</p>
                 <p style={{ color: T.muted, fontSize: "11px", margin: "6px 0 0" }}>Click to preview →</p>
@@ -353,7 +322,7 @@ export default function LandingPage() {
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: "16px" }}>
             {TESTIMONIALS.map((t, i) => (
               <div key={i} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px", transition: "all 0.3s" }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.boxShadow = `0 0 24px rgba(245,197,66,0.08)`; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.boxShadow = "0 0 24px rgba(245,197,66,0.08)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "none"; }}>
                 <div style={{ color: T.gold, fontSize: "16px", marginBottom: "12px" }}>{"★".repeat(t.stars)}</div>
                 <p style={{ color: T.sub, fontSize: "14px", lineHeight: 1.7, marginBottom: "16px", fontStyle: "italic" }}>"{t.text}"</p>
@@ -429,7 +398,7 @@ export default function LandingPage() {
           <div style={{ display: "flex", justifyContent: "center", marginBottom: "2.5rem" }}>
             <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "12px", padding: "4px", display: "flex" }}>
               {(["monthly", "yearly"] as const).map((c) => (
-                <button key={c} onClick={() => setBilling(c)} style={{ padding: "8px 20px", borderRadius: "9px", border: "none", background: billing === c ? G : "none", color: billing === c ? "#050505" : T.muted, fontSize: "13px", fontWeight: billing === c ? 700 : 400, cursor: "pointer", transition: "all 0.2s" }}>
+                <button key={c} onClick={() => setBilling(c)} style={{ padding: "8px 20px", borderRadius: "9px", border: "none", background: billing === c ? G : "none", color: billing === c ? "#050505" : T.muted, fontSize: "13px", fontWeight: billing === c ? 700 : 400, cursor: "pointer" }}>
                   {c === "monthly" ? "Monthly" : "Yearly"}{c === "yearly" && <span style={{ fontSize: "10px", marginLeft: "4px" }}>20% off</span>}
                 </button>
               ))}
@@ -441,9 +410,7 @@ export default function LandingPage() {
                 onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = "none")}>
                 {plan.highlight && (
-                  <div style={{ position: "absolute" as "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)", background: G, color: "#050505", fontSize: "11px", fontWeight: 700, padding: "3px 14px", borderRadius: "20px", whiteSpace: "nowrap" }}>
-                    Most Popular
-                  </div>
+                  <div style={{ position: "absolute" as "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)", background: G, color: "#050505", fontSize: "11px", fontWeight: 700, padding: "3px 14px", borderRadius: "20px", whiteSpace: "nowrap" }}>Most Popular</div>
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
                   <span>{plan.emoji}</span>
@@ -495,9 +462,8 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section style={{ padding: isMobile ? "60px 20px" : "100px 24px", textAlign: "center", borderTop: `1px solid ${T.border}`, position: "relative", zIndex: 1 }}>
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? "clamp(24px, 7vw, 36px)" : "clamp(32px, 4vw, 52px)", fontWeight: 800, marginBottom: "1.5rem", color: T.text }}>
-          The future of building is{" "}
-          <GradText>a sentence away.</GradText>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: isMobile ? "clamp(24px, 7vw, 36px)" : "clamp(32px, 4vw, 52px)", fontWeight: 800, marginBottom: "1.5rem" }}>
+          The future of building is <GradText>a sentence away.</GradText>
         </h2>
         <button onClick={() => router.push("/auth/signup")} style={{ padding: "15px 40px", background: G, border: "none", borderRadius: "14px", color: "#050505", fontSize: "16px", fontWeight: 700, cursor: "pointer" }}>
           Start Free — No credit card required →
@@ -528,7 +494,7 @@ export default function LandingPage() {
             ))}
           </div>
           <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
-            <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
+            <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
             <p style={{ color: T.muted, fontSize: "12px", margin: 0 }}>© 2026 Krypton AI. All rights reserved.</p>
           </div>
         </div>
@@ -536,4 +502,3 @@ export default function LandingPage() {
     </div>
   );
  }
-          
