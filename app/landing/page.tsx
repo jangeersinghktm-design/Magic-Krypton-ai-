@@ -78,8 +78,8 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Center - Nav links (desktop) */}
-        <div style={{ display: "flex", gap: "28px", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+        {/* Center - Nav links (desktop only) */}
+        <div style={{ display: "flex", gap: "28px", position: "absolute", left: "50%", transform: "translateX(-50%)", visibility: "hidden" }} className="desktop-nav">
           {["Features", "Pricing", "Examples", "Roadmap"].map((item) => (
             <a key={item} href={`#${item.toLowerCase()}`} style={{ color: "#9ca3af", fontSize: "13px", textDecoration: "none", fontWeight: 500 }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
