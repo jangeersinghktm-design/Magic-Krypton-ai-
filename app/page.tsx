@@ -224,8 +224,9 @@ export default function HomePage() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
         <div style={{ padding: "12px 16px", borderBottom: "1px solid #1c1c1c", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: "20px", padding: "4px", flexShrink: 0 }}>
-            &#9776;
+             &#9776;
           </button>
+          <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "28px", width: "auto", objectFit: "contain", mixBlendMode: "lighten" }} />
           <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
             <button onClick={() => router.push("/dashboard")} style={{ padding: "7px 12px", background: "#101010", border: "1px solid #1c1c1c", borderRadius: "9px", color: "#9ca3af", fontSize: "12px", cursor: "pointer", whiteSpace: "nowrap" }}>
               Projects
