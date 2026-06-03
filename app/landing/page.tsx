@@ -119,14 +119,91 @@ export default function LandingPage() {
         @media (min-width: 768px) { .desktop-nav { display: flex !important; } }
       `}</style>
 
-      {/* Animated background glows */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "-20%", left: "-15%", width: "70vw", height: "70vw", background: "radial-gradient(circle, rgba(245,197,66,0.12) 0%, transparent 60%)", borderRadius: "50%", animation: "gradMove 12s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", top: "30%", right: "-20%", width: "60vw", height: "60vw", background: "radial-gradient(circle, rgba(0,208,132,0.10) 0%, transparent 60%)", borderRadius: "50%", animation: "gradMove2 15s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", bottom: "-10%", left: "20%", width: "50vw", height: "50vw", background: "radial-gradient(circle, rgba(245,197,66,0.08) 0%, transparent 60%)", borderRadius: "50%", animation: "gradMove3 10s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", bottom: "20%", right: "10%", width: "40vw", height: "40vw", background: "radial-gradient(circle, rgba(0,208,132,0.07) 0%, transparent 60%)", borderRadius: "50%", animation: "gradMove 18s ease-in-out infinite reverse" }} />
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(rgba(245,197,66,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,66,0.015) 1px, transparent 1px)`, backgroundSize: "48px 48px" }} />
-      </div>
+       {/* Premium Animated Background */}
+<div
+  style={{
+    position: "fixed",
+    inset: 0,
+    pointerEvents: "none",
+    zIndex: 0,
+    overflow: "hidden",
+  }}
+>
+  {/* Gold Glow */}
+  <div
+    style={{
+      position: "absolute",
+      top: "-15%",
+      left: "-10%",
+      width: "70vw",
+      height: "70vw",
+      borderRadius: "50%",
+      filter: "blur(140px)",
+      background:
+        "radial-gradient(circle, rgba(245,197,66,0.55) 0%, rgba(245,197,66,0.25) 35%, transparent 70%)",
+      animation: "gradMove 20s ease-in-out infinite",
+    }}
+  />
+
+  {/* Orange Glow */}
+  <div
+    style={{
+      position: "absolute",
+      top: "10%",
+      right: "-15%",
+      width: "65vw",
+      height: "65vw",
+      borderRadius: "50%",
+      filter: "blur(140px)",
+      background:
+        "radial-gradient(circle, rgba(255,140,0,0.50) 0%, rgba(255,140,0,0.20) 35%, transparent 70%)",
+      animation: "gradMove2 24s ease-in-out infinite",
+    }}
+  />
+
+  {/* Green Glow */}
+  <div
+    style={{
+      position: "absolute",
+      bottom: "-10%",
+      left: "15%",
+      width: "60vw",
+      height: "60vw",
+      borderRadius: "50%",
+      filter: "blur(140px)",
+      background:
+        "radial-gradient(circle, rgba(0,208,132,0.45) 0%, rgba(0,208,132,0.20) 35%, transparent 70%)",
+      animation: "gradMove3 22s ease-in-out infinite",
+    }}
+  />
+
+  {/* Mixed Premium Glow */}
+  <div
+    style={{
+      position: "absolute",
+      bottom: "5%",
+      right: "5%",
+      width: "55vw",
+      height: "55vw",
+      borderRadius: "50%",
+      filter: "blur(150px)",
+      background:
+        "radial-gradient(circle, rgba(245,197,66,0.35) 0%, rgba(255,140,0,0.28) 35%, rgba(0,208,132,0.25) 65%, transparent 80%)",
+      animation: "gradMove 28s ease-in-out infinite reverse",
+    }}
+  />
+
+  {/* Premium Grid */}
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      backgroundImage:
+        "linear-gradient(rgba(245,197,66,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,66,0.03) 1px, transparent 1px)",
+      backgroundSize: "48px 48px",
+    }}
+  />
+</div>
 
       {/* NAVBAR */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, borderBottom: `1px solid ${T.border}`, background: "rgba(5,5,5,0.94)", backdropFilter: "blur(20px)", padding: "0 20px", height: "60px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
