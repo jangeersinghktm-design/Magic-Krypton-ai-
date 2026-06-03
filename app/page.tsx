@@ -127,8 +127,16 @@ export default function HomePage() {
   const firstName = user?.user_metadata?.first_name || user?.email?.split("@")[0] || "there";
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#080808", color: "#fff", fontFamily: "'DM Sans', sans-serif", overflow: "hidden", position: "relative" }}>
+    <div style={{ display: "flex", height: "100vh", background: "#050505", color: "#fff", fontFamily: "'DM Sans', sans-serif", overflow: "hidden", position: "relative" }}>
 
+      {/* Animated background */}
+<div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+  <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "55vw", height: "55vw", borderRadius: "50%", filter: "blur(80px)", background: "radial-gradient(circle, rgba(245,197,66,0.35) 0%, rgba(245,197,66,0.12) 35%, transparent 70%)", animation: "gradMove 18s ease-in-out infinite" }} />
+  <div style={{ position: "absolute", top: "20%", right: "-10%", width: "50vw", height: "50vw", borderRadius: "50%", filter: "blur(80px)", background: "radial-gradient(circle, rgba(255,140,0,0.26) 0%, rgba(255,140,0,0.10) 35%, transparent 70%)", animation: "gradMove2 22s ease-in-out infinite" }} />
+  <div style={{ position: "absolute", bottom: "-10%", left: "15%", width: "45vw", height: "45vw", borderRadius: "50%", filter: "blur(80px)", background: "radial-gradient(circle, rgba(0,208,132,0.24) 0%, rgba(0,208,132,0.10) 35%, transparent 70%)", animation: "gradMove3 20s ease-in-out infinite" }} />
+  <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(245,197,66,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,66,0.018) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
+</div>
+      
       {isMobile && sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 40 }} />
       )}
