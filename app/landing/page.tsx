@@ -119,18 +119,13 @@ export default function LandingPage() {
         @media (min-width: 768px) { .desktop-nav { display: flex !important; } }
       `}</style>
        @keyframes glowPulse {
-        0% {
-         opacity: 0.7;
-        }
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+  }
 
-       50% {
-         opacity: 1;
-       }
-
-       100% {
-         opacity: 0.7;
-        }
-       }
+  .desktop-nav { display:none; }
+`}</style>
 
        {/* Premium Animated Background */}
 <div
