@@ -145,10 +145,10 @@ export default function LandingPage() {
   <div
     style={{
       position: "absolute",
-      top: "-10%",
-      left: "-5%",
-      width: "65vw",
-      height: "65vw",
+      top: "10%",
+      left: "10%",
+      width: "50vw",
+      height: "50vw",
       borderRadius: "50%",
       filter: "blur(90px)",
       background:
