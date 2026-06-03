@@ -301,12 +301,12 @@ export default function LandingPage() {
           <textarea rows={isMobile ? 3 : 4} placeholder={displayed + (isTyping ? "|" : "")}
             style={{ width: "100%", background: "none", border: "none", color: T.text, fontSize: "15px", resize: "none", outline: "none", lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" }} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", borderTop: `1px solid ${T.border}`, paddingTop: "12px" }}>
-            <button style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, color: T.muted, fontSize: "22px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+            <button onClick={() => router.push("/auth/signup")} style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, color: T.muted, fontSize: "22px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <button style={{ padding: "8px 14px", background: "#1a1a1a", border: `1px solid ${T.border}`, borderRadius: "9px", color: T.muted, fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
+               <button onClick={() => router.push("/auth/signup")} style={{ padding: "8px 14px", background: "#1a1a1a", border: `1px solid ${T.border}`, borderRadius: "9px", color: T.muted, fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}>
                 Website <span style={{ fontSize: "9px" }}>&#9660;</span>
-              </button>
-              <button style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+               </button>
+               <button onClick={() => router.push("/auth/signup")} style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="1.5" strokeLinecap="round">
                   <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/>
                 </svg>
