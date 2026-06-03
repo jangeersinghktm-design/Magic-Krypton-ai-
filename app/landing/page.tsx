@@ -145,12 +145,12 @@ export default function LandingPage() {
   <div
     style={{
       position: "absolute",
-      top: "-15%",
-      left: "-10%",
-      width: "70vw",
-      height: "70vw",
+      top: "-10%",
+      left: "-5%",
+      width: "65vw",
+      height: "65vw",
       borderRadius: "50%",
-      filter: "blur(100px)",
+      filter: "blur(90px)",
       background:
         "radial-gradient(circle, rgba(245,197,66,0.55) 0%, rgba(245,197,66,0.25) 35%, transparent 70%)",
       animation: "gradMove 20s ease-in-out infinite, glowPulse 8s ease-in-out infinite",
@@ -161,12 +161,12 @@ export default function LandingPage() {
   <div
     style={{
       position: "absolute",
-      top: "10%",
-      right: "-15%",
-      width: "65vw",
-      height: "65vw",
+      top: "0%",
+      right: "-8%",
+      width: "60vw",
+      height: "60vw",
       borderRadius: "50%",
-      filter: "blur(100px)",
+      filter: "blur(90px)",
       background:
         "radial-gradient(circle, rgba(255,140,0,0.50) 0%, rgba(255,140,0,0.20) 35%, transparent 70%)",
       animation: "gradMove2 24s ease-in-out infinite, glowPulse 10s ease-in-out infinite",
@@ -177,12 +177,12 @@ export default function LandingPage() {
   <div
     style={{
       position: "absolute",
-      bottom: "-10%",
-      left: "15%",
-      width: "60vw",
-      height: "60vw",
+      bottom: "-5%",
+      left: "10%",
+      width: "55vw",
+      height: "55vw",
       borderRadius: "50%",
-      filter: "blur(100px)",
+      filter: "blur(90px)",
       background:
         "radial-gradient(circle, rgba(0,208,132,0.45) 0%, rgba(0,208,132,0.20) 35%, transparent 70%)",
       animation: "gradMove3 22s ease-in-out infinite, glowPulse 7s ease-in-out infinite",
@@ -193,12 +193,12 @@ export default function LandingPage() {
   <div
     style={{
       position: "absolute",
-      bottom: "5%",
-      right: "5%",
-      width: "55vw",
-      height: "55vw",
+      bottom: "10%",
+      right: "0%",
+      width: "50vw",
+      height: "50vw",
       borderRadius: "50%",
-      filter: "blur(100px)",
+      filter: "blur(90px)",
       background:
         "radial-gradient(circle, rgba(245,197,66,0.35) 0%, rgba(255,140,0,0.28) 35%, rgba(0,208,132,0.25) 65%, transparent 80%)",
       animation: "gradMove 28s ease-in-out infinite reverse, glowPulse 12s ease-in-out infinite",
