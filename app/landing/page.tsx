@@ -221,7 +221,7 @@ export default function LandingPage() {
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, borderBottom: `1px solid ${T.border}`, background: "rgba(5,5,5,0.94)", backdropFilter: "blur(20px)", padding: "0 20px", height: "60px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
 
         <div ref={dropdownRef} style={{ position: "relative", display: "flex", alignItems: "center" }}>
-          <button onClick={(e) => { e.stopPropagation(); setShowDropdown((v) => !v); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", padding: "0px", borderRadius: "8px" }}>
+          <button onClick={(e) => { e.stopPropagation(); setShowDropdown((v) => !v); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", padding: "0px", borderRadius: "8px"
             <img src="/logo.png" alt="Krypton AI" style={{ height: "42px", width: "auto", objectFit: "contain" }}
             <span style={{ color: "#555", fontSize: "10px" }}>&#9660;</span>
           </button>
