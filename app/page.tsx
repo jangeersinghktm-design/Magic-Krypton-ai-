@@ -130,11 +130,36 @@ export default function HomePage() {
     <div style={{ display: "flex", height: "100vh", background: "#050505", color: "#fff", fontFamily: "'DM Sans', sans-serif", overflow: "hidden", position: "relative" }}>
 
       {/* Animated background */}
+<style>{`
+  @keyframes gradMove {
+    0% { transform: translate(0%, 0%) scale(1); }
+    33% { transform: translate(3%, -3%) scale(1.05); }
+    66% { transform: translate(-3%, 3%) scale(0.97); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+  @keyframes gradMove2 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    50% { transform: translate(-4%, 4%) scale(1.08); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+  @keyframes gradMove3 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    50% { transform: translate(4%, -2%) scale(1.06); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+  @keyframes glowPulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+  }
+`}</style>
+
 <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-  <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "55vw", height: "55vw", borderRadius: "50%", filter: "blur(80px)", background: "radial-gradient(circle, rgba(245,197,66,0.35) 0%, rgba(245,197,66,0.12) 35%, transparent 70%)", animation: "gradMove 18s ease-in-out infinite" }} />
-  <div style={{ position: "absolute", top: "20%", right: "-10%", width: "50vw", height: "50vw", borderRadius: "50%", filter: "blur(80px)", background: "radial-gradient(circle, rgba(255,140,0,0.26) 0%, rgba(255,140,0,0.10) 35%, transparent 70%)", animation: "gradMove2 22s ease-in-out infinite" }} />
-  <div style={{ position: "absolute", bottom: "-10%", left: "15%", width: "45vw", height: "45vw", borderRadius: "50%", filter: "blur(80px)", background: "radial-gradient(circle, rgba(0,208,132,0.24) 0%, rgba(0,208,132,0.10) 35%, transparent 70%)", animation: "gradMove3 20s ease-in-out infinite" }} />
-  <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(245,197,66,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,66,0.018) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
+  <div style={{ position: "absolute", top: "10%", left: "10%", width: "50vw", height: "50vw", borderRadius: "50%", filter: "blur(90px)", background: "radial-gradient(circle, rgba(245,197,66,0.55) 0%, rgba(245,197,66,0.25) 35%, transparent 70%)", animation: "gradMove 20s ease-in-out infinite, glowPulse 8s ease-in-out infinite" }} />
+  <div style={{ position: "absolute", top: "0%", right: "-8%", width: "60vw", height: "60vw", borderRadius: "50%", filter: "blur(90px)", background: "radial-gradient(circle, rgba(255,140,0,0.50) 0%, rgba(255,140,0,0.20) 35%, transparent 70%)", animation: "gradMove2 24s ease-in-out infinite, glowPulse 10s ease-in-out infinite" }} />
+  <div style={{ position: "absolute", bottom: "-5%", left: "10%", width: "55vw", height: "55vw", borderRadius: "50%", filter: "blur(90px)", background: "radial-gradient(circle, rgba(0,208,132,0.45) 0%, rgba(0,208,132,0.20) 35%, transparent 70%)", animation: "gradMove3 22s ease-in-out infinite, glowPulse 7s ease-in-out infinite" }} />
+  <div style={{ position: "absolute", bottom: "10%", right: "0%", width: "50vw", height: "50vw", borderRadius: "50%", filter: "blur(90px)", background: "radial-gradient(circle, rgba(245,197,66,0.35) 0%, rgba(255,140,0,0.28) 35%, rgba(0,208,132,0.25) 65%, transparent 80%)", animation: "gradMove 28s ease-in-out infinite reverse, glowPulse 12s ease-in-out infinite" }} />
+  <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(245,197,66,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,66,0.03) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
 </div>
       
       {isMobile && sidebarOpen && (
