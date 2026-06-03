@@ -118,6 +118,19 @@ export default function LandingPage() {
         .desktop-nav { display: none; }
         @media (min-width: 768px) { .desktop-nav { display: flex !important; } }
       `}</style>
+       @keyframes glowPulse {
+        0% {
+         opacity: 0.7;
+        }
+
+       50% {
+         opacity: 1;
+       }
+
+       100% {
+         opacity: 0.7;
+        }
+       }
 
        {/* Premium Animated Background */}
 <div
@@ -141,7 +154,7 @@ export default function LandingPage() {
       filter: "blur(140px)",
       background:
         "radial-gradient(circle, rgba(245,197,66,0.55) 0%, rgba(245,197,66,0.25) 35%, transparent 70%)",
-      animation: "gradMove 20s ease-in-out infinite",
+      animation: "gradMove 20s ease-in-out infinite, glowPulse 8s ease-in-out infinite",
     }}
   />
 
@@ -157,7 +170,7 @@ export default function LandingPage() {
       filter: "blur(140px)",
       background:
         "radial-gradient(circle, rgba(255,140,0,0.50) 0%, rgba(255,140,0,0.20) 35%, transparent 70%)",
-      animation: "gradMove2 24s ease-in-out infinite",
+      animation: "gradMove2 24s ease-in-out infinite, glowPulse 10s ease-in-out infinite",
     }}
   />
 
@@ -173,7 +186,7 @@ export default function LandingPage() {
       filter: "blur(140px)",
       background:
         "radial-gradient(circle, rgba(0,208,132,0.45) 0%, rgba(0,208,132,0.20) 35%, transparent 70%)",
-      animation: "gradMove3 22s ease-in-out infinite",
+      animation: "gradMove3 22s ease-in-out infinite, glowPulse 7s ease-in-out infinite",
     }}
   />
 
@@ -189,7 +202,7 @@ export default function LandingPage() {
       filter: "blur(150px)",
       background:
         "radial-gradient(circle, rgba(245,197,66,0.35) 0%, rgba(255,140,0,0.28) 35%, rgba(0,208,132,0.25) 65%, transparent 80%)",
-      animation: "gradMove 28s ease-in-out infinite reverse",
+      animation: "gradMove 28s ease-in-out infinite reverse, glowPulse 12s ease-in-out infinite",
     }}
   />
 
