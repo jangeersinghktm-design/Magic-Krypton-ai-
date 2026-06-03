@@ -104,3 +104,10 @@ body {
     filter: blur(70px);
   }
 }
+
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+}
