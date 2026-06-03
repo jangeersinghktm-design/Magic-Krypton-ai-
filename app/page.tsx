@@ -172,7 +172,7 @@ export default function HomePage() {
         {/* Logo only */}
         <div style={{ padding: "16px", borderBottom: "1px solid #1c1c1c", position: "relative" }}>
           <button onClick={() => setShowUserDropdown(!showUserDropdown)} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer", width: "100%", padding: "4px 6px", borderRadius: "10px" }}>
-            <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "36px", width: "auto", objectFit: "contain", flexShrink: 0 }} />
+            <img src="/logo.png" alt="Krypton AI" style={{ height: "36px", width: "auto", objectFit: "contain", flexShrink: 0 }} />
             <span style={{ color: "#555", fontSize: "11px" }}>&#9660;</span>
           </button>
 
