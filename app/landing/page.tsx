@@ -583,7 +583,7 @@ export default function LandingPage() {
             ))}
           </div>
           <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: "20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
-            <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
+            <img src="/logo.png" alt="Krypton AI" style={{ height: "40px", width: "auto", objectFit: "contain" }} />
             <p style={{ color: T.muted, fontSize: "12px", margin: 0 }}>© 2026 Krypton AI. All rights reserved.</p>
           </div>
         </div>
