@@ -188,7 +188,7 @@ function CreatePage() {
         <button onClick={() => router.push("/")} style={{ background: "#161616", border: "1px solid #1c1c1c", borderRadius: "8px", color: "#fff", cursor: "pointer", fontSize: "16px", padding: "5px 10px", fontWeight: 700, lineHeight: 1, flexShrink: 0 }}>
           &larr;
         </button>
-         <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "28px", width: "auto", objectFit: "contain" }} />
+         <img src="/logo.png" alt="Krypton AI" style={{ height: "28px", width: "auto", objectFit: "contain" }} />
 
         {editingName ? (
           <input autoFocus value={projectName} onChange={(e) => setProjectName(e.target.value)} onBlur={() => setEditingName(false)} onKeyDown={(e) => e.key === "Enter" && setEditingName(false)} style={{ background: "#161616", border: "1px solid #FFC107", borderRadius: "7px", color: "#fff", padding: "4px 8px", fontSize: "12px", fontWeight: 600, outline: "none", flex: 1, minWidth: 0 }} />
