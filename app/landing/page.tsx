@@ -98,33 +98,37 @@ export default function LandingPage() {
     <div style={{ background: T.bg, color: T.text, fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", overflowX: "hidden", position: "relative" }}>
 
       {/* Animated gradient background */}
-      <style>{`
-        @keyframes gradMove {
-          0% { transform: translate(0%, 0%) scale(1); }
-          33% { transform: translate(3%, -3%) scale(1.05); }
-          66% { transform: translate(-3%, 3%) scale(0.97); }
-          100% { transform: translate(0%, 0%) scale(1); }
-        }
-        @keyframes gradMove2 {
-          0% { transform: translate(0%, 0%) scale(1); }
-          50% { transform: translate(-4%, 4%) scale(1.08); }
-          100% { transform: translate(0%, 0%) scale(1); }
-        }
-        @keyframes gradMove3 {
-          0% { transform: translate(0%, 0%) scale(1); }
-          50% { transform: translate(4%, -2%) scale(1.06); }
-          100% { transform: translate(0%, 0%) scale(1); }
-        }
-        .desktop-nav { display: none; }
-        @media (min-width: 768px) { .desktop-nav { display: flex !important; } }
-      `}</style>
-       @keyframes glowPulse {
+         <style>{`
+  @keyframes gradMove {
+    0% { transform: translate(0%, 0%) scale(1); }
+    33% { transform: translate(3%, -3%) scale(1.05); }
+    66% { transform: translate(-3%, 3%) scale(0.97); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+
+  @keyframes gradMove2 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    50% { transform: translate(-4%, 4%) scale(1.08); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+
+  @keyframes gradMove3 {
+    0% { transform: translate(0%, 0%) scale(1); }
+    50% { transform: translate(4%, -2%) scale(1.06); }
+    100% { transform: translate(0%, 0%) scale(1); }
+  }
+
+  @keyframes glowPulse {
     0% { opacity: 0.7; }
     50% { opacity: 1; }
     100% { opacity: 0.7; }
   }
 
-  .desktop-nav { display:none; }
+  .desktop-nav { display: none; }
+
+  @media (min-width: 768px) {
+    .desktop-nav { display: flex !important; }
+  }
 `}</style>
 
        {/* Premium Animated Background */}
