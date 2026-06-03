@@ -37,7 +37,7 @@ export default function SignupPage() {
       <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: "500px" }}>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "2rem" }}>
-          <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "90px", width: "auto", objectFit: "contain", marginBottom: "16px" }} />
+          <img src="/logo.png" alt="Krypton AI" style={{ height: "90px", width: "auto", objectFit: "contain", marginBottom: "16px" }} />
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(245,197,66,0.07)", border: "1px solid rgba(245,197,66,0.15)", borderRadius: "20px", padding: "5px 14px", fontSize: "12px" }}>
             <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00D084", display: "inline-block" }} />
             <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 600 }}>Free Plan — 5 Credits/Day</span>
