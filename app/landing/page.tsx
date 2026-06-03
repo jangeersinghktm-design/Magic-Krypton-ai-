@@ -222,7 +222,7 @@ export default function LandingPage() {
 
         <div ref={dropdownRef} style={{ position: "relative", display: "flex", alignItems: "center" }}>
           <button onClick={(e) => { e.stopPropagation(); setShowDropdown((v) => !v); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: "8px" }}>
-            <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "34px", width: "auto", objectFit: "contain" }} />
+            <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "40px", width: "40", objectFit: "contain" }} />
             <span style={{ color: "#555", fontSize: "10px" }}>&#9660;</span>
           </button>
 
