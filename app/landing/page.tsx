@@ -280,7 +280,7 @@ export default function LandingPage() {
       )}
 
       {/* HERO - NO logo here, just text + prompt */}
-      <section style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: isMobile ? "80px 20px 40px" : "60px 24px", textAlign: "center" }}>
+      <section style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", minHeight: "85vh", padding: isMobile ? "80px 20px 40px" : "120px 24px 60px", textAlign: "center" }}>
 
         <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(245,197,66,0.07)", border: `1px solid ${T.border}`, borderRadius: "20px", padding: "5px 16px", marginBottom: "1.5rem", fontSize: "12px" }}>
           <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.green, display: "inline-block" }} />
