@@ -226,7 +226,7 @@ export default function HomePage() {
           <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer", fontSize: "20px", padding: "4px", flexShrink: 0 }}>
              &#9776;
           </button>
-          <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "28px", width: "auto", objectFit: "contain", mixBlendMode: "lighten" }} />
+          {isMobile && <img src="/logo.png" alt="Krypton AI" style={{ height: "28px", width: "auto", objectFit: "contain" }} />}
           <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
             <button onClick={() => router.push("/dashboard")} style={{ padding: "7px 12px", background: "#101010", border: "1px solid #1c1c1c", borderRadius: "9px", color: "#9ca3af", fontSize: "12px", cursor: "pointer", whiteSpace: "nowrap" }}>
               Projects
