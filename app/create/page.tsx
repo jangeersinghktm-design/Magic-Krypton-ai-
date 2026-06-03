@@ -23,7 +23,7 @@ function CreatePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(true);
   const [activeTab, setActiveTab] = useState<"chat" | "preview">("chat");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -188,12 +188,7 @@ function CreatePage() {
         <button onClick={() => router.push("/")} style={{ background: "#161616", border: "1px solid #1c1c1c", borderRadius: "8px", color: "#fff", cursor: "pointer", fontSize: "16px", padding: "5px 10px", fontWeight: 700, lineHeight: 1, flexShrink: 0 }}>
           &larr;
         </button>
-        <div style={{ width: "24px", height: "24px", background: "#FFC107", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="13" height="13" viewBox="0 0 20 20" fill="none">
-            <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#080808" />
-            <path d="M10 6l-4 3v2l4 3 4-3V9L10 6z" fill="#FFC107" opacity="0.8" />
-          </svg>
-        </div>
+         <img src="/logo.jpeg" alt="Krypton AI" style={{ height: "28px", width: "auto", objectFit: "contain" }} />
 
         {editingName ? (
           <input autoFocus value={projectName} onChange={(e) => setProjectName(e.target.value)} onBlur={() => setEditingName(false)} onKeyDown={(e) => e.key === "Enter" && setEditingName(false)} style={{ background: "#161616", border: "1px solid #FFC107", borderRadius: "7px", color: "#fff", padding: "4px 8px", fontSize: "12px", fontWeight: 600, outline: "none", flex: 1, minWidth: 0 }} />
