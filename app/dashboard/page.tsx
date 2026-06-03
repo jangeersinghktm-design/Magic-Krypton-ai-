@@ -64,27 +64,7 @@ export default function DashboardPage() {
         marginBottom: "2rem",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{
-            width: "32px",
-            height: "32px",
-            background: "#FFC107",
-            borderRadius: "8px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-              <path d="M10 2L3 7v6l7 5 7-5V7L10 2z" fill="#06060A" />
-              <path d="M10 6l-4 3v2l4 3 4-3V9L10 6z" fill="#FFC107" opacity="0.7" />
-            </svg>
-          </div>
-          <span style={{
-            fontFamily: "'Syne', sans-serif",
-            fontWeight: 800,
-            fontSize: "16px",
-          }}>
-            KRYPTON <span style={{ color: "#FFC107" }}>AI</span>
-          </span>
+           <img src="/logo.png" alt="Krypton AI" style={{ height: "36px", width: "auto", objectFit: "contain" }} />
         </div>
 
         <button
