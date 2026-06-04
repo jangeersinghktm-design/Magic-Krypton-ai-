@@ -17,6 +17,10 @@ const TABS = [
   { id: "cloudcode", label: "Cloud Code", icon: "☁️" },
   { id: "notifications", label: "Notifications", icon: "🔔" },
   { id: "theme", label: "Theme", icon: "🎨" },
+  { id: "github", label: "GitHub", icon: "🐙" },
+  { id: "domains", label: "Domains", icon: "🌐" },
+  { id: "security", label: "Security", icon: "🔒" },
+  { id: "members", label: "Members", icon: "👥" },
 ];
 
 export default function SettingsPage() {
@@ -83,31 +87,43 @@ export default function SettingsPage() {
 
       <div style={{ display: "flex", minHeight: "100vh", position: "relative", zIndex: 1 }}>
 
+        {/* Sidebar */}
         {!isMobile && (
-          <div style={{ width: "220px", background: "#0A0A0A", borderRight: `1px solid ${T.border}`, padding: "24px 12px", flexShrink: 0 }}>
+          <div style={{ width: "220px", background: "#0A0A0A", borderRight: `1px solid ${T.border}`, padding: "24px 12px", flexShrink: 0, overflowY: "auto" }}>
             <button onClick={() => router.push("/")} style={{ display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: "13px", marginBottom: "24px", padding: "8px 12px" }}>
               ← Back to Home
             </button>
-            <p style={{ fontSize: "10px", color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 12px", marginBottom: "8px" }}>Settings</p>
-            {TABS.map((tab) => (
+            <p style={{ fontSize: "10px", color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 12px", marginBottom: "8px" }}>Account</p>
+            {TABS.slice(0, 3).map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ width: "100%", textAlign: "left", padding: "10px 12px", background: activeTab === tab.id ? "rgba(245,197,66,0.08)" : "none", border: activeTab === tab.id ? `1px solid ${T.border}` : "1px solid transparent", borderRadius: "10px", color: activeTab === tab.id ? T.gold : T.muted, fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px", fontWeight: activeTab === tab.id ? 600 : 400, transition: "all 0.2s" }}>
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+            <p style={{ fontSize: "10px", color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 12px", marginBottom: "8px", marginTop: "16px" }}>Developer</p>
+            {TABS.slice(3, 6).map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ width: "100%", textAlign: "left", padding: "10px 12px", background: activeTab === tab.id ? "rgba(245,197,66,0.08)" : "none", border: activeTab === tab.id ? `1px solid ${T.border}` : "1px solid transparent", borderRadius: "10px", color: activeTab === tab.id ? T.gold : T.muted, fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px", fontWeight: activeTab === tab.id ? 600 : 400, transition: "all 0.2s" }}>
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+            <p style={{ fontSize: "10px", color: T.muted, textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 12px", marginBottom: "8px", marginTop: "16px" }}>Advanced</p>
+            {TABS.slice(6).map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ width: "100%", textAlign: "left", padding: "10px 12px", background: activeTab === tab.id ? "rgba(245,197,66,0.08)" : "none", border: activeTab === tab.id ? `1px solid ${T.border}` : "1px solid transparent", borderRadius: "10px", color: activeTab === tab.id ? T.gold : T.muted, fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px", fontWeight: activeTab === tab.id ? 600 : 400, transition: "all 0.2s" }}>
                 {tab.icon} {tab.label}
               </button>
             ))}
             <div style={{ height: "1px", background: T.border, margin: "16px 0" }} />
-            <button onClick={handleLogout} style={{ width: "100%", textAlign: "left", padding: "10px 12px", background: "none", border: "1px solid transparent", borderRadius: "10px", color: "#ef4444", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}>
+            <button onClick={handleLogout} style={{ width: "100%", textAlign: "left", padding: "10px 12px", background: "none", border: "1px solid transparent", borderRadius: "10px", color: T.gold, fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px" }}>
               🚪 Logout
             </button>
           </div>
         )}
 
+        {/* Main */}
         <div style={{ flex: 1, padding: isMobile ? "20px 16px" : "32px 40px", overflowY: "auto" }}>
 
           {isMobile && (
             <div style={{ marginBottom: "20px" }}>
-              <button onClick={() => router.push("/")} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: "10px", color: T.muted, padding: "8px 14px", cursor: "pointer", fontSize: "14px", marginBottom: "16px" }}>
-                ← Back
-              </button>
+              <button onClick={() => router.push("/")} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: "10px", color: T.muted, padding: "8px 14px", cursor: "pointer", fontSize: "14px", marginBottom: "16px" }}>← Back</button>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {TABS.map((tab) => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ padding: "6px 14px", background: activeTab === tab.id ? G : "#141414", border: `1px solid ${activeTab === tab.id ? "transparent" : T.border}`, borderRadius: "20px", color: activeTab === tab.id ? "#050505" : T.muted, fontSize: "12px", fontWeight: activeTab === tab.id ? 700 : 400, cursor: "pointer" }}>
@@ -118,6 +134,7 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* PROFILE */}
           {activeTab === "profile" && (
             <div>
               <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Profile</h1>
@@ -150,15 +167,16 @@ export default function SettingsPage() {
                   {saved ? "✓ Saved!" : "Save Changes"}
                 </button>
               </div>
-              <div style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "16px", padding: "24px" }}>
-                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "15px", fontWeight: 700, color: "#ef4444", marginBottom: "8px" }}>Danger Zone</h3>
+              <div style={{ background: "rgba(245,197,66,0.04)", border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px" }}>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "15px", fontWeight: 700, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: "8px" }}>Danger Zone</h3>
                 <p style={{ color: T.muted, fontSize: "13px", marginBottom: "16px" }}>These actions cannot be undone.</p>
-                <button onClick={handleLogout} style={{ padding: "10px 20px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "10px", color: "#ef4444", fontWeight: 600, fontSize: "13px", cursor: "pointer", marginRight: "10px" }}>Logout</button>
-                <button style={{ padding: "10px 20px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "10px", color: "#ef4444", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>Delete Account</button>
+                <button onClick={handleLogout} style={{ padding: "10px 20px", background: G, border: "none", borderRadius: "10px", color: "#050505", fontWeight: 700, fontSize: "13px", cursor: "pointer", marginRight: "10px" }}>Logout</button>
+                <button style={{ padding: "10px 20px", background: "#161616", border: `1px solid ${T.border}`, borderRadius: "10px", color: T.muted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>Delete Account</button>
               </div>
             </div>
           )}
 
+          {/* BILLING */}
           {activeTab === "billing" && (
             <div>
               <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Billing</h1>
@@ -212,6 +230,7 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* API KEYS */}
           {activeTab === "apikeys" && (
             <div>
               <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>API Keys</h1>
@@ -230,7 +249,7 @@ export default function SettingsPage() {
                     </code>
                     <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
                       <button onClick={() => setShowKey(!showKey)} style={{ padding: "5px 10px", background: "#1a1a1a", border: `1px solid ${T.border}`, borderRadius: "6px", color: T.muted, fontSize: "11px", cursor: "pointer" }}>{showKey ? "Hide" : "Show"}</button>
-                      <button onClick={copyKey} style={{ padding: "5px 10px", background: G, border: "none", borderRadius: "6px", color: "#050505", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>Copy</button>
+                      <button onClick={copyKey} style={{ padding: "5px 10px", background: G, border: "none", borderRadius: "6px", color: "#050505", fontSize: "11px", fontWeight:700, cursor: "pointer" }}>Copy</button>
                     </div>
                   </div>
                 )}
@@ -238,6 +257,7 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* CLOUD CODE */}
           {activeTab === "cloudcode" && (
             <div>
               <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Cloud Code</h1>
@@ -255,7 +275,7 @@ export default function SettingsPage() {
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = "translateY(-2px)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "none"; }}>
                     <div style={{ fontSize: "24px", marginBottom: "10px" }}>{item.icon}</div>
-                    <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "14px", fontWeight: 700, marginBottom: "6px", color: T.text }}>{item.title}</h3>
+                    <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "14px", fontWeight: 700, marginBottom: "6px" }}>{item.title}</h3>
                     <p style={{ color: T.muted, fontSize: "12px", marginBottom: "14px" }}>{item.desc}</p>
                     <button style={{ padding: "7px 16px", background: G, border: "none", borderRadius: "8px", color: "#050505", fontWeight: 700, fontSize: "12px", cursor: "pointer" }}>{item.action}</button>
                   </div>
@@ -271,6 +291,7 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* NOTIFICATIONS */}
           {activeTab === "notifications" && (
             <div>
               <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Notifications</h1>
@@ -297,6 +318,7 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* THEME */}
           {activeTab === "theme" && (
             <div>
               <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Theme</h1>
@@ -328,8 +350,96 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+
+          {/* GITHUB */}
+          {activeTab === "github" && (
+            <div>
+              <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>GitHub Integration</h1>
+              <p style={{ color: T.muted, fontSize: "13px", marginBottom: "28px" }}>Connect your GitHub account</p>
+              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "32px", textAlign: "center" as "center" }}>
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>🐙</div>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "18px", fontWeight: 700, marginBottom: "8px" }}>Connect GitHub</h3>
+                <p style={{ color: T.muted, fontSize: "14px", marginBottom: "24px", maxWidth: "400px", margin: "0 auto 24px" }}>Push your generated code directly to GitHub repositories.</p>
+                <button style={{ padding: "12px 28px", background: G, border: "none", borderRadius: "12px", color: "#050505", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>Connect GitHub Account</button>
+              </div>
+            </div>
+          )}
+
+          {/* DOMAINS */}
+          {activeTab === "domains" && (
+            <div>
+              <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Custom Domains</h1>
+              <p style={{ color: T.muted, fontSize: "13px", marginBottom: "28px" }}>Manage your custom domains</p>
+              <div style={{ background: "rgba(245,197,66,0.04)", border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "13px", color: T.sub, marginBottom: "16px" }}>Custom domains are available on Business plan.</p>
+                <button onClick={() => router.push("/landing#pricing")} style={{ padding: "10px 20px", background: G, border: "none", borderRadius: "10px", color: "#050505", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>🔒 Upgrade to Add Domain</button>
+              </div>
+              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px" }}>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "15px", fontWeight: 700, marginBottom: "16px" }}>Your Domains</h3>
+                <div style={{ textAlign: "center", padding: "24px 0" }}>
+                  <p style={{ fontSize: "28px", marginBottom: "8px" }}>🌐</p>
+                  <p style={{ color: T.muted, fontSize: "13px" }}>No domains added yet</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECURITY */}
+          {activeTab === "security" && (
+            <div>
+              <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Security</h1>
+              <p style={{ color: T.muted, fontSize: "13px", marginBottom: "28px" }}>Manage your account security</p>
+              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px", marginBottom: "16px" }}>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "15px", fontWeight: 700, marginBottom: "16px" }}>Change Password</h3>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: T.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px" }}>Current Password</label>
+                  <input type="password" placeholder="••••••••" style={{ width: "100%", padding: "12px 14px", background: "#141414", border: `1px solid ${T.border}`, borderRadius: "10px", color: T.text, fontSize: "14px", outline: "none", boxSizing: "border-box" as "border-box" }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)} onBlur={(e) => (e.currentTarget.style.borderColor = T.border)} />
+                </div>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: T.muted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px" }}>New Password</label>
+                  <input type="password" placeholder="••••••••" style={{ width: "100%", padding: "12px 14px", background: "#141414", border: `1px solid ${T.border}`, borderRadius: "10px", color: T.text, fontSize: "14px", outline: "none", boxSizing: "border-box" as "border-box" }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)} onBlur={(e) => (e.currentTarget.style.borderColor = T.border)} />
+                </div>
+                <button style={{ padding: "11px 24px", background: G, border: "none", borderRadius: "10px", color: "#050505", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}>Update Password</button>
+              </div>
+              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px" }}>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "15px", fontWeight: 700, marginBottom: "8px" }}>Two-Factor Authentication</h3>
+                <p style={{ color: T.muted, fontSize: "13px", marginBottom: "16px" }}>Add an extra layer of security to your account.</p>
+                <button style={{ padding: "10px 20px", background: "#161616", border: `1px solid ${T.border}`, borderRadius: "10px", color: T.text, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>Enable 2FA</button>
+              </div>
+            </div>
+          )}
+
+          {/* MEMBERS */}
+          {activeTab === "members" && (
+            <div>
+              <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "6px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Team Members</h1>
+              <p style={{ color: T.muted, fontSize: "13px", marginBottom: "28px" }}>Manage your team workspace</p>
+              <div style={{ background: "rgba(245,197,66,0.04)", border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px", marginBottom: "16px" }}>
+                <p style={{ fontSize: "13px", color: T.sub, marginBottom: "16px" }}>Team workspace is available on Premium plan and above.</p>
+                <button onClick={() => router.push("/landing#pricing")} style={{ padding: "10px 20px", background: G, border: "none", borderRadius: "10px", color: "#050505", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>🔒 Upgrade to Add Members</button>
+              </div>
+              <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "24px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                  <h3 style={{ fontFamily: "'Syne', sans-serif", fontSize: "15px", fontWeight: 700, margin: 0 }}>Members</h3>
+                  <button style={{ padding: "7px 14px", background: G, border: "none", borderRadius: "8px", color: "#050505", fontWeight: 700, fontSize: "12px", cursor: "pointer" }}>+ Invite</button>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 0" }}>
+                  <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: G, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: 700, color: "#050505" }}>
+                    {user?.email?.[0]?.toUpperCase() || "K"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 600, fontSize: "14px", margin: 0 }}>{user?.email}</p>
+                    <p style={{ color: T.muted, fontSize: "12px", margin: "2px 0 0" }}>Owner</p>
+                  </div>
+                  <span style={{ fontSize: "11px", padding: "3px 10px", background: "rgba(245,197,66,0.1)", border: `1px solid ${T.border}`, borderRadius: "20px", color: T.gold }}>Owner</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-}
+ }
