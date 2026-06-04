@@ -200,7 +200,7 @@ export default function LandingPage() {
     borderRadius: "50%",
     filter: "blur(90px)",
     background:
-      "radial-gradient(circle, rgba(139,92,246,0.42) 0%, rgba(139,92,246,0.18) 35%, transparent 70%)",
+      "radial-gradient(circle, rgba(139,92,246,0.30) 0%, rgba(139,92,246,0.18) 35%, transparent 70%)",
     animation: "gradMove2 26s ease-in-out infinite, glowPulse 11s ease-in-out infinite",
   }}
 />
@@ -216,7 +216,7 @@ export default function LandingPage() {
     borderRadius: "50%",
     filter: "blur(90px)",
     background:
-      "radial-gradient(circle, rgba(59,130,246,0.40) 0%, rgba(59,130,246,0.18) 35%, transparent 70%)",
+      "radial-gradient(circle, rgba(59,130,246,0.30) 0%, rgba(59,130,246,0.18) 35%, transparent 70%)",
     animation: "gradMove3 24s ease-in-out infinite, glowPulse 9s ease-in-out infinite",
   }}
 />
