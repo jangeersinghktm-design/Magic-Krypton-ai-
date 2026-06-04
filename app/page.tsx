@@ -178,7 +178,20 @@ export default function HomePage() {
 
           {showUserDropdown && (
             <div style={{ position: "absolute", top: "64px", left: "12px", right: "12px", background: "#141414", border: "1px solid #1c1c1c", borderRadius: "12px", padding: "6px", zIndex: 100 }}>
-              {["Profile", "Billing", "API Keys", "Notifications", "Theme"].map((item) => (
+              {[
+  { label: "Profile", icon: "👤", path: "/settings" },
+  { label: "Billing", icon: "💳", path: "/settings" },
+  { label: "API Keys", icon: "🔑", path: "/settings" },
+  { label: "Cloud Code", icon: "☁️", path: "/settings" },
+  { label: "Notifications", icon: "🔔", path: "/settings" },
+  { label: "Theme", icon: "🎨", path: "/settings" },
+].map((item) => (
+  <button key={item.label} onClick={() => router.push(item.path)} style={{ width: "100%", textAlign: "left", padding: "9px 12px", background: "none", border: "none", color: "#9ca3af", fontSize: "13px", cursor: "pointer", borderRadius: "8px", display: "flex", alignItems: "center", gap: "8px" }}
+    onMouseEnter={(e) => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = "#fff"; }}
+    onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#9ca3af"; }}>
+    {item.icon} {item.label}
+  </button>
+))}
                 <button key={item} style={{ width: "100%", textAlign: "left", padding: "9px 12px", background: "none", border: "none", color: "#9ca3af", fontSize: "13px", cursor: "pointer", borderRadius: "8px" }}>
                   {item}
                 </button>
@@ -201,7 +214,7 @@ export default function HomePage() {
         </div>
 
         <div style={{ padding: "0 10px", flex: 1, overflowY: "auto" }}>
-          <p style={{ fontSize: "10px", color: "#444", textTransform: "uppercase", letterSpacing: "0.08em", padding: "8px 12px 6px" }}>Recent</p>
+          <p style={{ fontSize: "10px", color: "#444", textTransform: "uppercase", letterSpacing: "0.08em", padding: "8px 12px 6px", fontWeight: 700 }}>Recent</p>
           {recentProjects.map((p) => (
             <button key={p.id} onClick={() => router.push("/dashboard")} style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", color: "#9ca3af", fontSize: "12px", cursor: "pointer", borderRadius: "8px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {p.title}
