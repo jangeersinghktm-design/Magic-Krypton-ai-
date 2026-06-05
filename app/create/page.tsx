@@ -152,17 +152,15 @@ function CreatePage() {
     recognition.start();
   };
 
-   const handleSave = async () => {
+  const handleSave = async () => {
     if (!result) return;
     setSaving(true);
     try {
-      const data = await saveProject({
+      await saveProject({
         title: projectName,
         prompt: messages.find((m) => m.role === "user")?.content || projectName,
-        html_code: result,
+        html_code: result
       });
-      // Project ID set karo — Version History + AI Chat ke liye
-      if (data?.id) setProjectId(data.id);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
@@ -494,7 +492,7 @@ function CreatePage() {
                       <rect x="9" y="2" width="6" height="11" rx="3" fill={listening ? "#080808" : "#9ca3af"} />
                       <path d="M5 11a7 7 0 0 0 14 0" stroke={listening ? "#080808" : "#9ca3af"} strokeWidth="2" strokeLinecap="round" />
                       <line x1="12" y1="18" x2="12" y2="22" stroke={listening ? "#080808" : "#9ca3af"} strokeWidth="2" strokeLinecap="round" />
-                      </svg>
+                    </svg>
                   </button>
                   <button
                     onClick={handleGenerate}
@@ -540,25 +538,21 @@ function CreatePage() {
               <button
                 key={tab.id}
                 onClick={() => setRightTab(tab.id as RightTab)}
-                 style={{
-                  padding: "5px 14px",
-                  borderRadius: "8px",
+                style={{
+                  padding: "5px 14px", borderRadius: "8px", border: "none",
                   background: rightTab === tab.id
-                   ? "linear-gradient(135deg,rgba(245,197,66,0.2),rgba(0,208,132,0.1))"
-                   : "rgba(255,255,255,0.04)",
+                    ? "linear-gradient(135deg,rgba(245,197,66,0.2),rgba(0,208,132,0.1))"
+                    : "rgba(255,255,255,0.04)",
                   color: rightTab === tab.id ? "#F5C542" : "#555",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
+                  fontSize: "12px", fontWeight: 600, cursor: "pointer",
                   whiteSpace: "nowrap",
                   border: rightTab === tab.id
-                   ? "1px solid rgba(245,197,66,0.25)"
-                   : "1px solid transparent",
+                    ? "1px solid rgba(245,197,66,0.25)"
+                    : "1px solid transparent",
                   transition: "all 0.18s",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px"
-                 }}
+                  display: "flex", alignItems: "center", gap: "5px"
+                }}
+              >
                 <span>{tab.icon}</span>
                 {!isMobile && tab.label}
               </button>
