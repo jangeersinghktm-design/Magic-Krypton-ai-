@@ -245,18 +245,19 @@ ${html.substring(0, 10000)}`;
             "x-api-key": process.env.ANTHROPIC_API_KEY!,
             "anthropic-version": "2023-06-01",
           },
-          body: JSON.stringify({
-           model: "claude-sonnet-4-6",
-           max_tokens: 12000,
-           messages: [{ role: "user", content: getRepairPrompt(html, issues) }],
-          }),
+           body: JSON.stringify({
+              model: "claude-sonnet-4-6",
+              max_tokens: 12000,
+              messages: [{ role: "user", content: getRepairPrompt(html, issues) }],
+            }),
+          });
 
-        if (repairRes.ok) {
-          const data = await repairRes.json();
-          const repairedHtml = cleanHtml(data.content[0].text);
-          console.log("Repair pass complete!");
-          return repairedHtml;
-        }
+          if (repairRes.ok) {
+            const data = await repairRes.json();
+            const repairedHtml = cleanHtml(data.content[0].text);
+            console.log("Repair pass complete!");
+            return repairedHtml;
+          }
       } catch (e: any) {
         console.log("Repair failed:", e.message);
       }
