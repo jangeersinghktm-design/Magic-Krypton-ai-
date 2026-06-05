@@ -259,18 +259,90 @@ export default function LandingPage() {
           </button>
 
           {showDropdown && (
-            <div style={{ position: "absolute", top: "50px", left: 0, background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: "14px", padding: "8px", minWidth: "190px", zIndex: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.7)" }}>
-              {[["Settings", "⚙"], ["Billing", "💳"], ["API Keys", "🔑"], ["Roadmap", "🗺"], ["Changelog", "📋"]].map(([label, icon]) => (
-                <button key={String(label)} style={{ width: "100%", textAlign: "left", padding: "9px 12px", background: "none", border: "none", color: T.muted, fontSize: "13px", cursor: "pointer", borderRadius: "8px", display: "flex", alignItems: "center", gap: "8px" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = T.text; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = T.muted; }}>
-                  {icon} {label}
-                </button>
-              ))}
-              <div style={{ height: "1px", background: T.border, margin: "6px 0" }} />
-              <button onClick={() => router.push("/auth/login")} style={{ width: "100%", textAlign: "left", padding: "9px 12px", background: "none", border: "none", color: "#ef4444", fontSize: "13px", cursor: "pointer", borderRadius: "8px" }}>Login →</button>
-            </div>
-          )}
+  <div style={{
+    position: "absolute", top: "50px", left: 0,
+    background: "#0D0D0D",
+    border: `1px solid ${T.border}`,
+    borderRadius: "16px", padding: "8px",
+    minWidth: "220px", zIndex: 200,
+    boxShadow: "0 8px 32px rgba(0,0,0,0.7)",
+    maxHeight: "80vh", overflowY: "auto",
+  }}>
+    {/* PUBLIC DROPDOWN */}
+    <p style={{ fontSize: "9px", color: "#333", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", padding: "6px 12px 4px" }}>PRODUCT</p>
+    {[
+      { icon: "🏠", label: "Home",             path: "/landing" },
+      { icon: "✨", label: "Features",         onClick: () => scrollTo("features") },
+      { icon: "🖼️", label: "Templates",        path: "/templates" },
+      { icon: "🎮", label: "Examples Gallery", onClick: () => scrollTo("examples") },
+      { icon: "💰", label: "Pricing",          onClick: () => scrollTo("pricing") },
+      { icon: "🗺️", label: "Roadmap",          onClick: () => scrollTo("roadmap") },
+    ].map((item) => (
+      <button key={item.label}
+        onClick={() => {
+          if (item.path) router.push(item.path);
+          else if (item.onClick) item.onClick();
+          setShowDropdown(false);
+        }}
+        style={{
+          width: "100%", textAlign: "left", padding: "9px 12px",
+          background: "none", border: "none", color: T.muted,
+          fontSize: "13px", cursor: "pointer", borderRadius: "8px",
+          display: "flex", alignItems: "center", gap: "8px",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = T.text; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = T.muted; }}>
+        {item.icon} {item.label}
+      </button>
+    ))}
+
+    <p style={{ fontSize: "9px", color: "#333", fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", padding: "10px 12px 4px" }}>LEARN</p>
+    {[
+      { icon: "📚", label: "Documentation",     path: "#" },
+      { icon: "🎥", label: "Demo Videos",       path: "#" },
+      { icon: "⭐", label: "Customer Showcase", path: "#" },
+      { icon: "🏆", label: "Community",         path: "#" },
+      { icon: "📝", label: "Changelog",         path: "#" },
+      { icon: "❓", label: "FAQ",               onClick: () => scrollTo("faq") },
+      { icon: "📞", label: "Contact",           path: "#" },
+    ].map((item) => (
+      <button key={item.label}
+        onClick={() => {
+          if (item.path && item.path !== "#") router.push(item.path);
+          else if (item.onClick) item.onClick();
+          setShowDropdown(false);
+        }}
+        style={{
+          width: "100%", textAlign: "left", padding: "9px 12px",
+          background: "none", border: "none", color: T.muted,
+          fontSize: "13px", cursor: "pointer", borderRadius: "8px",
+          display: "flex", alignItems: "center", gap: "8px",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = T.text; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = T.muted; }}>
+        {item.icon} {item.label}
+      </button>
+    ))}
+
+    <div style={{ height: "1px", background: T.border, margin: "6px 0" }} />
+
+    <button onClick={() => { router.push("/auth/login"); setShowDropdown(false); }} style={{
+      width: "100%", textAlign: "left", padding: "9px 12px",
+      background: "none", border: "none", color: T.muted,
+      fontSize: "13px", cursor: "pointer", borderRadius: "8px",
+      display: "flex", alignItems: "center", gap: "8px",
+    }}>🚀 Login</button>
+
+    <button onClick={() => { router.push("/auth/signup"); setShowDropdown(false); }} style={{
+      width: "100%", textAlign: "left", padding: "9px 12px",
+      background: "linear-gradient(135deg,rgba(245,197,66,0.15),rgba(0,208,132,0.1))",
+      border: "1px solid rgba(245,197,66,0.2)",
+      borderRadius: "8px", color: T.gold,
+      fontSize: "13px", fontWeight: 700, cursor: "pointer",
+      display: "flex", alignItems: "center", gap: "8px", marginTop: 4,
+    }}>🟢 Get Started Free</button>
+  </div>
+)}
         </div>
 
         <div className="desktop-nav" style={{ gap: "24px", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
