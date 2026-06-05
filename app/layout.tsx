@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import KryptonSidebar from "@/components/KryptonSidebar";
 
 export const metadata: Metadata = {
   title: "Krypton AI - Build Anything with AI",
@@ -13,8 +14,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        {children}
+      <body style={{ margin: 0, background: "#050505" }}>
+        <KryptonSidebar />
+        <main style={{ marginLeft: "240px", minHeight: "100vh" }}>
+          {children}
+        </main>
       </body>
     </html>
   );
