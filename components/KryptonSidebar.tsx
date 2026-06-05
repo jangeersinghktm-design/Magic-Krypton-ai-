@@ -132,22 +132,15 @@ export default function KryptonSidebar() {
         scrollbarWidth: "none",
       }}
     >
-      {/* Logo */}
-      <Link href="/" style={{
-        display: "flex", alignItems: "center", gap: 10,
-        padding: "20px 20px 16px",
-        borderBottom: "1px solid rgba(245,197,66,0.12)",
-        textDecoration: "none",
-      }}>
-        <img src="/logo.png" alt="Krypton AI" style={{ width: 32, height: 32, objectFit: "contain" }} />
-        <span style={{
-          fontSize: 17, fontWeight: 700,
-          background: "linear-gradient(135deg,#F5C542,#00D084)",
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-        }}>
-          Krypton AI
-        </span>
-      </Link>
+       {/* Logo */}
+<Link href="/" style={{
+  display: "flex", alignItems: "center", justifyContent: "center",
+  padding: "16px",
+  borderBottom: "1px solid rgba(245,197,66,0.12)",
+  textDecoration: "none",
+}}>
+  <img src="/logo.png" alt="Krypton AI" style={{ height: 44, width: "auto", objectFit: "contain" }} />
+</Link>
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: "12px 10px" }}>
