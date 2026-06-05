@@ -299,30 +299,31 @@ ${html.substring(0, 10000)}`;
     // ============================================
     try {
       const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.ANTHROPIC_API_KEY!,
-          "anthropic-version": "2023-06-01",
-        },
-         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 12000,
-          messages: [{ role: "user", content: systemPrompt }],
-         }),
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": process.env.ANTHROPIC_API_KEY!,
+    "anthropic-version": "2023-06-01",
+  },
+  body: JSON.stringify({
+    model: "claude-sonnet-4-6",
+    max_tokens: 12000,
+    messages: [{ role: "user", content: systemPrompt }],
+  }),
+});
 
-      if (claudeRes.ok) {
-        const data = await claudeRes.json();
-        const html = await processHtml(data.content[0].text);
-        if (html) {
-          console.log("Claude success!");
-          return NextResponse.json({ html, model: "claude" });
-        }
-        console.log("Claude failed even after repair");
-      } else {
-        const err = await claudeRes.text();
-        console.log("Claude error:", err);
-      }
+if (claudeRes.ok) {
+  const data = await claudeRes.json();
+  const html = await processHtml(data.content[0].text);
+  if (html) {
+    console.log("Claude success!");
+    return NextResponse.json({ html, model: "claude" });
+  }
+  console.log("Claude failed even after repair");
+} else {
+  const err = await claudeRes.text();
+  console.log("Claude error:", err);
+}
     } catch (e: any) {
       console.log("Claude exception:", e.message);
     }
