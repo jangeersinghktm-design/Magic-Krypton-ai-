@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import KryptonSidebar from "@/components/KryptonSidebar";
 
 export const metadata: Metadata = {
   title: "Krypton AI - Build Anything with AI",
