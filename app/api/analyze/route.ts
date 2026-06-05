@@ -2,94 +2,162 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 
-const RESPONSE_SCHEMA = `
-{
+const SCHEMA = `{
   "score": <number 0-100>,
   "label": <"Excellent"|"Good"|"Fair"|"Needs Work"|"Poor"|"Critical">,
-  "summary": <one paragraph string>,
-  "issues": [
-    { "severity": <"error"|"warning"|"info">, "message": <string> }
-  ],
-  "metrics": [
-    { "label": <string>, "value": <string>, "good": <boolean> }
-  ],
-  "suggestions": [
-    { "title": <string>, "detail": <string>, "priority": <"high"|"medium"|"low"> }
-  ]
+  "summary": <string>,
+  "issues": [{ "severity": <"error"|"warning"|"info">, "message": <string> }],
+  "metrics": [{ "label": <string>, "value": <string>, "good": <boolean> }],
+  "suggestions": [{ "title": <string>, "detail": <string>, "priority": <"high"|"medium"|"low"> }]
 }`;
 
-function buildSystemPrompt(type: "code" | "seo" | "performance"): string {
-  return `You are an expert ${
-    type === "code" ? "software engineer and code reviewer" :
-    type === "seo"  ? "SEO specialist and content strategist" :
-    "web performance engineer"
-  } working inside Krypton AI.
+function getSystemPrompt(type: string): string {
+  const role =
+    type === "code"
+      ? "expert software engineer and code reviewer"
+      : type === "seo"
+      ? "expert SEO specialist and content strategist"
+      : "expert web performance engineer";
 
-Analyze the user input and return ONLY a single valid JSON object.
-No markdown, no backticks, no explanation outside JSON.
+  return `You are a ${role} inside Krypton AI.
 
-JSON schema:
-${RESPONSE_SCHEMA}
+Analyze the input and return ONLY a valid JSON object.
+No markdown, no backticks, no text outside JSON.
+
+Schema:
+${SCHEMA}
 
 Rules:
-- score: 0-100 integer
-- issues: 3-8 items ordered by severity
-- metrics: 4-6 key metrics
-- suggestions: 3-5 actionable improvements
-- ONLY return JSON, nothing else`;
+- score: realistic 0-100 integer
+- issues: 3-8 items, errors first
+- metrics: 4-6 relevant metrics
+- suggestions: 3-5 actionable items
+- Return ONLY raw JSON`;
 }
 
-async function callClaude(systemPrompt: string, userContent: string) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
+function getUserMessage(type: string, input: string): string {
+  if (type === "performance") return `Analyze performance of this URL: ${input.trim()}`;
+  if (type === "seo") return `Analyze SEO of this content:\n\n${input}`;
+  return `Analyze this code:\n\n${input}`;
+}
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userContent }],
-    }),
-  });
-
-  if (!response.ok) throw new Error(`Claude API error: ${response.status}`);
-  const data = await response.json();
-  return data.content.map((b: {type: string; text?: string}) => b.text || "").join("");
+function getScoreColor(score: number): string {
+  if (score >= 85) return "#00D084";
+  if (score >= 70) return "#F5C542";
+  if (score >= 50) return "#f59e0b";
+  return "#ef4444";
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { type, input } = await req.json();
+    const body = await req.json();
+    const { type, input } = body;
 
-    if (!["code", "seo", "performance"].includes(type)) {
-      return NextResponse.json({ error: "Invalid type" }, { status: 400 });
+    // Validation
+    if (!type || !["code", "seo", "performance"].includes(type)) {
+      return NextResponse.json(
+        { error: "Invalid type. Use: code | seo | performance" },
+        { status: 400 }
+      );
     }
-    if (!input || input.trim().length < 10) {
-      return NextResponse.json({ error: "Input too short" }, { status: 400 });
+
+    if (!input || input.trim().length < 5) {
+      return NextResponse.json(
+        { error: "Input too short" },
+        { status: 400 }
+      );
     }
 
-    const systemPrompt = buildSystemPrompt(type);
-    const userContent =
-      type === "performance" ? `Analyze performance of URL: ${input}` :
-      type === "seo" ? `Analyze SEO of this content:\n\n${input}` :
-      `Analyze this code:\n\n${input}`;
+    if (input.length > 15000) {
+      return NextResponse.json(
+        { error: "Input too long. Max 15,000 characters." },
+        { status: 400 }
+      );
+    }
 
-    const raw = await callClaude(systemPrompt, userContent);
-    const cleaned = raw.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
+    // API Key check
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "ANTHROPIC_API_KEY not configured in environment variables" },
+        { status: 500 }
+      );
+    }
 
-    const score = Number(parsed.score) || 0;
-    const color = score >= 85 ? "#00D084" : score >= 70 ? "#F5C542" : score >= 50 ? "#f59e0b" : "#ef4444";
+    // Claude API call
+    const claudeResponse = await fetch(
+      "https://api.anthropic.com/v1/messages",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1500,
+          system: getSystemPrompt(type),
+          messages: [
+            {
+              role: "user",
+              content: getUserMessage(type, input),
+            },
+          ],
+        }),
+      }
+    );
 
-    return NextResponse.json({ ...parsed, score, color });
+    if (!claudeResponse.ok) {
+      const errText = await claudeResponse.text();
+      return NextResponse.json(
+        { error: `Claude API error: ${claudeResponse.status} — ${errText}` },
+        { status: 500 }
+      );
+    }
+
+    const claudeData = await claudeResponse.json();
+
+    // Extract text
+    const rawText = claudeData.content
+      .filter((b: { type: string }) => b.type === "text")
+      .map((b: { text: string }) => b.text)
+      .join("");
+
+    // Parse JSON — strip markdown if Claude adds it
+    const cleaned = rawText
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*/gi, "")
+      .trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      // Try extracting JSON object from text
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (!match) {
+        return NextResponse.json(
+          { error: "Failed to parse Claude response" },
+          { status: 500 }
+        );
+      }
+      parsed = JSON.parse(match[0]);
+    }
+
+    const score = Math.min(100, Math.max(0, Number(parsed.score) || 0));
+
+    return NextResponse.json({
+      ...parsed,
+      score,
+      color: getScoreColor(score),
+    });
+
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
   }
 }
