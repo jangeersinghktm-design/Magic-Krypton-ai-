@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,12 +16,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify signature
+    // Verify signature using Web Crypto API
     const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSig = crypto
-      .createHmac("sha256", keySecret)
-      .update(body)
-      .digest("hex");
+    
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(keySecret);
+    const message = encoder.encode(body);
+
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    const signature = await crypto.subtle.sign("HMAC", cryptoKey, message);
+    
+    const expectedSig = Array.from(new Uint8Array(signature))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
 
     if (expectedSig !== razorpay_signature) {
       return NextResponse.json(
@@ -32,6 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
+
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error";
     return NextResponse.json({ error: message }, { status: 500 });
