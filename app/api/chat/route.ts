@@ -1,3 +1,6 @@
+// app/api/chat/route.ts
+// Krypton AI — Project Chat with Memory + Context
+
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -6,31 +9,56 @@ export async function POST(req: NextRequest) {
   try {
     const {
       projectName,
-      framework,
+      framework = "html",
       currentCode,
       userMessage,
       history = [],
+      projectId,
     } = await req.json();
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "API key not configured" }, { status: 500 });
     }
 
+    // Build code context (limit to 6000 chars)
     const codeContext = Object.entries(currentCode as Record<string, string>)
-      .map(([file, code]) => `### ${file}\n\`\`\`\n${code}\n\`\`\``)
+      .map(([file, code]) => `### ${file}\n\`\`\`\n${code.slice(0, 3000)}\n\`\`\``)
       .join("\n");
 
+    // Build conversation history (last 10 messages for memory)
+    const historyMessages = history.slice(-10).map((m: any) => ({
+      role: m.role === "ai" ? "assistant" : "user",
+      content: m.content,
+    }));
+
+    // Build messages
     const messages = [
-      ...history,
+      ...historyMessages,
       {
         role: "user" as const,
-        content: `Project: ${projectName} (${framework})\n\nCode:\n${codeContext}\n\nRequest: ${userMessage}`,
+        content: `Project: ${projectName} (${framework})\n\nCurrent Code:\n${codeContext}\n\nUser Request: ${userMessage}`,
       },
     ];
+
+    const system = `You are Krypton AI — an expert full-stack developer assistant.
+You have full context of the user's project and remember previous instructions in this conversation.
+
+When making code changes:
+1. Return the COMPLETE updated file content
+2. Wrap changes in: <code_changes>{"filename": "full content"}</code_changes>
+3. Explain what you changed briefly
+4. List modified files
+
+For edit requests like:
+- "Make hero section larger" → increase hero padding/height
+- "Add dark mode" → add CSS dark mode variables + toggle
+- "Change pricing cards" → update pricing section styling
+- "Improve mobile layout" → add responsive CSS breakpoints
+- "Add login page" → create login HTML/component
+
+Always maintain project context and remember what was done before.
+Be concise, professional, and specific.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -42,23 +70,13 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 4000,
-        system: `You are Krypton AI — expert developer assistant.
-You know the project code. Help the user improve it.
-When modifying code, wrap changes in:
-<code_changes>
-{"filename.tsx": "full updated content"}
-</code_changes>
-Be concise and professional.`,
+        system,
         messages,
       }),
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      return NextResponse.json(
-        { error: `Claude API error: ${response.status}` },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: `Claude error: ${response.status}` }, { status: 500 });
     }
 
     const data = await response.json();
@@ -68,19 +86,19 @@ Be concise and professional.`,
 
     // Extract code changes
     const codeMatch = text.match(/<code_changes>([\s\S]*?)<\/code_changes>/);
-    let codeChanges = null;
+    let codeChanges: Record<string, string> | null = null;
     if (codeMatch) {
-      try {
-        codeChanges = JSON.parse(codeMatch[1].trim());
-      } catch {}
+      try { codeChanges = JSON.parse(codeMatch[1].trim()); } catch {}
     }
 
-    return NextResponse.json({ text, codeChanges });
+    // Clean text (remove code_changes block from display)
+    const cleanText = text.replace(/<code_changes>[\s\S]*?<\/code_changes>/g, "").trim();
+
+    return NextResponse.json({ text: cleanText, codeChanges });
 
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
-      { error: message },
+      { error: err instanceof Error ? err.message : "Unknown error" },
       { status: 500 }
     );
   }
