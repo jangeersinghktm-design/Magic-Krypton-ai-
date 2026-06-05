@@ -152,15 +152,17 @@ function CreatePage() {
     recognition.start();
   };
 
-  const handleSave = async () => {
+   const handleSave = async () => {
     if (!result) return;
     setSaving(true);
     try {
-      await saveProject({
+      const data = await saveProject({
         title: projectName,
         prompt: messages.find((m) => m.role === "user")?.content || projectName,
-        html_code: result
+        html_code: result,
       });
+      // Project ID set karo — Version History + AI Chat ke liye
+      if (data?.id) setProjectId(data.id);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
