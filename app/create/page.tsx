@@ -539,18 +539,23 @@ function CreatePage() {
                 key={tab.id}
                 onClick={() => setRightTab(tab.id as RightTab)}
                 style={{
-                  padding: "5px 14px", borderRadius: "8px", border: "none",
+                  padding: "5px 14px",
+                  borderRadius: "8px",
                   background: rightTab === tab.id
                     ? "linear-gradient(135deg,rgba(245,197,66,0.2),rgba(0,208,132,0.1))"
                     : "rgba(255,255,255,0.04)",
                   color: rightTab === tab.id ? "#F5C542" : "#555",
-                  fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
                   whiteSpace: "nowrap",
                   border: rightTab === tab.id
                     ? "1px solid rgba(245,197,66,0.25)"
                     : "1px solid transparent",
                   transition: "all 0.18s",
-                  display: "flex", alignItems: "center", gap: "5px"
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px"
                 }}
               >
                 <span>{tab.icon}</span>
