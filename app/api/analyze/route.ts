@@ -20,13 +20,9 @@ function getSystemPrompt(type: string): string {
       : "expert web performance engineer";
 
   return `You are a ${role} inside Krypton AI.
-
 Analyze the input and return ONLY a valid JSON object.
 No markdown, no backticks, no text outside JSON.
-
-Schema:
-${SCHEMA}
-
+Schema: ${SCHEMA}
 Rules:
 - score: realistic 0-100 integer
 - issues: 3-8 items, errors first
@@ -53,7 +49,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { type, input } = body;
 
-    // Validation
     if (!type || !["code", "seo", "performance"].includes(type)) {
       return NextResponse.json(
         { error: "Invalid type. Use: code | seo | performance" },
@@ -75,16 +70,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // API Key check
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY not configured in environment variables" },
+        { error: "ANTHROPIC_API_KEY not configured" },
         { status: 500 }
       );
     }
 
-    // Claude API call
     const claudeResponse = await fetch(
       "https://api.anthropic.com/v1/messages",
       {
@@ -95,7 +88,7 @@ export async function POST(req: NextRequest) {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 1500,
           system: getSystemPrompt(type),
           messages: [
@@ -111,20 +104,18 @@ export async function POST(req: NextRequest) {
     if (!claudeResponse.ok) {
       const errText = await claudeResponse.text();
       return NextResponse.json(
-        { error: `Claude API error: ${claudeResponse.status} — ${errText}` },
+        { error: `Claude API error: ${claudeResponse.status}` },
         { status: 500 }
       );
     }
 
     const claudeData = await claudeResponse.json();
 
-    // Extract text
     const rawText = claudeData.content
       .filter((b: { type: string }) => b.type === "text")
       .map((b: { text: string }) => b.text)
       .join("");
 
-    // Parse JSON — strip markdown if Claude adds it
     const cleaned = rawText
       .replace(/```json\s*/gi, "")
       .replace(/```\s*/gi, "")
@@ -134,7 +125,6 @@ export async function POST(req: NextRequest) {
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      // Try extracting JSON object from text
       const match = cleaned.match(/\{[\s\S]*\}/);
       if (!match) {
         return NextResponse.json(
