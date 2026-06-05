@@ -22,7 +22,8 @@ function getSystemPrompt(type: string): string {
   return `You are a ${role} inside Krypton AI.
 Analyze the input and return ONLY a valid JSON object.
 No markdown, no backticks, no text outside JSON.
-Schema: ${SCHEMA}
+Schema:
+${SCHEMA}
 Rules:
 - score: realistic 0-100 integer
 - issues: 3-8 items, errors first
@@ -32,8 +33,10 @@ Rules:
 }
 
 function getUserMessage(type: string, input: string): string {
-  if (type === "performance") return `Analyze performance of this URL: ${input.trim()}`;
-  if (type === "seo") return `Analyze SEO of this content:\n\n${input}`;
+  if (type === "performance")
+    return `Analyze performance of this URL: ${input.trim()}`;
+  if (type === "seo")
+    return `Analyze SEO of this content:\n\n${input}`;
   return `Analyze this code:\n\n${input}`;
 }
 
@@ -102,7 +105,6 @@ export async function POST(req: NextRequest) {
     );
 
     if (!claudeResponse.ok) {
-      const errText = await claudeResponse.text();
       return NextResponse.json(
         { error: `Claude API error: ${claudeResponse.status}` },
         { status: 500 }
