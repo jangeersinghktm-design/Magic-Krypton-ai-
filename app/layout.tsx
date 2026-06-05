@@ -15,12 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body style={{ margin: 0, background: "#050505" }}>
-        <div style={{ display: "flex" }}>
-          <KryptonSidebar />
-          <main style={{ marginLeft: "240px", flex: 1, minHeight: "100vh" }}>
-            {children}
-          </main>
-        </div>
+        {children}
       </body>
     </html>
   );
