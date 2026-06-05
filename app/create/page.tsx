@@ -44,7 +44,7 @@ function CreatePage() {
   const silenceTimer = useRef<any>(null);
 
   // Current code object for components
-  const currentCode = result ? { "index.html": result } : {};
+  const currentCode: Record<string, string> = result ? { "index.html": result } : {};
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -698,5 +698,5 @@ export default function Page() {
     }>
       <CreatePage />
     </Suspense>
-  );
+  ):
 }
