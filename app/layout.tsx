@@ -1,21 +1,31 @@
-import type { Metadata } from "next";
+"use client";
+
 import "./globals.css";
 import KryptonSidebar from "@/components/KryptonSidebar";
-
-export const metadata: Metadata = {
-  title: "Krypton AI - Build Anything with AI",
-  description: "Create websites, apps, games with AI",
-};
+import { usePathname } from "next/navigation";
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
+  const noSidebar = ["/landing", "/auth"];
+  const showSidebar = !noSidebar.some((p) => pathname.startsWith(p));
+
   return (
     <html lang="en">
       <body style={{ margin: 0, background: "#050505" }}>
-        {children}
+        <div style={{ display: "flex" }}>
+          {showSidebar && <KryptonSidebar />}
+          <main style={{
+            marginLeft: showSidebar ? "240px" : "0",
+            flex: 1, minHeight: "100vh"
+          }}>
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );
