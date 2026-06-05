@@ -246,12 +246,10 @@ ${html.substring(0, 10000)}`;
             "anthropic-version": "2023-06-01",
           },
           body: JSON.stringify({
-            model: "claude-opus-4-5",
-            max_tokens: 12000,
-            temperature: 0.5,
-            messages: [{ role: "user", content: getRepairPrompt(html, issues) }],
+           model: "claude-sonnet-4-6",
+           max_tokens: 12000,
+           messages: [{ role: "user", content: getRepairPrompt(html, issues) }],
           }),
-        });
 
         if (repairRes.ok) {
           const data = await repairRes.json();
@@ -306,13 +304,11 @@ ${html.substring(0, 10000)}`;
           "x-api-key": process.env.ANTHROPIC_API_KEY!,
           "anthropic-version": "2023-06-01",
         },
-        body: JSON.stringify({
-          model: "claude-opus-4-5",
+         body: JSON.stringify({
+          model: "claude-sonnet-4-6",
           max_tokens: 12000,
-          temperature: 0.8,
           messages: [{ role: "user", content: systemPrompt }],
-        }),
-      });
+         }),
 
       if (claudeRes.ok) {
         const data = await claudeRes.json();
