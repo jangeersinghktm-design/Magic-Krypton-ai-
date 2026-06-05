@@ -685,7 +685,7 @@ function CreatePage() {
   );
 }
 
-export default function Page() {
+ export default function Page() {
   return (
     <Suspense fallback={
       <div style={{
@@ -698,5 +698,5 @@ export default function Page() {
     }>
       <CreatePage />
     </Suspense>
-  ):
-}
+  );
+ }
