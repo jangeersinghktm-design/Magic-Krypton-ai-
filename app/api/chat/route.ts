@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 
@@ -13,7 +13,12 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "ANTHROPIC_API_KEY not configured" },
+        { status: 500 }
+      );
+    }
 
     const codeContext = Object.entries(currentCode as Record<string, string>)
       .map(([file, code]) => `### ${file}\n\`\`\`\n${code}\n\`\`\``)
@@ -35,7 +40,7 @@ export async function POST(req: NextRequest) {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 4000,
         system: `You are Krypton AI — expert developer assistant.
 You know the project code. Help the user improve it.
@@ -48,14 +53,20 @@ Be concise and professional.`,
       }),
     });
 
-    if (!response.ok) throw new Error("Claude API failed");
+    if (!response.ok) {
+      const errText = await response.text();
+      return NextResponse.json(
+        { error: `Claude API error: ${response.status}` },
+        { status: 500 }
+      );
+    }
 
     const data = await response.json();
     const text = data.content
       .map((b: { type: string; text?: string }) => b.text || "")
       .join("");
 
-    // Extract code changes if any
+    // Extract code changes
     const codeMatch = text.match(/<code_changes>([\s\S]*?)<\/code_changes>/);
     let codeChanges = null;
     if (codeMatch) {
@@ -64,9 +75,13 @@ Be concise and professional.`,
       } catch {}
     }
 
-    return Response.json({ text, codeChanges });
+    return NextResponse.json({ text, codeChanges });
+
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Error";
-    return Response.json({ error: message }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
   }
 }
