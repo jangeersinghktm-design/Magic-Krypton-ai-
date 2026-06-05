@@ -105,52 +105,6 @@ IFRAME COMPATIBILITY — CRITICAL:
 - No horizontal scrolling ever
 - Avoid oversized fixed elements
 
-DESIGN QUALITY REQUIREMENTS:
-- Use modern spacing system (8px grid)
-- Premium typography hierarchy (display, heading, body, caption sizes)
-- Consistent border radius (4px, 8px, 12px, 16px, 24px system)
-- Professional color palette — no random colors
-- NO placeholder lorem ipsum text anywhere
-- Realistic business content relevant to the request
-- Every section must feel production-ready and polished
-- Avoid generic cookie-cutter templates
-- Create visually distinct, memorable layouts
-- Use white space generously for premium feel
-- Icons using Unicode emoji or inline SVG only
-
-GAME QUALITY REQUIREMENTS:
-- Professional game UI with beautiful start screen
-- Clear instructions on start screen
-- Pause system (P key or pause button)
-- Game over screen with final score and restart button
-- High score tracking using localStorage
-- Smooth restart functionality without page reload
-- Mobile touch controls (swipe gestures or on-screen buttons)
-- Responsive canvas that fits any screen size
-- Sound effects using Web Audio API
-- Visual feedback for all game events (score, lives, level)
-- Difficulty progression as game advances
-- Smooth 60fps gameplay
-
-OUTPUT QUALITY ENFORCEMENT:
-- Never generate placeholder content
-- Never generate incomplete sections
-- Every feature mentioned by user MUST be implemented
-- All buttons must have working functionality
-- All forms must work with validation
-- No TODO comments in code
-- No mock data unless requested
-- No lorem ipsum text
-- Production-ready code only
-
-PREVIEW REQUIREMENTS:
-- Content must fit inside iframe previews
-- No horizontal scrolling
-- Use width: 100% on containers
-- Use responsive layouts only
-- Avoid oversized fixed elements
-- Canvas must resize with window resize events
-
 MOBILE RESPONSIVE — MANDATORY:
 - Hamburger menu on mobile
 - Single column on mobile, grid on desktop
@@ -245,19 +199,19 @@ ${html.substring(0, 10000)}`;
             "x-api-key": process.env.ANTHROPIC_API_KEY!,
             "anthropic-version": "2023-06-01",
           },
-           body: JSON.stringify({
-              model: "claude-sonnet-4-6",
-              max_tokens: 12000,
-              messages: [{ role: "user", content: getRepairPrompt(html, issues) }],
-            }),
-          });
+          body: JSON.stringify({
+            model: "claude-sonnet-4-6",
+            max_tokens: 12000,
+            messages: [{ role: "user", content: getRepairPrompt(html, issues) }],
+          }),
+        });
 
-          if (repairRes.ok) {
-            const data = await repairRes.json();
-            const repairedHtml = cleanHtml(data.content[0].text);
-            console.log("Repair pass complete!");
-            return repairedHtml;
-          }
+        if (repairRes.ok) {
+          const data = await repairRes.json();
+          const repairedHtml = cleanHtml(data.content[0].text);
+          console.log("Repair pass complete!");
+          return repairedHtml;
+        }
       } catch (e: any) {
         console.log("Repair failed:", e.message);
       }
@@ -299,31 +253,31 @@ ${html.substring(0, 10000)}`;
     // ============================================
     try {
       const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "x-api-key": process.env.ANTHROPIC_API_KEY!,
-    "anthropic-version": "2023-06-01",
-  },
-  body: JSON.stringify({
-    model: "claude-sonnet-4-6",
-    max_tokens: 12000,
-    messages: [{ role: "user", content: systemPrompt }],
-  }),
-});
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY!,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 12000,
+          messages: [{ role: "user", content: systemPrompt }],
+        }),
+      });
 
-if (claudeRes.ok) {
-  const data = await claudeRes.json();
-  const html = await processHtml(data.content[0].text);
-  if (html) {
-    console.log("Claude success!");
-    return NextResponse.json({ html, model: "claude" });
-  }
-  console.log("Claude failed even after repair");
-} else {
-  const err = await claudeRes.text();
-  console.log("Claude error:", err);
-}
+      if (claudeRes.ok) {
+        const data = await claudeRes.json();
+        const html = await processHtml(data.content[0].text);
+        if (html) {
+          console.log("Claude success!");
+          return NextResponse.json({ html, model: "claude" });
+        }
+        console.log("Claude failed even after repair");
+      } else {
+        const err = await claudeRes.text();
+        console.log("Claude error:", err);
+      }
     } catch (e: any) {
       console.log("Claude exception:", e.message);
     }
@@ -364,7 +318,10 @@ if (claudeRes.ok) {
       console.log("Gemini exception:", e.message);
     }
 
-    return NextResponse.json({ error: "All AI services failed. Please try again." }, { status: 500 });
+    return NextResponse.json(
+      { error: "All AI services failed. Please try again." },
+      { status: 500 }
+    );
 
   } catch (error: any) {
     console.log("Server error:", error.message);
