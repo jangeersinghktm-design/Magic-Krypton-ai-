@@ -315,8 +315,8 @@ export default function HomePage() {
   border: "none", cursor: "pointer",
   display: "flex", alignItems: "center", justifyContent: "center",
 }}>
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-    <rect x="9" y="2" width="6" height="11" rx="3"
+  <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
+    <rect x="9" y="2" width="8" height="11" rx="3"
       fill={listening ? "#080808" : "#9ca3af"}/>
     <path d="M5 11a7 7 0 0014 0"
       stroke={listening ? "#080808" : "#9ca3af"}
