@@ -47,14 +47,7 @@ const navItems = [
     { label: "Performance",   href: "/analytics?tab=performance",  icon: icons.performance },
   ]},
   { label: "Dashboard", href: "/dashboard", icon: icons.dashboard },
-  { label: "Settings",  href: "/settings",  icon: icons.settings,  children: [
-    { label: "Profile",  href: "/settings?tab=profile",  icon: icons.profile  },
-    { label: "Billing",  href: "/settings?tab=billing",  icon: icons.billing  },
-    { label: "API Keys", href: "/settings?tab=apikeys",  icon: icons.apikeys  },
-    { label: "Domains",  href: "/settings?tab=domains",  icon: icons.domains  },
-    { label: "Security", href: "/settings?tab=security", icon: icons.security },
-  ]},
-];
+  { label: "Settings", href: "/settings", icon: icons.settings },
 
 // ── Profile type ───────────────────────────────────────────────────
 interface Profile {
