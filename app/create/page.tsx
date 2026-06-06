@@ -58,13 +58,13 @@ const CREDIT_COSTS = {
   premium_template: 2,
 };
 
-// ── Stage Animator ─────────────────────────────────────────────────
+ // ── Stage Animator ─────────────────────────────────────────────────
 function animateStages(
-  GEN_STAGES,
-  (stages) => updateMsgStages(aiMsgId, stages),
-  resolve,
-  1500,
-);
+  stageList: Omit<Stage, "status">[],
+  onUpdate: (stages: Stage[]) => void,
+  onComplete: () => void,
+  delay = 1500
+) {
   const stages: Stage[] = stageList.map(s => ({ ...s, status: "pending" }));
   let i = 0;
 
@@ -420,7 +420,7 @@ useEffect(() => {
         GEN_STAGES,
         (stages) => updateMsgStages(aiMsgId, stages),
         resolve,
-        700,
+        1500,
       );
     });
 
@@ -495,7 +495,7 @@ useEffect(() => {
         EDIT_STAGES,
         (stages) => updateMsgStages(aiMsgId, stages),
         resolve,
-        500,
+        1500,
       );
     });
 
