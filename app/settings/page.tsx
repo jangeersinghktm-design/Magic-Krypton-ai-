@@ -3,7 +3,7 @@
 // app/settings/page.tsx
 // Krypton AI — Settings with Billing, Credits Dashboard, Top-up
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -73,7 +73,7 @@ const T = {
   gold: "#F5D800", green: "#00D084", text: "#fff", muted: "#6B7280",
 };
 
-export default function SettingsPage() {
+function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -525,5 +525,22 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        height: "100vh", display: "flex",
+        alignItems: "center", justifyContent: "center",
+        background: "#050505", color: "#F5D800",
+        fontFamily: "'DM Sans', sans-serif", fontSize: 16,
+      }}>
+        Loading...
+      </div>
+    }>
+      <SettingsContent />
+    </Suspense>
   );
 }
