@@ -309,7 +309,7 @@ export default function HomePage() {
 
               {/* Voice + Send */}
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <button onClick={handleSend}
+                <button onClick={handleSend}
   disabled={loading || !prompt.trim() || remaining < 1}
   style={{
     width: 40, height: 40, borderRadius: "50%",
