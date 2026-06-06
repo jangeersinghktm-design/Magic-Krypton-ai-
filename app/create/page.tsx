@@ -103,7 +103,7 @@ function animateStages(
             color: s.status === "done"
               ? "#fff"
               : s.status === "active"
-              ? "#F5C542"
+              ? "F5D800"
               : "#666",
             fontWeight: s.status === "active" ? 600 : 400,
           }}>
@@ -175,8 +175,7 @@ function CreditsBar({ credits, onUpgrade }: { credits: Credits; onUpgrade: () =>
           {credits.plan} Plan
         </span>
         <button onClick={onUpgrade} style={{
-          fontSize: 10, color: "const T = {
-          gold: "#F5D800", background: "none",
+           fontSize: 10, color: "#F5D800", background: "none",
           border: "1px solid rgba(245,197,66,0.3)",
           borderRadius: 4, padding: "1px 7px", cursor: "pointer",
         }}>
