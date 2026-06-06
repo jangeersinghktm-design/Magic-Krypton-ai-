@@ -1,17 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
     const { prompt } = await request.json();
+
     if (!prompt) {
-      return NextResponse.json(
-        { error: "Prompt required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Prompt required" }, { status: 400 });
     }
 
+    // ── Supabase client ──────────────────────────────────────────
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // ── Auth check ───────────────────────────────────────────────
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.replace("Bearer ", "");
+
+    let userId: string | null = null;
+    let userProfile: any = null;
+
+    if (token) {
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (user) {
+        userId = user.id;
+
+        // Load profile + credits
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("total_credits, used_credits, plan")
+          .eq("id", user.id)
+          .single();
+
+        userProfile = profile;
+
+        // Credit check
+        const total = profile?.total_credits || 100;
+        const used = profile?.used_credits || 0;
+        const remaining = total - used;
+
+        if (remaining < 5) {
+          return NextResponse.json(
+            { error: "Insufficient credits! Please upgrade your plan." },
+            { status: 402 }
+          );
+        }
+      }
+    }
+
+    // ── System prompt ────────────────────────────────────────────
     const systemPrompt = `You are an elite full-stack developer and UI/UX designer. Build EXACTLY what the user asks.
 
 USER REQUEST: "${prompt}"
@@ -48,14 +89,10 @@ FOR APPS:
 
 QUALITY: Think Stripe, Linear, Notion level quality.`;
 
-    const getRepairPrompt = (html: string, issues: string[]): string =>
-      `Fix these HTML issues and return ONLY corrected HTML:
-${issues.map((issue, n) => `${n + 1}. ${issue}`).join("\n")}
-HTML: ${html.substring(0, 10000)}`;
-
     const isGameRequest = /game|snake|tetris|pong|chess|puzzle|arcade|shooter|runner|platformer/i.test(prompt);
     const isWebsiteRequest = /website|landing|portfolio|business|saas|agency|startup|blog|shop/i.test(prompt);
 
+    // ── HTML Validator ───────────────────────────────────────────
     const validateHtml = (html: string): { valid: boolean; issues: string[] } => {
       const issues: string[] = [];
       if (!html.startsWith("<!DOCTYPE") || !html.includes("</html>")) {
@@ -75,6 +112,7 @@ HTML: ${html.substring(0, 10000)}`;
       return { valid: issues.length === 0, issues };
     };
 
+    // ── HTML Cleaner ─────────────────────────────────────────────
     const cleanHtml = (html: string): string => {
       html = html
         .replace(/^```html\s*/i, "")
@@ -86,6 +124,13 @@ HTML: ${html.substring(0, 10000)}`;
       return html;
     };
 
+    // ── Repair prompt ────────────────────────────────────────────
+    const getRepairPrompt = (html: string, issues: string[]): string =>
+      `Fix these HTML issues and return ONLY corrected HTML:
+${issues.map((issue, n) => `${n + 1}. ${issue}`).join("\n")}
+HTML: ${html.substring(0, 10000)}`;
+
+    // ── Claude API call ──────────────────────────────────────────
     const callClaude = async (content: string): Promise<string | null> => {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -95,16 +140,21 @@ HTML: ${html.substring(0, 10000)}`;
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
+          model: "claude-sonnet-4-6",
           max_tokens: 12000,
           messages: [{ role: "user", content }],
         }),
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+        const err = await res.text();
+        console.log("Claude API error:", res.status, err);
+        return null;
+      }
       const data = await res.json();
       return data.content[0].text;
     };
 
+    // ── Process + repair HTML ────────────────────────────────────
     const processHtml = async (raw: string): Promise<string | null> => {
       const html = cleanHtml(raw);
       const { valid, issues } = validateHtml(html);
@@ -118,12 +168,31 @@ HTML: ${html.substring(0, 10000)}`;
       return html.length > 1500 ? html : null;
     };
 
-    // Try Claude
+    // ── Deduct credits ───────────────────────────────────────────
+    const deductCredits = async () => {
+      if (!userId || !userProfile) return;
+      const newUsed = (userProfile.used_credits || 0) + 5;
+
+      await supabase
+        .from("profiles")
+        .update({ used_credits: newUsed })
+        .eq("id", userId);
+
+      await supabase.from("credit_transactions").insert({
+        user_id: userId,
+        amount: -5,
+        type: "usage",
+        description: `Generate: ${prompt.slice(0, 50)}`,
+      });
+    };
+
+    // ── Try Claude ───────────────────────────────────────────────
     try {
       const raw = await callClaude(systemPrompt);
       if (raw) {
         const html = await processHtml(raw);
         if (html) {
+          await deductCredits();
           return NextResponse.json({ html, model: "claude" });
         }
       }
@@ -131,7 +200,7 @@ HTML: ${html.substring(0, 10000)}`;
       console.log("Claude error:", e.message);
     }
 
-    // Try Gemini
+    // ── Try Gemini ───────────────────────────────────────────────
     try {
       const geminiRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -149,6 +218,7 @@ HTML: ${html.substring(0, 10000)}`;
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
         const html = await processHtml(raw);
         if (html) {
+          await deductCredits();
           return NextResponse.json({ html, model: "gemini" });
         }
       }
