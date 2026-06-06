@@ -309,25 +309,34 @@ export default function HomePage() {
 
               {/* Voice + Send */}
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                 <button onClick={handleVoice} style={{
-  width: "34px", height: "34px", borderRadius: "50%",
-  background: listening ? T.gold : "#2a2a2a",
-  border: "none", cursor: "pointer",
-  display: "flex", alignItems: "center", justifyContent: "center",
-}}>
-  <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
-    <rect x="9" y="2" width="8" height="11" rx="3"
-      fill={listening ? "#080808" : "#9ca3af"}/>
-    <path d="M5 11a7 7 0 0014 0"
-      stroke={listening ? "#080808" : "#9ca3af"}
-      strokeWidth="2" strokeLinecap="round"/>
-    <line x1="12" y1="18" x2="12" y2="22"
-      stroke={listening ? "#080808" : "#9ca3af"}
-      strokeWidth="2" strokeLinecap="round"/>
-    <line x1="8" y1="22" x2="16" y2="22"
-      stroke={listening ? "#080808" : "#9ca3af"}
-      strokeWidth="2" strokeLinecap="round"/>
-  </svg>
+                  <button onClick={handleSend}
+  disabled={loading || !prompt.trim() || remaining < 1}
+  style={{
+    width: 40, height: 40, borderRadius: "50%",
+    background: !loading && prompt.trim() && remaining >= 1
+      ? "linear-gradient(135deg,#F5C542,#00D084)"
+      : "#1a1a1a",
+    border: "none",
+    cursor: !loading && prompt.trim() && remaining >= 1 ? "pointer" : "not-allowed",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    transition: "all 0.2s",
+    boxShadow: prompt.trim() ? "0 0 12px rgba(245,197,66,0.4)" : "none",
+  }}>
+  {loading ? (
+    <span style={{
+      width: 16, height: 16, borderRadius: "50%",
+      border: "2px solid rgba(255,255,255,0.3)",
+      borderTopColor: "#fff",
+      animation: "dot-pulse 0.8s linear infinite",
+      display: "inline-block",
+    }}/>
+  ) : (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M12 19V5M5 12l7-7 7 7"
+        stroke={prompt.trim() ? "#080808" : "#444"}
+        strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )}
 </button>
                 <button onClick={handleGenerate} disabled={!prompt.trim()} style={{
                   width: "34px", height: "34px", borderRadius: "50%",
