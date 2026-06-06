@@ -309,26 +309,26 @@ export default function HomePage() {
 
               {/* Voice + Send */}
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <button onClick={handleVoice} style={{
-                 width: "34px", height: "34px", borderRadius: "50%",
-                 background: listening ? T.gold : "#2a2
-                 border: "none", cursor: "pointer",
-                 display: "flex", alignItems: "center", justifyContent: "center",
-               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                 <rect x="9" y="2" width="6" height="11" rx="3"
-                  fill={listening ? "#080808" : "#9ca3af"}/>
-                 <path d="M5 11a7 7 0 0014 0"
-                  stroke={listening ? "#080808" : "#9ca3af"}
-                  strokeWidth="2" strokeLinecap="round"/>
-                 <line x1="12" y1="18" x2="12" y2="22"
-                  stroke={listening ? "#080808" : "#9ca3af"}
-                  strokeWidth="2" strokeLinecap="round"/>
-                 <line x1="8" y1="22" x2="16" y2="22"
-                  stroke={listening ? "#080808" : "#9ca3af"}
-                  strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-               </button>
+                 <button onClick={handleVoice} style={{
+  width: "34px", height: "34px", borderRadius: "50%",
+  background: listening ? T.gold : "#2a2a2a",
+  border: "none", cursor: "pointer",
+  display: "flex", alignItems: "center", justifyContent: "center",
+}}>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <rect x="9" y="2" width="6" height="11" rx="3"
+      fill={listening ? "#080808" : "#9ca3af"}/>
+    <path d="M5 11a7 7 0 0014 0"
+      stroke={listening ? "#080808" : "#9ca3af"}
+      strokeWidth="2" strokeLinecap="round"/>
+    <line x1="12" y1="18" x2="12" y2="22"
+      stroke={listening ? "#080808" : "#9ca3af"}
+      strokeWidth="2" strokeLinecap="round"/>
+    <line x1="8" y1="22" x2="16" y2="22"
+      stroke={listening ? "#080808" : "#9ca3af"}
+      strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+</button>
                 <button onClick={handleGenerate} disabled={!prompt.trim()} style={{
                   width: "34px", height: "34px", borderRadius: "50%",
                   background: prompt.trim() ? G : "#1a1a1a",
