@@ -225,17 +225,30 @@ function CreatePage() {
   const [versions, setVersions]       = useState<any[]>([]);
 
   const chatEndRef   = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const silenceTimer = useRef<any>(null);
   const promptRef    = useRef("");
 
   // ── Init ──────────────────────────────────────────────────────
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+   useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 768);
+  check();
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
+
+useEffect(() => {
+  const handler = (e: MouseEvent) => {
+    if (dropdownRef.current &&
+      !dropdownRef.current.contains(e.target as Node)) {
+      setShowDropdown(false);
+    }
+  };
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+}, []);
 
   useEffect(() => {
     initUser();
