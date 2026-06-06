@@ -223,14 +223,14 @@ function CreatePage() {
   const [listening, setListening]     = useState(false);
   const [error, setError]             = useState("");
   const [versions, setVersions]       = useState<any[]>([]);
-
+  const [user, setUser] = useState<any>(null);
   const chatEndRef   = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const silenceTimer = useRef<any>(null);
   const promptRef    = useRef("");
-
+  
   // ── Init ──────────────────────────────────────────────────────
    useEffect(() => {
   const check = () => setIsMobile(window.innerWidth < 768);
@@ -248,7 +248,14 @@ useEffect(() => {
   };
   document.addEventListener("mousedown", handler);
   return () => document.removeEventListener("mousedown", handler);
-}, []);
+}, []); 
+
+  const remaining = credits.total - credits.used;
+  const displayName = user?.user_metadata?.full_name ||
+    user?.email?.split("@")[0] || "User";
+  const planLabel = credits?.plan
+    ? credits.plan.charAt(0).toUpperCase() + credits.plan.slice(1)
+    : "Free";
 
   useEffect(() => {
     initUser();
@@ -269,6 +276,7 @@ useEffect(() => {
   const initUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) { router.push("/auth/login"); return; }
+    setUser(session.user); //
 
     // Load credits from DB
     const { data: profile } = await supabase
