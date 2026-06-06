@@ -1045,8 +1045,7 @@ Instructions:
                   <button key={opt.label} onClick={opt.action} disabled={!result} style={{
                     width: "100%", marginBottom: 10, padding: "12px 16px",
                     background: "#0d0d0d", border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 10, color: result ? "#e8e8e8" : "#444",
-                    fontSize: 13, cursor: result ? "pointer" : "not-allowed",
+                    borderRadius: 10, color: result ? "pointer" : "not-allowed",
                     display: "flex", alignItems: "center", gap: 10, transition: "all 0.15s",
                     textAlign: "left",
                   }}>
