@@ -175,7 +175,8 @@ function CreditsBar({ credits, onUpgrade }: { credits: Credits; onUpgrade: () =>
           {credits.plan} Plan
         </span>
         <button onClick={onUpgrade} style={{
-          fontSize: 10, color: "#F5C542", background: "none",
+          fontSize: 10, color: "const T = {
+          gold: "#F5D800", background: "none",
           border: "1px solid rgba(245,197,66,0.3)",
           borderRadius: 4, padding: "1px 7px", cursor: "pointer",
         }}>
@@ -186,7 +187,7 @@ function CreditsBar({ credits, onUpgrade }: { credits: Credits; onUpgrade: () =>
         <div style={{
           height: "100%", width: `${pct}%`,
           background: pct > 30
-            ? "linear-gradient(90deg,#F5C542,#00D084)"
+            ? "linear-gradient(90deg,#F5D800 0%, #AAEE00 45%, #00CC44 100%)"
             : "linear-gradient(90deg,#ef4444,#f59e0b)",
           borderRadius: 4, transition: "width 0.5s",
         }}/>
@@ -953,7 +954,7 @@ Instructions:
                   }}>
                     {msg.role === "ai" && (
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                        <img src="/logo.png" alt="Kr" style={{ width: 14, height: 14 }} />
+                        <img src="/logo.png" alt="Kr" style={{ width: 16, height: 16 }} />
                         <span style={{ fontSize: 10, color: "#555" }}>Krypton AI</span>
                       </div>
                     )}
@@ -1122,7 +1123,7 @@ Instructions:
               flexShrink: 0,
             }}>
               {[
-                { id: "preview", label: "👁 Preview" },
+                { id: "preview", label: "✨ Preview" },
                 { id: "history", label: "⏱ History" },
                 { id: "export",  label: "📤 Export"  },
               ].map(tab => (
@@ -1172,7 +1173,7 @@ Instructions:
                     alignItems: "center", justifyContent: "center",
                     flexDirection: "column", gap: 12, color: "#333",
                   }}>
-                    <div style={{ fontSize: 48 }}>👁</div>
+                    <div style={{ fontSize: 48 }}>✨</div>
                     <p style={{ fontSize: 14 }}>Generate something to preview</p>
                   </div>
                 )}
