@@ -625,78 +625,270 @@ Instructions:
             fontSize: 16, padding: "5px 10px", fontWeight: 700,
           }}>←</button>
 
-          <img src="/logo.png" alt="Kr" style={{ height: 28, width: "auto", objectFit: "contain" }} />
+          <img src="/logo.png" alt="Kr" style={{ height: 52, width: "auto", objectFit: "contain" }} />
 
-          {editingName ? (
-            <input autoFocus value={projectName}
-              onChange={e => setProjectName(e.target.value)}
-              onBlur={() => setEditingName(false)}
-              onKeyDown={e => e.key === "Enter" && setEditingName(false)}
-              style={{
-                background: "#161616", border: "1px solid #F5C542",
-                borderRadius: 7, color: "#fff", padding: "4px 8px",
-                fontSize: 12, fontWeight: 600, outline: "none", flex: 1,
-              }}
-            />
-          ) : (
-            <button onClick={() => setEditingName(true)} style={{
-              background: "none", border: "none", color: "#fff",
-              fontSize: 12, fontWeight: 600, cursor: "pointer",
-              padding: "4px 6px", borderRadius: 7, flex: 1, textAlign: "left",
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}>
-              {projectName} ✏
-            </button>
-          )}
+         {/* ── TOP BAR ── */}
+<div style={{
+  padding: "10px 14px", borderBottom: "1px solid #1c1c1c",
+  display: "flex", alignItems: "center", gap: 8,
+  background: "#0C0C0C", flexShrink: 0, minHeight: 52,
+  position: "relative", zIndex: 100,
+}}>
 
-          {isMobile && (
-            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-              {["chat","preview"].map(t => (
-                <button key={t} onClick={() => setActiveTab(t as any)} style={{
-                  padding: "4px 10px", borderRadius: 6, border: "none",
-                  background: activeTab === t ? "#F5C542" : "#1c1c1c",
-                  color: activeTab === t ? "#080808" : "#fff",
-                  fontSize: 11, cursor: "pointer", fontWeight: activeTab === t ? 700 : 400,
-                  textTransform: "capitalize",
-                }}>{t}</button>
-              ))}
+  {/* ── Logo + Lovable Style Dropdown ── */}
+  <div style={{ position: "relative" }} ref={dropdownRef}>
+    <button onClick={() => setShowDropdown(!showDropdown)} style={{
+      display: "flex", alignItems: "center", gap: 6,
+      background: "none", border: "none", cursor: "pointer", padding: 0,
+    }}>
+      <img src="/logo.png" alt="Kr"
+        style={{ height: 36, width: "auto", objectFit: "contain" }} />
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+        stroke="#555" strokeWidth="2.5">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </button>
+
+    {/* ── DROPDOWN ── */}
+    {showDropdown && (
+      <div style={{
+        position: "absolute", top: "calc(100% + 8px)", left: 0,
+        background: "#111",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: 14, padding: "6px", minWidth: 260,
+        boxShadow: "0 16px 48px rgba(0,0,0,0.9)",
+        animation: "dropIn 0.18s ease",
+        maxHeight: "85vh", overflowY: "auto",
+        scrollbarWidth: "none",
+      }}>
+        <style>{`
+          @keyframes dropIn {
+            from { opacity:0; transform:translateY(-6px); }
+            to   { opacity:1; transform:translateY(0);    }
+          }
+        `}</style>
+
+        {/* Go to Dashboard */}
+        <button
+          onClick={() => { router.push("/"); setShowDropdown(false); }}
+          style={{
+            width: "100%", textAlign: "left", padding: "9px 12px",
+            background: "none", border: "none", color: "#888",
+            fontSize: 13, cursor: "pointer", borderRadius: 8,
+            display: "flex", alignItems: "center", gap: 8,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = "#fff"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "#888"; }}
+        >
+          ← Go to Dashboard
+        </button>
+
+        <div style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "4px 0" }} />
+
+        {/* User + Plan */}
+        <div style={{ padding: "10px 12px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
+              {displayName}
             </div>
-          )}
+            <span style={{
+              fontSize: 10, fontWeight: 800, padding: "2px 10px",
+              borderRadius: 20,
+              background: "linear-gradient(135deg,#F5C542,#00D084)",
+              color: "#000",
+            }}>
+              {planLabel.toUpperCase()}
+            </span>
+          </div>
 
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0, marginLeft: "auto" }}>
-            {/* Credits indicator */}
+          {/* Credits */}
+          <div style={{
+            display: "flex", alignItems: "center",
+            justifyContent: "space-between", marginTop: 8,
+          }}>
+            <span style={{ fontSize: 12, color: "#555" }}>Credits</span>
+            <span
+              onClick={() => { router.push("/settings?tab=billing"); setShowDropdown(false); }}
+              style={{ fontSize: 12, color: "#00D084", fontWeight: 600, cursor: "pointer" }}
+            >
+              {remaining} left →
+            </span>
+          </div>
+          <div style={{
+            height: 3, background: "rgba(255,255,255,0.06)",
+            borderRadius: 3, marginTop: 6, overflow: "hidden",
+          }}>
             <div style={{
-              padding: "4px 10px", borderRadius: 6,
-              background: remaining > 20 ? "rgba(0,208,132,0.1)" : "rgba(239,68,68,0.1)",
-              border: `1px solid ${remaining > 20 ? "rgba(0,208,132,0.3)" : "rgba(239,68,68,0.3)"}`,
-              fontSize: 11, color: remaining > 20 ? "#00D084" : "#ef4444", fontWeight: 700,
-            }}>
-              ⚡ {remaining}
-            </div>
-
-            {result && (
-              <>
-                <button onClick={() => { setSaving(true); saveProject(result, projectName); }} disabled={saving} style={{
-                  padding: "5px 10px",
-                  background: saved ? "rgba(0,208,132,0.15)" : "rgba(245,197,66,0.15)",
-                  border: saved ? "1px solid rgba(0,208,132,0.3)" : "1px solid rgba(245,197,66,0.3)",
-                  borderRadius: 7,
-                  color: saved ? "#00D084" : "#F5C542",
-                  cursor: "pointer", fontSize: 11, fontWeight: 600,
-                }}>
-                  {saving ? "..." : saved ? "✓ Saved" : "Save"}
-                </button>
-                {!isMobile && (
-                  <button onClick={handleDownload} style={{
-                    padding: "5px 10px", background: "#161616",
-                    border: "1px solid #1c1c1c", borderRadius: 7,
-                    color: "#9ca3af", cursor: "pointer", fontSize: 11,
-                  }}>Export</button>
-                )}
-              </>
-            )}
+              height: "100%",
+              width: `${Math.max(0, (remaining / (credits?.total || 100)) * 100)}%`,
+              background: remaining > 20
+                ? "linear-gradient(90deg,#F5C542,#00D084)"
+                : "#ef4444",
+              borderRadius: 3, transition: "width 0.5s",
+            }} />
           </div>
         </div>
+
+        <div style={{ height: 1, background: "rgba(255,255,255,0.07)", margin: "4px 0" }} />
+
+        {/* Menu Items */}
+        {[
+          { icon: "⚡", label: "Get free credits",  path: "/settings?tab=billing", gold: true  },
+          { icon: "⚙️", label: "Settings",          path: "/settings",             shortcut: "Ctrl." },
+          { icon: "🔗", label: "Connectors",        path: "/settings?tab=apikeys" },
+          { icon: "⭐", label: "Templates",          path: "/templates" },
+          { icon: "📊", label: "Analytics",          path: "/analytics" },
+          null,
+          { icon: "🔀", label: "Remix this project", action: () => {} },
+          { icon: "👤", label: "Publish to profile", action: () => {} },
+          { icon: "✏️", label: "Rename project",     action: () => setEditingName(true) },
+          { icon: "⭐", label: "Star project",        action: () => {} },
+          { icon: "📁", label: "Move to folder",     action: () => {} },
+          { icon: "ℹ️", label: "Details",            action: () => {} },
+          null,
+          { icon: "🎨", label: "Appearance",         path: "/settings?tab=theme", arrow: true },
+          null,
+          { icon: "❓", label: "Help",               path: "/landing#faq" },
+        ].map((item, i) => {
+          if (item === null) {
+            return (
+              <div key={i} style={{
+                height: 1, background: "rgba(255,255,255,0.07)",
+                margin: "4px 0",
+              }} />
+            );
+          }
+          return (
+            <button key={item.label}
+              onClick={() => {
+                if ((item as any).path) router.push((item as any).path);
+                if ((item as any).action) (item as any).action();
+                setShowDropdown(false);
+              }}
+              style={{
+                width: "100%", textAlign: "left",
+                padding: "8px 12px", background: "none", border: "none",
+                color: (item as any).gold ? "#F5C542" : "#888",
+                fontSize: 13, cursor: "pointer", borderRadius: 8,
+                display: "flex", alignItems: "center",
+                justifyContent: "space-between",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "#1a1a1a";
+                e.currentTarget.style.color = (item as any).gold ? "#F5C542" : "#fff";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "none";
+                e.currentTarget.style.color = (item as any).gold ? "#F5C542" : "#888";
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                {item.icon} {item.label}
+              </span>
+              <span style={{ fontSize: 11, color: "#444" }}>
+                {(item as any).shortcut || ((item as any).arrow ? "›" : "")}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    )}
+  </div>
+
+  {/* ── Project Name ── */}
+  {editingName ? (
+    <input autoFocus value={projectName}
+      onChange={e => setProjectName(e.target.value)}
+      onBlur={() => setEditingName(false)}
+      onKeyDown={e => e.key === "Enter" && setEditingName(false)}
+      style={{
+        background: "#161616", border: "1px solid #F5C542",
+        borderRadius: 7, color: "#fff", padding: "4px 8px",
+        fontSize: 12, fontWeight: 600, outline: "none", flex: 1,
+      }}
+    />
+  ) : (
+    <button onClick={() => setEditingName(true)} style={{
+      background: "none", border: "none", color: "#888",
+      fontSize: 12, fontWeight: 500, cursor: "pointer",
+      padding: "4px 6px", borderRadius: 7, flex: 1,
+      textAlign: "left", overflow: "hidden",
+      textOverflow: "ellipsis", whiteSpace: "nowrap",
+    }}>
+      {projectName} ✏
+    </button>
+  )}
+
+  {/* ── Mobile Chat/Preview Tabs ── */}
+  {isMobile && (
+    <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+      {["chat", "preview"].map(t => (
+        <button key={t} onClick={() => setActiveTab(t as any)} style={{
+          padding: "4px 10px", borderRadius: 6, border: "none",
+          background: activeTab === t ? "#F5C542" : "#1c1c1c",
+          color: activeTab === t ? "#080808" : "#fff",
+          fontSize: 11, cursor: "pointer",
+          fontWeight: activeTab === t ? 700 : 400,
+          textTransform: "capitalize",
+        }}>{t}</button>
+      ))}
+    </div>
+  )}
+
+  {/* ── Right Side ── */}
+  <div style={{
+    display: "flex", gap: 6, alignItems: "center",
+    flexShrink: 0, marginLeft: "auto",
+  }}>
+    {/* Credits badge */}
+    <div style={{
+      padding: "4px 10px", borderRadius: 6,
+      background: remaining > 20
+        ? "rgba(0,208,132,0.1)"
+        : "rgba(239,68,68,0.1)",
+      border: `1px solid ${remaining > 20
+        ? "rgba(0,208,132,0.3)"
+        : "rgba(239,68,68,0.3)"}`,
+      fontSize: 11,
+      color: remaining > 20 ? "#00D084" : "#ef4444",
+      fontWeight: 700,
+    }}>
+      ⚡ {remaining}
+    </div>
+
+    {result && (
+      <>
+        <button
+          onClick={() => { setSaving(true); saveProject(result, projectName); }}
+          disabled={saving}
+          style={{
+            padding: "5px 10px",
+            background: saved
+              ? "rgba(0,208,132,0.15)"
+              : "rgba(245,197,66,0.15)",
+            border: saved
+              ? "1px solid rgba(0,208,132,0.3)"
+              : "1px solid rgba(245,197,66,0.3)",
+            borderRadius: 7,
+            color: saved ? "#00D084" : "#F5C542",
+            cursor: "pointer", fontSize: 11, fontWeight: 600,
+          }}
+        >
+          {saving ? "..." : saved ? "✓ Saved" : "Save"}
+        </button>
+        {!isMobile && (
+          <button onClick={handleDownload} style={{
+            padding: "5px 10px", background: "#161616",
+            border: "1px solid #1c1c1c", borderRadius: 7,
+            color: "#9ca3af", cursor: "pointer", fontSize: 11,
+          }}>Export</button>
+        )}
+      </>
+    )}
+  </div>
+</div>
+      
 
         {/* ── MAIN ── */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
