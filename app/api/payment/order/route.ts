@@ -3,16 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Razorpay from "razorpay";
 
-export const runtime = "edge";
-
 const PLANS: Record<string, { name: string; price_inr: number; price_usd: number; credits: number }> = {
-  pro:      { name: "Pro",      price_inr: 209900, price_usd: 25,  credits: 2000  },
-  premium:  { name: "Premium",  price_inr: 579900, price_usd: 69,  credits: 5000  },
-  business: { name: "Business", price_inr: 1249900,price_usd: 149, credits: 10000 },
-  topup_50:  { name: "Top-up 50 Credits",  price_inr: 129900, price_usd: 15, credits: 50  },
-  topup_100: { name: "Top-up 100 Credits", price_inr: 259900, price_usd: 30, credits: 100 },
-  topup_200: { name: "Top-up 200 Credits", price_inr: 499900, price_usd: 60, credits: 200 },
-  topup_500: { name: "Top-up 500 Credits", price_inr: 1199900,price_usd: 150,credits: 500 },
+  pro:       { name: "Pro",              price_inr: 209900,  price_usd: 25,  credits: 2000  },
+  premium:   { name: "Premium",          price_inr: 579900,  price_usd: 69,  credits: 5000  },
+  business:  { name: "Business",         price_inr: 1249900, price_usd: 149, credits: 10000 },
+  topup_50:  { name: "50 Credits",       price_inr: 129900,  price_usd: 15,  credits: 50    },
+  topup_100: { name: "100 Credits",      price_inr: 259900,  price_usd: 30,  credits: 100   },
+  topup_150: { name: "150 Credits",      price_inr: 379900,  price_usd: 45,  credits: 150   },
+  topup_200: { name: "200 Credits",      price_inr: 499900,  price_usd: 60,  credits: 200   },
+  topup_250: { name: "250 Credits",      price_inr: 629900,  price_usd: 75,  credits: 250   },
+  topup_300: { name: "300 Credits",      price_inr: 749900,  price_usd: 90,  credits: 300   },
+  topup_500: { name: "500 Credits",      price_inr: 1199900, price_usd: 150, credits: 500   },
 };
 
 export async function POST(req: NextRequest) {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
-    // Auth check
+    // ── Auth ──────────────────────────────────────────────────────
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -38,24 +39,24 @@ export async function POST(req: NextRequest) {
 
     const plan = PLANS[planId];
 
-    // Create Razorpay order
+    // ── Create Razorpay Order ─────────────────────────────────────
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID!,
       key_secret: process.env.RAZORPAY_KEY_SECRET!,
     });
 
     const order = await razorpay.orders.create({
-      amount: plan.price_inr, // in paise
+      amount: plan.price_inr,
       currency: "INR",
-      receipt: `krypton_${user.id.slice(0, 8)}_${Date.now()}`,
+      receipt: `kr_${user.id.slice(0, 8)}_${Date.now()}`,
       notes: {
         user_id: user.id,
         plan_id: planId,
-        credits: plan.credits.toString(),
+        credits: String(plan.credits),
       },
     });
 
-    // Save pending payment in DB
+    // ── Save pending payment ──────────────────────────────────────
     await supabase.from("payments").insert({
       user_id: user.id,
       razorpay_order_id: order.id,
@@ -81,4 +82,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
