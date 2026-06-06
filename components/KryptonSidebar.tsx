@@ -48,6 +48,7 @@ const navItems = [
   ]},
   { label: "Dashboard", href: "/dashboard", icon: icons.dashboard },
   { label: "Settings", href: "/settings", icon: icons.settings },
+  ];
 
 // ── Profile type ───────────────────────────────────────────────────
 interface Profile {
