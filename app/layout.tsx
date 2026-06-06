@@ -11,7 +11,7 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
 
-  const noSidebar = ["/landing", "/auth"];
+  const noSidebar = ["/landing", "/auth", "/create"];
   const showSidebar = !noSidebar.some((p) => pathname.startsWith(p));
 
   return (
