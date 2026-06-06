@@ -83,53 +83,55 @@ function animateStages(
 }
 
 // ── Stage Display Component ────────────────────────────────────────
-function StageDisplay({ stages }: { stages: Stage[] }) {
+ 
+ function StageDisplay({ stages }: { stages: Stage[] }) {
   return (
-    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 3 }}>
       {stages.map((s) => (
         <div key={s.id} style={{
           display: "flex", alignItems: "center", gap: 8,
-          padding: "4px 8px", borderRadius: 6,
-          background: s.status === "active"
-            ? "rgba(245,197,66,0.12)"
-            : s.status === "done"
-            ? "rgba(0,208,132,0.08)"
-            : "rgba(255,255,255,0.02)",
-          transition: "all 0.3s ease",
-          opacity: s.status === "pending" ? 0.4 : 1,
+          padding: "3px 0",
+          opacity: s.status === "pending" ? 0.3 : 1,
+          transition: "opacity 0.3s ease",
         }}>
-          <span style={{ fontSize: 14 }}>{s.icon}</span>
+          {/* Icon */}
+          <span style={{ fontSize: 13 }}>{s.icon}</span>
+
+          {/* Label */}
           <span style={{
-            fontSize: 12.5, fontWeight: s.status === "active" ? 700 : 500,
+            fontSize: 12.5,
             color: s.status === "done"
-              ? "#00D084"
+              ? "#fff"
               : s.status === "active"
               ? "#F5C542"
               : "#666",
+            fontWeight: s.status === "active" ? 600 : 400,
           }}>
             {s.label}
           </span>
-          {s.status === "active" && (
-            <span style={{
-              marginLeft: "auto", display: "flex", gap: 3,
-            }}>
-              {[0,1,2].map(i => (
-                <span key={i} style={{
-                  width: 4, height: 4, borderRadius: "50%",
-                  background: "#F5C542",
-                  animation: `dot-pulse 1.2s ${i * 0.2}s ease-in-out infinite`,
-                }}/>
-              ))}
-            </span>
-          )}
-          {s.status === "done" && (
-            <span style={{ marginLeft: "auto", color: "#00D084", fontSize: 12 }}>✓</span>
-          )}
+
+          {/* Right side */}
+          <span style={{ marginLeft: "auto" }}>
+            {s.status === "done" && (
+              <span style={{ color: "#00D084", fontSize: 12 }}>✓</span>
+            )}
+            {s.status === "active" && (
+              <span style={{ display: "flex", gap: 3 }}>
+                {[0,1,2].map(i => (
+                  <span key={i} style={{
+                    width: 3, height: 3, borderRadius: "50%",
+                    background: "#F5C542", display: "inline-block",
+                    animation: `dot-pulse 1.2s ${i * 0.2}s ease-in-out infinite`,
+                  }}/>
+                ))}
+              </span>
+            )}
+          </span>
         </div>
       ))}
     </div>
   );
-}
+ }
 
 // ── Modified Files Display ─────────────────────────────────────────
 function FilesDisplay({ files }: { files: string[] }) {
