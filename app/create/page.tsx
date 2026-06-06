@@ -614,20 +614,6 @@ Instructions:
       }}>
 
         {/* ── TOP BAR ── */}
-        <div style={{
-          padding: "10px 14px", borderBottom: "1px solid #1c1c1c",
-          display: "flex", alignItems: "center", gap: 8,
-          background: "#0C0C0C", flexShrink: 0, minHeight: 52,
-        }}>
-          <button onClick={() => router.push("/")} style={{
-            background: "#161616", border: "1px solid #1c1c1c",
-            borderRadius: 8, color: "#fff", cursor: "pointer",
-            fontSize: 16, padding: "5px 10px", fontWeight: 700,
-          }}>←</button>
-
-          <img src="/logo.png" alt="Kr" style={{ height: 52, width: "auto", objectFit: "contain" }} />
-
-         {/* ── TOP BAR ── */}
 <div style={{
   padding: "10px 14px", borderBottom: "1px solid #1c1c1c",
   display: "flex", alignItems: "center", gap: 8,
@@ -642,7 +628,7 @@ Instructions:
       background: "none", border: "none", cursor: "pointer", padding: 0,
     }}>
       <img src="/logo.png" alt="Kr"
-        style={{ height: 36, width: "auto", objectFit: "contain" }} />
+        style={{ height: 52, width: "auto", objectFit: "contain" }} />
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
         stroke="#555" strokeWidth="2.5">
         <path d="M6 9l6 6 6-6"/>
@@ -888,8 +874,8 @@ Instructions:
     )}
   </div>
 </div>
-      
-
+        
+  
         {/* ── MAIN ── */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
