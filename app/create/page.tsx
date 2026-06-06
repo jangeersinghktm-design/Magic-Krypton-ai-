@@ -902,7 +902,7 @@ Instructions:
 
           {/* ── LEFT — Chat ── */}
           <div style={{
-            width: isMobile ? "100%" : 320,
+            width: isMobile ? "100%" : "50%",
             display: isMobile ? (activeTab === "chat" ? "flex" : "none") : "flex",
             flexDirection: "column",
             borderRight: isMobile ? "none" : "1px solid #1c1c1c",
