@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-const G = "linear-gradient(135deg, #F5C542 0%, #00D084 100%)";
+const G = "linear-gradient(135deg, #FFD700 0%, #F5C542 50%, #FFB300 80%, #00D084 100%)";
 const T = {
   gold: "#F5C542", green: "#00D084", bg: "#050505", card: "#0D0D0D",
   border: "rgba(245,197,66,0.12)", text: "#FFFFFF", sub: "#B3B3B3", muted: "#6B7280",
