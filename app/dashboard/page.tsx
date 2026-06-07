@@ -80,11 +80,44 @@ function ProjectActions({ project, onDelete, onDuplicate, onStar, router }: any)
       a.href = url; a.download = `${project.title}.html`; a.click();
     }},
     { icon: "🐙",  label: "GitHub Push",    action: () => router.push("/settings?tab=github") },
-    { icon: "🚀",  label: "Deploy",         action: () => router.push("/settings?tab=domains") },
-    { icon: "📤",  label: "Share",          action: () => {
-      navigator.clipboard.writeText(window.location.origin + `/create?id=${project.id}`);
-      alert("Link copied!");
-    }},
+    { icon: "🚀", label: "Deploy", action: async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  alert("🚀 Deploying...");
+  const res = await fetch("/api/deploy", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ projectId: project.id }),
+  });
+  const data = await res.json();
+  if (data.url) {
+    alert(`✅ Deployed!\n${data.url}`);
+    navigator.clipboard.writeText(data.url);
+  } else {
+    alert("❌ Deploy failed: " + data.error);
+  }
+}},
+    { icon: "📤", label: "Share", action: async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  const res = await fetch("/api/projects/share", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ projectId: project.id }),
+  });
+  const data = await res.json();
+  if (data.slug) {
+    const url = `${window.location.origin}/share/${data.slug}`;
+    navigator.clipboard.writeText(url);
+    alert("✅ Share link copied!\n" + url);
+  }
+}},
     { icon: "⧉",   label: "Duplicate",      action: () => onDuplicate(project) },
     { icon: "🗑",  label: "Delete",         action: () => onDelete(project.id), danger: true },
   ];
