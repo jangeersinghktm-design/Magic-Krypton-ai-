@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "@/components/ThemeProvider";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -103,9 +104,7 @@ function SettingsContent() {
   const [savedNotif, setSavedNotif]   = useState(false);
 
   // Theme
-  const [theme, setTheme]             = useState<"dark"|"system"|"light">("dark");
-  const [accentColor, setAccentColor] = useState("gold-green");
-  const [savedTheme, setSavedTheme]   = useState(false);
+   const { theme, accent, setTheme, setAccent, saveTheme, saving: savingTheme, saved: savedTheme } = useTheme();
 
   useEffect(() => { loadData(); }, []);
 
@@ -202,17 +201,6 @@ function SettingsContent() {
     setSavingNotif(false);
     setSavedNotif(true);
     setTimeout(() => setSavedNotif(false), 3000);
-  };
-
-  // ── Save Theme ────────────────────────────────────────────────
-  const handleSaveTheme = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    await supabase.from("profiles")
-      .update({ theme, accent_color: accentColor })
-      .eq("id", session.user.id);
-    setSavedTheme(true);
-    setTimeout(() => setSavedTheme(false), 3000);
   };
 
   // ── Payment ───────────────────────────────────────────────────
@@ -712,7 +700,7 @@ function SettingsContent() {
               </div>
             </div>
 
-            <button onClick={handleSaveTheme} style={{
+             <button onClick={saveTheme} style={{
               padding: "10px 24px",
               background: savedTheme ? "rgba(0,204,68,0.15)" : G,
               border: savedTheme ? "1px solid rgba(0,204,68,0.3)" : "none",
