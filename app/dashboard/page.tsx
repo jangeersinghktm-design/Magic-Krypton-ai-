@@ -59,7 +59,8 @@ function StatusBadge({ status }: { status: string }) {
 function ProjectActions({ project, onDelete, onDuplicate, onStar, router }: any) {
   const [showMore, setShowMore] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
+  const supabase = createClient();
+  
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setShowMore(false);
