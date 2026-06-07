@@ -104,9 +104,6 @@ function SettingsContent() {
   const [savingNotif, setSavingNotif] = useState(false);
   const [savedNotif, setSavedNotif]   = useState(false);
 
-  // Theme
-   const { theme, accent, setTheme, setAccent, saveTheme, saving: savingTheme, saved: savedTheme } = useTheme();
-
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
@@ -124,8 +121,6 @@ function SettingsContent() {
     if (prof?.notification_settings) {
       setNotifSettings(prof.notification_settings);
     }
-    if (prof?.theme) setTheme(prof.theme);
-    if (prof?.accent_color) setAccent(prof.accent_color);
 
     // Load API keys
     const { data: keys } = await supabase
