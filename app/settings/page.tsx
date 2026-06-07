@@ -70,6 +70,7 @@ function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const { mode, accent, colors, setMode, setAccent, saveTheme, saving: savingTheme, saved: savedTheme } = useTheme();
 
   const [activeTab, setActiveTab]     = useState(searchParams.get("tab") || "profile");
   const [profile, setProfile]         = useState<any>(null);
