@@ -681,7 +681,7 @@ function SettingsContent() {
                   { id: "orange-red",  label: "Orange & Red",  gradient: "linear-gradient(135deg, #F97316, #EF4444)" },
                   { id: "cyan-blue",   label: "Cyan & Blue",   gradient: "linear-gradient(135deg, #06B6D4, #3B82F6)" },
                 ].map(color => (
-                  <div key={color.id} onClick={() => setAccentColor(color.id)} style={{
+                  <div key={color.id} onClick={() => setAccent(color.id as any)} style={{
                     display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
                     cursor: "pointer",
                   }}>
