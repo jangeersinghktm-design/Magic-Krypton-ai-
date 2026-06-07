@@ -46,7 +46,9 @@ const navItems = [
     { label: "SEO Analysis",  href: "/analytics?tab=seo",         icon: icons.seo         },
     { label: "Performance",   href: "/analytics?tab=performance",  icon: icons.performance },
   ]},
-  { label: "Dashboard", href: "/dashboard", icon: icons.dashboard },
+  { label: "Dashboard",  href: "/dashboard",  icon: icons.dashboard },
+  { label: "Community",  href: "/community",  icon: icons.home },
+  { label: "Stats",      href: "/stats",      icon: icons.analytics },
   { label: "Settings", href: "/settings", icon: icons.settings },
   ];
 
