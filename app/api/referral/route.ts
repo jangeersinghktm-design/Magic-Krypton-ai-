@@ -88,45 +88,46 @@ export async function POST(req: NextRequest) {
 
     if (existing) return NextResponse.json({ error: "Already used a referral" }, { status: 400 });
 
-    // Create referral + give credits to both
+    // Create referral + give 20 credits to both
     await supabase.from("referrals").insert({
       referrer_id: referrer.id,
       referred_id: user.id,
       referral_code: referralCode,
       status: "completed",
-      credits_given: 50,
+      credits_given: 20,
     });
 
-    // Give 50 credits to referrer
+    // Give 20 credits to referrer
     await supabase.from("profiles")
-      .update({ total_credits: (referrer.total_credits || 100) + 50 })
+      .update({ total_credits: (referrer.total_credits || 100) + 20 })
       .eq("id", referrer.id);
 
-    // Give 50 credits to new user
+    // Give 20 credits to new user
     const { data: newUserProfile } = await supabase
       .from("profiles").select("total_credits").eq("id", user.id).single();
     await supabase.from("profiles")
-      .update({ total_credits: (newUserProfile?.total_credits || 100) + 50 })
+      .update({ total_credits: (newUserProfile?.total_credits || 100) + 20 })
       .eq("id", user.id);
 
-    // Save referral credit transactions
+    // Save credit transactions
     await supabase.from("credit_transactions").insert([
-      { user_id: referrer.id, amount: 50, type: "referral", description: "Referral bonus — friend joined!" },
-      { user_id: user.id, amount: 50, type: "referral", description: "Welcome bonus — joined via referral!" },
+      { user_id: referrer.id, amount: 20, type: "referral", description: "Referral bonus +20 credits — friend joined!" },
+      { user_id: user.id,     amount: 20, type: "referral", description: "Welcome bonus +20 credits — joined via referral!" },
     ]);
 
-    // Send notification
+    // Send notification to referrer
     await supabase.from("notifications").insert({
       user_id: referrer.id,
       title: "🎉 Referral Bonus!",
-      message: "Your friend joined Krypton AI! +50 credits added.",
+      message: "Your friend joined Krypton AI! +20 credits added.",
       type: "success",
       link: "/settings?tab=billing",
     });
 
-    return NextResponse.json({ success: true, creditsAdded: 50 });
+    return NextResponse.json({ success: true, creditsAdded: 20 });
+
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-
+  
