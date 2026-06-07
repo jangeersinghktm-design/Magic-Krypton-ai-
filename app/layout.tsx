@@ -2,9 +2,8 @@
 
 import "./globals.css";
 import KryptonSidebar from "@/components/KryptonSidebar";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 export default function RootLayout({
   children,
@@ -12,54 +11,36 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const supabase = createClient();
 
-  const noSidebar = ["/landing", "/auth", "/create"];
+  const noSidebar = ["/landing", "/auth", "/create", "/share"];
   const showSidebar = !noSidebar.some((p) => pathname.startsWith(p));
 
-  useEffect(() => {
-    const applyTheme = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("theme")
-        .eq("id", session.user.id)
-        .single();
-
-      if (profile?.theme === "light") {
-        document.body.style.background = "#ffffff";
-        document.body.style.color = "#000000";
-      } else {
-        document.body.style.background = "#050505";
-        document.body.style.color = "#ffffff";
-      }
-    };
-    applyTheme();
-  }, []);
-
   return (
-    <html lang="en">
-      <body style={{ margin: 0, background: "#050505" }}>
-        <style>{`
-          @media (max-width: 767px) {
-            .main-content { margin-left: 0 !important; }
-          }
-        `}</style>
-        <div style={{ display: "flex" }}>
-          {showSidebar && <KryptonSidebar />}
-          <main
-            className="main-content"
-            style={{
-              marginLeft: showSidebar ? "240px" : "0",
-              flex: 1,
-              minHeight: "100vh",
-              transition: "margin-left 0.25s ease",
-            }}
-          >
-            {children}
-          </main>
-        </div>
+    <html lang="en" data-theme="dark" data-accent="gold-green">
+      <body style={{ margin: 0 }}>
+        <ThemeProvider>
+          <style>{`
+            @media (max-width: 767px) {
+              .main-content { margin-left: 0 !important; }
+            }
+          `}</style>
+          <div style={{ display: "flex" }}>
+            {showSidebar && <KryptonSidebar />}
+            <main
+              className="main-content"
+              style={{
+                marginLeft: showSidebar ? "240px" : "0",
+                flex: 1,
+                minHeight: "100vh",
+                transition: "margin-left 0.25s ease",
+                background: "var(--bg)",
+                color: "var(--text)",
+              }}
+            >
+              {children}
+            </main>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
