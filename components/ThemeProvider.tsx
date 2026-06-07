@@ -32,12 +32,33 @@ function getSystemTheme(): "dark" | "light" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function applyTheme(theme: Theme, accent: Accent) {
+ function applyTheme(theme: Theme, accent: Accent) {
   const root = document.documentElement;
   const resolved = theme === "system" ? getSystemTheme() : theme;
   root.setAttribute("data-theme", resolved);
   root.setAttribute("data-accent", accent);
-}
+
+  // Direct body apply
+  if (resolved === "light") {
+    document.body.style.background = "#F8F9FA";
+    document.body.style.color = "#111111";
+    document.documentElement.style.setProperty("--bg", "#F8F9FA");
+    document.documentElement.style.setProperty("--bg-card", "#FFFFFF");
+    document.documentElement.style.setProperty("--bg-hover", "#F1F3F4");
+    document.documentElement.style.setProperty("--border", "rgba(0,0,0,0.1)");
+    document.documentElement.style.setProperty("--text", "#111111");
+    document.documentElement.style.setProperty("--text-muted", "#6B7280");
+  } else {
+    document.body.style.background = "#050505";
+    document.body.style.color = "#FFFFFF";
+    document.documentElement.style.setProperty("--bg", "#050505");
+    document.documentElement.style.setProperty("--bg-card", "#0D0D0D");
+    document.documentElement.style.setProperty("--bg-hover", "#161616");
+    document.documentElement.style.setProperty("--border", "rgba(245,197,66,0.12)");
+    document.documentElement.style.setProperty("--text", "#FFFFFF");
+    document.documentElement.style.setProperty("--text-muted", "#6B7280");
+  }
+ }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
