@@ -692,7 +692,7 @@ function SettingsContent() {
                       boxShadow: accent === color.id ? "0 0 0 2px #F5D800" : "none",
                       transition: "all 0.15s",
                     }} />
-                    <span style={{ fontSize: 11, color: accentColor === color.id ? T.gold : T.muted, whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: 11, color: accent === color.id ? T.gold : T.muted, whiteSpace: "nowrap" }}>
                       {color.label}
                     </span>
                   </div>
