@@ -714,46 +714,6 @@ function SettingsContent() {
     </button>
   </div>
 )}
-            {/* Accent Color */}
-            <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Accent Color</p>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                {[
-                  { id: "gold-green",  label: "Gold & Green",  gradient: "linear-gradient(135deg, #F5D800, #00CC44)" },
-                  { id: "blue-purple", label: "Blue & Purple", gradient: "linear-gradient(135deg, #3B82F6, #8B5CF6)" },
-                  { id: "orange-red",  label: "Orange & Red",  gradient: "linear-gradient(135deg, #F97316, #EF4444)" },
-                  { id: "cyan-blue",   label: "Cyan & Blue",   gradient: "linear-gradient(135deg, #06B6D4, #3B82F6)" },
-                ].map(color => (
-                  <div key={color.id} onClick={() => setAccent(color.id as any)} style={{
-                    display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                    cursor: "pointer",
-                  }}>
-                    <div style={{
-                      width: 48, height: 48, borderRadius: "50%",
-                      background: color.gradient,
-                      border: accent === color.id ? "3px solid #fff" : "3px solid transparent",
-                      boxShadow: accent === color.id ? "0 0 0 2px #F5D800" : "none",
-                      transition: "all 0.15s",
-                    }} />
-                    <span style={{ fontSize: 11, color: accent === color.id ? T.gold : T.muted, whiteSpace: "nowrap" }}>
-                      {color.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-             <button onClick={saveTheme} style={{
-              padding: "10px 24px",
-              background: savedTheme ? "rgba(0,204,68,0.15)" : G,
-              border: savedTheme ? "1px solid rgba(0,204,68,0.3)" : "none",
-              borderRadius: 9, color: savedTheme ? T.green : "#000",
-              fontWeight: 700, fontSize: 14, cursor: "pointer",
-            }}>
-              {savedTheme ? "✓ Saved!" : "Save Theme"}
-            </button>
-          </div>
-        )}
 
         {/* ── COMING SOON ── */}
         {!["profile","billing","apikeys","notifications","theme"].includes(activeTab) && (
