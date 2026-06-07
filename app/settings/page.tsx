@@ -124,7 +124,7 @@ function SettingsContent() {
       setNotifSettings(prof.notification_settings);
     }
     if (prof?.theme) setTheme(prof.theme);
-    if (prof?.accent_color) setAccentColor(prof.accent_color);
+    if (prof?.accent_color) setAccent(prof.accent_color);
 
     // Load API keys
     const { data: keys } = await supabase
