@@ -123,6 +123,12 @@ function CreatePage() {
   }, []);
 
   useEffect(() => {
+  const tab = searchParams.get("tab");
+  if (tab === "history") setRightTab("history");
+  if (tab === "export") setRightTab("export");
+}, []);
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
