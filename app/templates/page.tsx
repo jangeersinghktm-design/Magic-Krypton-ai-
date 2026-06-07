@@ -419,5 +419,4 @@ export default function TemplatesPage() {
       {preview && <PreviewModal template={preview} onClose={() => setPreview(null)} />}
     </>
   );
-                }
-                
+}
