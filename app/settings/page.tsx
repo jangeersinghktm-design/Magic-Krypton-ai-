@@ -636,37 +636,84 @@ function SettingsContent() {
           </div>
         )}
 
-        {/* ── THEME ── */}
-        {activeTab === "theme" && (
-          <div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Theme</h2>
-            <p style={{ color: T.muted, fontSize: 14, marginBottom: 28 }}>Customize your Krypton AI appearance</p>
+         {/* ── THEME ── */}
+{activeTab === "theme" && (
+  <div>
+    <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, color: colors.text }}>Theme</h2>
+    <p style={{ color: colors.muted, fontSize: 14, marginBottom: 28 }}>
+      Changes apply instantly — no refresh needed
+    </p>
 
-            {/* Color Mode */}
-            <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Color Mode</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-                {[
-                  { id: "dark",   label: "Dark",   icon: "🌙", bg: "#050505", preview: "#0d0d0d" },
-                  { id: "system", label: "System", icon: "💻", bg: "#1a1a1a", preview: "#2a2a2a" },
-                  { id: "light",  label: "Light",  icon: "☀️", bg: "#f5f5f5", preview: "#ffffff" },
-                ].map(t => (
-                  <div key={t.id} onClick={() => setTheme(t.id as any)} style={{
-                    border: theme === t.id ? `2px solid ${T.gold}` : `1px solid ${T.border}`,
-                    borderRadius: 12, padding: 16, cursor: "pointer",
-                    background: theme === t.id ? "rgba(245,197,66,0.05)" : T.card,
-                    transition: "all 0.15s", textAlign: "center",
-                  }}>
-                    <div style={{ width: "100%", height: 60, background: t.bg, borderRadius: 8, marginBottom: 10, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <div style={{ width: "60%", height: 8, background: t.preview, borderRadius: 4 }} />
-                    </div>
-                    <span style={{ fontSize: 18 }}>{t.icon}</span>
-                    <p style={{ fontSize: 13, fontWeight: 600, margin: "6px 0 0", color: theme === t.id ? T.gold : T.muted }}>{t.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+    <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
+      <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, color: colors.text }}>Color Mode</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        {[
+          { id: "dark",   label: "Dark",   icon: "🌙", preview: "#050505" },
+          { id: "system", label: "System", icon: "💻", preview: "#1a1a1a" },
+          { id: "light",  label: "Light",  icon: "☀️", preview: "#F5F5F5" },
+        ].map(t => (
+          <div key={t.id} onClick={() => setMode(t.id as any)} style={{
+            border: mode === t.id ? `2px solid ${colors.gold}` : `1px solid ${colors.border}`,
+            borderRadius: 12, padding: 16, cursor: "pointer",
+            background: mode === t.id ? "rgba(245,197,66,0.05)" : colors.card,
+            transition: "all 0.15s", textAlign: "center" as const,
+          }}>
+            <div style={{ width: "100%", height: 48, background: t.preview, borderRadius: 8, marginBottom: 10, border: `1px solid ${colors.border}` }} />
+            <span style={{ fontSize: 20 }}>{t.icon}</span>
+            <p style={{ fontSize: 13, fontWeight: 600, margin: "6px 0 0", color: mode === t.id ? colors.gold : colors.muted }}>{t.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
 
+    <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
+      <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, color: colors.text }}>Accent Color</p>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        {[
+          { id: "gold-green",  label: "Gold & Green",  g: "linear-gradient(135deg,#F5D800,#00CC44)" },
+          { id: "purple-blue", label: "Purple & Blue", g: "linear-gradient(135deg,#8B5CF6,#3B82F6)" },
+          { id: "orange-red",  label: "Orange & Red",  g: "linear-gradient(135deg,#F97316,#EF4444)" },
+          { id: "cyan-blue",   label: "Cyan & Blue",   g: "linear-gradient(135deg,#06B6D4,#3B82F6)" },
+          { id: "pink-purple", label: "Pink & Purple", g: "linear-gradient(135deg,#EC4899,#8B5CF6)" },
+        ].map(color => (
+          <div key={color.id} onClick={() => setAccent(color.id as any)}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, cursor: "pointer" }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: "50%",
+              background: color.g,
+              border: accent === color.id ? "3px solid #fff" : "3px solid transparent",
+              boxShadow: accent === color.id ? `0 0 0 2px ${colors.gold}` : "none",
+              transition: "all 0.15s",
+            }} />
+            <span style={{ fontSize: 10, color: accent === color.id ? colors.gold : colors.muted, whiteSpace: "nowrap" as const }}>{color.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 14, padding: "16px 20px", marginBottom: 20 }}>
+      <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: colors.text }}>Preview</p>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <button style={{ padding: "8px 20px", background: colors.gradient, border: "none", borderRadius: 8, color: "#000", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+          Primary Button
+        </button>
+        <button style={{ padding: "8px 20px", background: "none", border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, cursor: "pointer" }}>
+          Ghost Button
+        </button>
+      </div>
+    </div>
+
+    <button onClick={saveTheme} disabled={savingTheme} style={{
+      padding: "10px 24px",
+      background: savedTheme ? "rgba(0,204,68,0.15)" : colors.gradient,
+      border: savedTheme ? "1px solid rgba(0,204,68,0.3)" : "none",
+      borderRadius: 9, color: savedTheme ? colors.green : "#000",
+      fontWeight: 700, fontSize: 14, cursor: "pointer",
+    }}>
+      {savingTheme ? "Saving..." : savedTheme ? "✓ Saved!" : "Save Theme"}
+    </button>
+  </div>
+)}
             {/* Accent Color */}
             <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
               <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Accent Color</p>
