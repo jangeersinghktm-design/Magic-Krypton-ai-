@@ -257,9 +257,19 @@ export default function DashboardPage() {
     setDuplicating(null);
   };
 
-  const toggleStar = (id: string) => {
-    setProjects(p => p.map(x => x.id === id ? { ...x, starred: !x.starred } : x));
-  };
+   const toggleStar = async (id: string) => {
+  const project = projects.find(p => p.id === id);
+  if (!project) return;
+  const newVal = !project.starred;
+  
+  // Update UI immediately
+  setProjects(p => p.map(x => x.id === id ? { ...x, starred: newVal } : x));
+  
+  // Save to DB
+  await supabase.from("projects")
+    .update({ starred: newVal })
+    .eq("id", id);
+};
 
   const timeAgo = (date: string) => {
     const diff = Date.now() - new Date(date).getTime();
