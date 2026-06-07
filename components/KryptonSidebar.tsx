@@ -34,6 +34,7 @@ const icons = {
     { label: "Image Gen", href: "/create?type=image",   icon: icons.image   },
     { label: "Content",   href: "/create?type=content", icon: icons.content },
     { label: "Code Gen",  href: "/create?type=code",    icon: icons.code    },
+    { label: "Screenshot", href: "/screenshot", icon: icons.image },
   ]},
   { label: "Templates", href: "/templates", icon: icons.templates },
   { label: "Analytics", href: "/analytics", icon: icons.analytics, children: [
