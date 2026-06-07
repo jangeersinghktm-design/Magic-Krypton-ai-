@@ -27,30 +27,25 @@ const icons = {
   security: (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>),
 };
 
-const navItems = [
+ const navItems = [
   { label: "Home", href: "/", icon: icons.home },
   { label: "Create", href: "/create", icon: icons.create, children: [
-    { label: "Chatbot",  href: "/create?type=chatbot",  icon: icons.chatbot },
-    { label: "Image Gen",href: "/create?type=image",    icon: icons.image   },
-    { label: "Content",  href: "/create?type=content",  icon: icons.content },
-    { label: "Code Gen", href: "/create?type=code",     icon: icons.code    },
+    { label: "Chatbot",   href: "/create?type=chatbot", icon: icons.chatbot },
+    { label: "Image Gen", href: "/create?type=image",   icon: icons.image   },
+    { label: "Content",   href: "/create?type=content", icon: icons.content },
+    { label: "Code Gen",  href: "/create?type=code",    icon: icons.code    },
   ]},
-  { label: "Templates", href: "/templates", icon: icons.templates, children: [
-    { label: "AI Chatbots", href: "/templates?cat=chatbot", icon: icons.chatbot },
-    { label: "Image Tools", href: "/templates?cat=image",   icon: icons.image   },
-    { label: "SEO Tools",   href: "/templates?cat=seo",     icon: icons.seo     },
-    { label: "Code Tools",  href: "/templates?cat=code",    icon: icons.code    },
-  ]},
+  { label: "Templates", href: "/templates", icon: icons.templates },
   { label: "Analytics", href: "/analytics", icon: icons.analytics, children: [
-    { label: "Code Analysis", href: "/analytics?tab=code",        icon: icons.code        },
-    { label: "SEO Analysis",  href: "/analytics?tab=seo",         icon: icons.seo         },
-    { label: "Performance",   href: "/analytics?tab=performance",  icon: icons.performance },
+    { label: "Code Analysis", href: "/analytics?tab=code",       icon: icons.code        },
+    { label: "SEO Analysis",  href: "/analytics?tab=seo",        icon: icons.seo         },
+    { label: "Performance",   href: "/analytics?tab=performance", icon: icons.performance },
+    { label: "Stats",         href: "/stats",                     icon: icons.dashboard   },
+    { label: "Community",     href: "/community",                 icon: icons.home        },
   ]},
-  { label: "Dashboard",  href: "/dashboard",  icon: icons.dashboard },
-  { label: "Community",  href: "/community",  icon: icons.home },
-  { label: "Stats",      href: "/stats",      icon: icons.analytics },
-  { label: "Settings", href: "/settings", icon: icons.settings },
-  ];
+  { label: "Dashboard", href: "/dashboard", icon: icons.dashboard },
+  { label: "Settings",  href: "/settings",  icon: icons.settings  },
+];
 
 // ── Profile type ───────────────────────────────────────────────────
 interface Profile {
