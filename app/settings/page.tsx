@@ -688,8 +688,8 @@ function SettingsContent() {
                     <div style={{
                       width: 48, height: 48, borderRadius: "50%",
                       background: color.gradient,
-                      border: accentColor === color.id ? "3px solid #fff" : "3px solid transparent",
-                      boxShadow: accentColor === color.id ? "0 0 0 2px #F5D800" : "none",
+                      border: accent === color.id ? "3px solid #fff" : "3px solid transparent",
+                      boxShadow: accent === color.id ? "0 0 0 2px #F5D800" : "none",
                       transition: "all 0.15s",
                     }} />
                     <span style={{ fontSize: 11, color: accentColor === color.id ? T.gold : T.muted, whiteSpace: "nowrap" }}>
