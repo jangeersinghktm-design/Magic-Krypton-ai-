@@ -74,7 +74,7 @@ function CreatePage() {
   const [deviceMode, setDeviceMode]     = useState<DeviceMode>("desktop");
   const [isMobile, setIsMobile]         = useState(false);
   const [activeTab, setActiveTab]       = useState<"chat"|"preview">("chat");
-  const [credits, setCredits]           = useState<Credits>({ total: 100, used: 0, plan: "Free" });
+  const [credits, setCredits]           = useState<Credits>({ total: 5, used: 0, plan: "free" })
   const [saving, setSaving]             = useState(false);
   const [saved, setSaved]               = useState(false);
   const [listening, setListening]       = useState(false);
@@ -137,7 +137,11 @@ function CreatePage() {
     if (!session?.user) { router.push("/auth/login"); return; }
     setUser(session.user);
     const { data: profile } = await supabase.from("profiles").select("total_credits, used_credits, plan").eq("id", session.user.id).single();
-    if (profile) setCredits({ total: profile.total_credits || 100, used: profile.used_credits || 0, plan: profile.plan || "Free" });
+    if (profile) setCredits({ 
+  total: profile.total_credits ?? 5, 
+  used: profile.used_credits ?? 0, 
+  plan: profile.plan || "free" 
+})
   };
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -394,7 +398,7 @@ Instructions:
                     <span onClick={() => { router.push("/settings?tab=billing"); setShowDropdown(false); }} style={{ fontSize: 12, color: "#00D084", fontWeight: 600, cursor: "pointer" }}>{remaining} left →</span>
                   </div>
                   <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 3, marginTop: 6, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${Math.max(0, (remaining / (credits?.total || 100)) * 100)}%`, background: remaining > 20 ? "linear-gradient(90deg,#F5D800,#00CC44)" : "#ef4444", borderRadius: 3 }} />
+                    <div style={{ height: "100%", width: `${Math.max(0, (remaining / (credits?.total || 5)) * 100)}%`, background: remaining > 20 ? "linear-gradient(90deg,#F5D800,#00CC44)" : "#ef4444", borderRadius: 3 }} />
                   </div>
                 </div>
 
