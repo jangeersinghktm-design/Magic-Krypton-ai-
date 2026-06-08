@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const FROM_EMAIL = "Krypton AI <onboarding@resend.dev>";
+const FROM_EMAIL = "Krypton AI <support@kryptonai.tech>";
 
 async function sendEmail(to: string, subject: string, html: string) {
   const res = await fetch("https://api.resend.com/emails", {
