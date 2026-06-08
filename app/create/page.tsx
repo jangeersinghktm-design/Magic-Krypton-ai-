@@ -518,6 +518,28 @@ Instructions:
             <div style={{ padding: "10px 12px", borderTop: "1px solid #1c1c1c", background: "#0C0C0C", flexShrink: 0 }}>
               {result && <div style={{ marginBottom: 6, fontSize: 10.5, color: "#555" }}>✏ Edit mode — {CREDIT_COSTS.ai_edit} credit per edit</div>}
               <div style={{ background: "#161616", border: "1px solid #2a2a2a", borderRadius: 14, padding: "10px 12px" }}>
+                {remaining <= 1 && (
+                 <div
+                  onClick={() => window.open("/billing", "_blank")}
+                  style={{
+                  padding: "8px 14px",
+                  background: remaining === 0 ? "rgba(239,68,68,0.1)" : "rgba(245,197,66,0.08)",
+                  border: `1px solid ${remaining === 0 ? "rgba(239,68,68,0.3)" : "rgba(245,197,66,0.2)"}`,
+                  borderRadius: 8, cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  margin: "0 12px 8px",
+                 }}
+                >
+                 <span style={{ fontSize: 12, color: remaining === 0 ? "#ef4444" : "#F5D800" }}>
+                 {remaining === 0
+                  ? "⚠️ All credits used — Generate nahi kar sakte"
+                  : `⚡ Sirf ${remaining} credit bacha hai!`}
+                </span>
+                <span style={{ fontSize: 11, color: "#F5D800", fontWeight: 700 }}>
+                 Upgrade →
+               </span>
+              </div>
+              )}
                 <textarea value={prompt} onChange={e => { setPrompt(e.target.value); promptRef.current = e.target.value; }}
                   placeholder={result ? "Make hero section larger, add dark mode..." : "Describe what you want to build..."}
                   rows={3} onKeyDown={handleKeyDown} disabled={loading}
