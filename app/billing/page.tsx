@@ -117,7 +117,7 @@ export default function BillingPage() {
   const supabase = createClient();
 
   const [billing, setBilling]       = useState<"monthly" | "yearly">("monthly");
-  const [currency, setCurrency]     = useState<"INR" | "USD">("INR");
+  const [currency, setCurrency]     = useState<"INR" | "USD">("USD");
   const [currentPlan, setCurrentPlan] = useState("free");
   const [credits, setCredits]       = useState<any>(null);
   const [loading, setLoading]       = useState(true);
