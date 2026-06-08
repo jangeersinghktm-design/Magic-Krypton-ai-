@@ -204,7 +204,7 @@ export default function DashboardPage() {
       .select("total_credits, used_credits, plan, credits_reset_date")
       .eq("id", uid).single();
     if (data) setCredits({
-      total: data.total_credits ?? 5
+      total: data.total_credits ?? 5,
       used: data.used_credits || 0,
       plan: data.plan || "Free",
       resetDate: data.credits_reset_date ? new Date(data.credits_reset_date).toLocaleDateString() : "N/A",
