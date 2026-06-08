@@ -476,8 +476,6 @@ Instructions:
           {/* ── LEFT Chat ── */}
           <div style={{ width: isMobile ? "100%" : "50%", display: isMobile ? (activeTab === "chat" ? "flex" : "none") : "flex", flexDirection: "column", borderRight: isMobile ? "none" : "1px solid #1c1c1c", background: "#0A0A0A", flexShrink: 0 }}>
 
-            <CreditsBar credits={credits} onUpgrade={() => router.push("/settings?tab=billing")} />
-
             {/* Messages */}
             <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 12, scrollbarWidth: "none" }}>
               {messages.length === 0 && (
