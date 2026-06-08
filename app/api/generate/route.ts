@@ -204,14 +204,14 @@ export async function POST(req: NextRequest) {
     if (plan === "free" && !isEdit) {
       const dailyReset = profile.daily_reset_date || "2000-01-01";
       const dailyGens = dailyReset === today ? (profile.daily_generations || 0) : 0;
-      if (dailyGens >= 1) {
-        return NextResponse.json({
-          error: "Free plan allows 1 generation per day. Come back tomorrow or upgrade!",
-          upgradeRequired: true,
-          code: "DAILY_LIMIT",
-        }, { status: 402 });
-      }
-    }
+      if (dailyGens >= 5) {
+  return NextResponse.json({
+    error: "Free plan allows 5 generations per day. Come back tomorrow or upgrade!",
+    upgradeRequired: true,
+    code: "DAILY_LIMIT",
+  }, { status: 402 });
+ }
+}
 
     // ── Thinking steps for frontend ──────────────────────────
     const thinkingSteps = getThinkingSteps(prompt);
