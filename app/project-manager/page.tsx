@@ -254,14 +254,15 @@ export default function AIProjectManager() {
               {/* Tabs */}
               <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}>
                 {TABS.map(tab => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} style={{
-                    padding: "8px 16px", borderRadius: 9, whiteSpace: "nowrap",
-                    background: activeTab === tab.id ? "rgba(245,197,66,0.15)" : T.card,
-                    color: activeTab === tab.id ? T.gold : T.muted,
-                    fontSize: 13, fontWeight: activeTab === tab.id ? 700 : 400,
-                    cursor: "pointer", transition: "all 0.15s",
-                    border: activeTab === tab.id ? "1px solid rgba(245,197,66,0.3)" : `1px solid ${T.border}`,
-                  } as any}>{tab.label}</button>
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}  
+                    style={{
+                     padding: "8px 16px", borderRadius: 9, whiteSpace: "nowrap",
+                     background: activeTab === tab.id ? "rgba(245,197,66,0.15)" : T.card,
+                     border: activeTab === tab.id ? "1px solid rgba(245,197,66,0.3)" : `1px solid ${T.border}`,
+                     color: activeTab === tab.id ? T.gold : T.muted,
+                     fontSize: 13, fontWeight: activeTab === tab.id ? 700 : 400,
+                     cursor: "pointer", transition: "all 0.15s",
+                    } as any}}>{tab.label}</button>
                 ))}
               </div>
 
