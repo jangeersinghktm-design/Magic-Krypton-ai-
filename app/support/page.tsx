@@ -26,7 +26,7 @@ export default function SupportPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 48 }}>
           {[
             { icon: "📚", label: "Documentation", href: "/docs" },
-            { icon: "📧", label: "Email Support", href: "/contact" },
+            { icon: "📧", label: "Email Support", href: "mailto:support@kryptonai.tech" },
             { icon: "💳", label: "Billing Issues", href: "/settings?tab=billing" },
             { icon: "📋", label: "Changelog", href: "/changelog" },
           ].map(link => (
