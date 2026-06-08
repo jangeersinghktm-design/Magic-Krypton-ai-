@@ -66,6 +66,8 @@ function CreatePage() {
   const [prompt, setPrompt]             = useState("");
   const [result, setResult]             = useState("");
   const [loading, setLoading]           = useState(false);
+  const [thinkingSteps, setThinkingSteps] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
   const [messages, setMessages]         = useState<Message[]>([]);
   const [projectId, setProjectId]       = useState<string>("");
   const [projectName, setProjectName]   = useState("Untitled Project");
@@ -246,13 +248,36 @@ function CreatePage() {
   };
 
   // ── GENERATE ──────────────────────────────────────────────────
+  const getThinkingSteps = (prompt: string) => {
+  const lower = prompt.toLowerCase();
+  if (lower.includes("game") || lower.includes("mario") || lower.includes("snake")) {
+    return ["🎮 Understanding game mechanics...", "🗺 Planning game world...", "⚙️ Setting up game engine...", "🎯 Building player controls...", "👾 Creating enemies...", "💯 Adding score system...", "🎨 Designing game UI...", "✅ Build complete!"];
+  }
+  if (lower.includes("landing") || lower.includes("saas") || lower.includes("website")) {
+    return ["📋 Reading requirements...", "🏗 Planning structure...", "🎨 Designing hero section...", "📦 Building features...", "💰 Creating pricing...", "📱 Mobile optimization...", "✨ Adding animations...", "✅ Build complete!"];
+  }
+  if (lower.includes("shop") || lower.includes("store") || lower.includes("ecommerce")) {
+    return ["🛍 Planning store layout...", "📦 Designing product cards...", "🛒 Building cart system...", "💳 Creating checkout...", "🔍 Adding filters...", "📱 Mobile design...", "✅ Build complete!"];
+  }
+  return ["🔍 Understanding request...", "🧠 Planning structure...", "🎨 Designing layout...", "⚙️ Building features...", "✨ Adding animations...", "📱 Making responsive...", "✅ Build complete!"];
+};
   const triggerGenerate = async (overridePrompt?: string) => {
     const p = overridePrompt || promptRef.current;
     if (!p.trim() || loading) return;
     if (remaining < CREDIT_COSTS.new_project) { setError("Insufficient credits! Please upgrade."); return; }
 
     setLoading(true);
-    setError("");
+setError("");
+const steps = getThinkingSteps(p);
+setThinkingSteps(steps);
+setCurrentStep(0);
+let stepInterval = setInterval(() => {
+  setCurrentStep(prev => {
+    if (prev < steps.length - 1) return prev + 1;
+    clearInterval(stepInterval);
+    return prev;
+  });
+}, 800);
     if (isMobile) setActiveTab("preview");
 
     addMsg({ role: "user", content: p });
@@ -509,11 +534,26 @@ Instructions:
                       </div>
                     )}
                     {msg.loading ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(245,197,66,0.3)", borderTopColor: "#F5D800", animation: "spin 0.8s linear infinite" }}/>
-                        <span style={{ fontSize: 12, color: "#888" }}>Krypton is building...</span>
-                      </div>
-                    ) : (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+      <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(245,197,66,0.3)", borderTopColor: "#F5D800", animation: "spin 0.8s linear infinite" }}/>
+      <span style={{ fontSize: 12, color: "#888" }}>Krypton is building...</span>
+    </div>
+    {thinkingSteps.map((step, i) => (
+      <div key={i} style={{
+        fontSize: 11.5,
+        color: i === currentStep ? "#F5D800" : i < currentStep ? "#00CC44" : "#333",
+        display: "flex", alignItems: "center", gap: 6,
+        transition: "color 0.3s",
+      }}>
+        <span style={{ fontSize: 10 }}>
+          {i < currentStep ? "✅" : i === currentStep ? "⚡" : "○"}
+        </span>
+        {step}
+      </div>
+    ))}
+  </div>
+) : (
                       <div>{msg.content}</div>
                     )}
                     {msg.files && <FilesDisplay files={msg.files} />}
