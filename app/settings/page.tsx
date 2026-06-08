@@ -380,8 +380,17 @@ function SettingsContent() {
         )}
 
         {/* ── BILLING ── */}
-        {activeTab === "billing" && (
+         {activeTab === "billing" && (
           <div>
+           <button onClick={() => window.open("/billing", "_blank")} style={{
+            width: "100%", padding: "13px", marginBottom: 24,
+            background: "linear-gradient(135deg,#F5D800,#00CC44)",
+            border: "none", borderRadius: 10, color: "#000",
+            fontWeight: 700, fontSize: 14, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}>
+            💳 Open Full Billing Page — New Tab →
+           </button>
             <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Billing</h2>
             <p style={{ color: T.muted, fontSize: 14, marginBottom: 28 }}>Manage your plan and credits</p>
 
