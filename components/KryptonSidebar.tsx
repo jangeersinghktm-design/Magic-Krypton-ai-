@@ -94,7 +94,7 @@ export default function KryptonSidebar() {
         full_name: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
         email: session.user.email || "",
         plan: "free",
-        total_credits: 100,
+        total_credits: 5,
         used_credits: 0,
       });
     }
