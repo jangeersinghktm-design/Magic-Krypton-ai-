@@ -668,20 +668,50 @@ export default function LandingPage() {
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5, 1fr)", gap: isMobile ? "28px" : "32px", marginBottom: "40px" }}>
             {[
-              { title: "Product", links: ["Features", "Pricing", "Roadmap", "Examples"] },
-              { title: "Resources", links: ["Documentation", "Changelog", "Blog", "Support"] },
-              { title: "Company", links: ["About", "Contact"] },
-              { title: "Legal", links: ["Privacy Policy", "Terms of Service", "Refund Policy"] },
-              { title: "Social", links: ["X (Twitter)", "LinkedIn", "GitHub"] },
+              { title: "Product", links: [
+                { label: "Features",  href: "/landing#features" },
+                { label: "Pricing",   href: "/landing#pricing" },
+                { label: "Roadmap",   href: "/landing#roadmap" },
+                { label: "Examples",  href: "/landing#examples" },
+              ]},
+              { title: "Resources", links: [
+                { label: "Documentation", href: "/docs" },
+                { label: "Changelog",     href: "/changelog" },
+                { label: "Blog",          href: "/blog" },
+                { label: "Support",       href: "/support" },
+              ]},
+               { title: "Company", links: [
+                { label: "About",   href: "/about" },
+                { label: "Contact", href: "/contact" },
+              ]},
+               { title: "Legal", links: [
+                { label: "Privacy Policy",   href: "/privacy" },
+                { label: "Terms of Service", href: "/terms" },
+                { label: "Refund Policy",    href: "/refund" },
+              ]},
+               { title: "Social", links: [
+                { label: "X (Twitter)", href: "https://twitter.com/kryptonai" },
+                { label: "LinkedIn",    href: "https://linkedin.com/company/kryptonai" },
+                { label: "GitHub",      href: "https://github.com/jangeersinghktm-design/Magic-Krypton-ai-" },
+              ]},
             ].map((col) => (
               <div key={col.title}>
                 <p style={{ fontWeight: 700, fontSize: "13px", marginBottom: "14px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{col.title}</p>
-                {col.links.map((link) => (
+                 {col.links.map((link: any) => (
+                  typeof link === "string" ? (
                   <p key={link} style={{ color: T.muted, fontSize: "13px", marginBottom: "9px", cursor: "pointer", transition: "color 0.2s" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = T.gold)}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = T.muted)}>
-                    {link}
-                  </p>
+                   onMouseEnter={e => e.currentTarget.style.color = T.gold}
+                   onMouseLeave={e => e.currentTarget.style.color = T.muted}>
+                  {link}
+                 </p>
+                ) : (
+                  <a key={link.label} href={link.href} target="_blank" rel="noreferrer"
+                   style={{ display: "block", color: T.muted, fontSize: "13px", marginBottom: "9px", textDecoration: "none", transition: "color 0.2s" }}
+                   onMouseEnter={e => e.currentTarget.style.color = T.gold}
+                   onMouseLeave={e => e.currentTarget.style.color = T.muted}>
+                   {link.label}
+                  </a>
+                 )
                 ))}
               </div>
             ))}
