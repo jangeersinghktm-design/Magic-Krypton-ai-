@@ -1,4 +1,15 @@
 {
+  "functions": {
+    "app/api/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/project-manager/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/screenshot/route.ts": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/credits/reset",
@@ -6,4 +17,3 @@
     }
   ]
 }
-
