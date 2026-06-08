@@ -6,6 +6,7 @@ import { checkFeatureGate, deductCredits } from "@/lib/feature-gate";
 const FREE_PLAN_MAX_CREDITS = 5;
 
 export const maxDuration = 60;
+export const runtime = "nodejs";
 
 // Rate limit store (in-memory for edge)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -82,8 +83,8 @@ export async function POST(req: NextRequest) {
 
     // ── Select AI model based on plan ───────────────────────────
     const model = plan === "business" || plan === "premium"
-      ? "claude-opus-4-5"    // Fastest + best quality
-      : "claude-sonnet-4-6"; // Good quality for pro/free
+     ? "claude-sonnet-4-6"        // Best quality
+     : "claude-haiku-4-5-20251001"; // Fast — no timeout
 
     // ── Rate limit by user (stricter for free) ──────────────────
     const userLimit = plan === "free" ? 3 : 20;
