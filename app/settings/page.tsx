@@ -275,7 +275,7 @@ function SettingsContent() {
   }
 
   const currentPlan = PLANS.find(p => p.id === (profile?.plan || "free")) || PLANS[0];
-  const remaining = (profile?.total_credits || 100) - (profile?.used_credits || 0);
+  const remaining = (profile?.total_credits ?? 5) - (profile?.used_credits || 0);
   const firstName = profile?.full_name?.split(" ")[0] || profile?.email?.split("@")[0] || "User";
 
   const sections = ["ACCOUNT", "DEVELOPER", "ADVANCED"];
