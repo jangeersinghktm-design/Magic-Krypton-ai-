@@ -3,6 +3,7 @@
 // Use this in every API route that needs plan checking
 
 import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const FREE_PLAN_MAX_CREDITS = 5;
 
@@ -45,7 +46,7 @@ export interface GateResult {
 export async function checkFeatureGate(
   userId: string,
   feature: Feature,
-  supabase: ReturnType<typeof createClient>
+  supabase: SupabaseClient
 ): Promise<GateResult> {
   // Get user profile
   const { data: profile, error } = await supabase
@@ -175,7 +176,7 @@ export async function checkFeatureGate(
 export async function deductCredits(
   userId: string,
   feature: Feature,
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   description?: string
 ): Promise<void> {
   const creditCost = FEATURE_COST[feature] || 1;
