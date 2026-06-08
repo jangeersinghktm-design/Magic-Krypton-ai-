@@ -262,7 +262,7 @@ export default function AIProjectManager() {
                      color: activeTab === tab.id ? T.gold : T.muted,
                      fontSize: 13, fontWeight: activeTab === tab.id ? 700 : 400,
                      cursor: "pointer", transition: "all 0.15s",
-                    } as any}}>{tab.label}</button>
+                    } as any}>{tab.label}</button>
                 ))}
               </div>
 
