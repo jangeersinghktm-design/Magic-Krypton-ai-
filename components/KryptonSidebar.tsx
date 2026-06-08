@@ -48,6 +48,7 @@ const icons = {
   { label: "Team",      href: "/team",      icon: icons.dashboard },
   { label: "Dashboard", href: "/dashboard", icon: icons.dashboard },
   { label: "Settings",  href: "/settings",  icon: icons.settings  },
+  { label: "Billing", href: "/billing", icon: icons.billing },
 ];
 
 // ── Profile type ───────────────────────────────────────────────────
@@ -207,7 +208,7 @@ export default function KryptonSidebar() {
                   }}>{icons.chevron}</span>
                 </div>
               ) : (
-                <Link href={item.href} style={{
+                <Link href={item.href} target={item.label === "Billing" ? "_blank" : undefined} style={{
                   display: "flex", alignItems: "center",
                   justifyContent: "space-between",
                   padding: "9px 12px", borderRadius: 10,
