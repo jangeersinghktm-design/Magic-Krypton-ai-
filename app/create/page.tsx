@@ -262,16 +262,23 @@ function CreatePage() {
        const { data: { session } } = await supabase.auth.getSession();
        if (!session) { setError("Please login again."); setLoading(false); return; }
 
-       const response = await fetch("/api/generate", {
-       method: "POST",
-       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${session.access_token}`,
-       },
-       body: JSON.stringify({ prompt: p }),
-     });
-      const data = await response.json();
+        const response = await fetch("/api/generate", {
+         method: "POST",
+         headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+         },
+         body: JSON.stringify({ prompt: p }),
+       });
 
+       // Check if response is ok
+       if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`Server error: ${text.slice(0, 100)}`);
+         }
+
+         const data = await response.json();
+      
       if (data.html) {
         setResult(data.html);
         const name = p.slice(0, 40) || "Untitled Project";
