@@ -197,22 +197,7 @@ ${plan === "free" ? "Note: Standard quality generation." : "Use the highest qual
      }).select().single();
      savedProjectId = newProject?.id;
     }
-          html_code: html,
-          prompt,
-          updated_at: new Date().toISOString(),
-        }).eq("id", projectId).eq("user_id", user.id);
-      } else {
-        const { data: newProject } = await supabase.from("projects").insert({
-          user_id: user.id,
-          title: prompt.slice(0, 60),
-          prompt,
-          html_code: html,
-          status: "completed",
-        }).select().single();
-        savedProjectId = newProject?.id;
-      }
-    }
-
+    
     // ── Get fresh credit balance ────────────────────────────────
     const { data: updatedProfile } = await supabase
       .from("profiles")
