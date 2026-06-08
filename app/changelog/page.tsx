@@ -57,7 +57,7 @@ export default function ChangelogPage() {
               <div style={{ width: 48, height: 48, borderRadius: "50%", background: G, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#000" }}>
                 {i + 1}
               </div>
-              {i < changes.length - 1 && <div style={{ width: 2, flex: 1, background: `1px solid ${T.border}`, marginTop: 8, background: "rgba(245,197,66,0.15)" }} />}
+              {i < changes.length - 1 && <div style={{ width: 2, flex: 1, background: "rgba(245,197,66,0.15)", marginTop: 8 }} />
             </div>
             <div style={{ flex: 1, paddingBottom: 24 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
