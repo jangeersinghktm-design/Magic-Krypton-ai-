@@ -534,26 +534,43 @@ Instructions:
                       </div>
                     )}
                     {msg.loading ? (
-  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-      <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(245,197,66,0.3)", borderTopColor: "#F5D800", animation: "spin 0.8s linear infinite" }}/>
-      <span style={{ fontSize: 12, color: "#888" }}>Krypton is building...</span>
-    </div>
-    {thinkingSteps.map((step, i) => (
-      <div key={i} style={{
-        fontSize: 11.5,
-        color: i === currentStep ? "#F5D800" : i < currentStep ? "#00CC44" : "#333",
-        display: "flex", alignItems: "center", gap: 6,
-        transition: "color 0.3s",
-      }}>
-        <span style={{ fontSize: 10 }}>
-          {i < currentStep ? "✅" : i === currentStep ? "⚡" : "○"}
-        </span>
-        {step}
-      </div>
-    ))}
-  </div>
-) : (
+                     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                     {/* Header */}
+                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                     <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(245,197,66,0.2)", borderTopColor: "#F5D800", animation: "spin 0.8s linear infinite", flexShrink: 0 }}/>
+                     <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Thinking...</span>
+                    </div>
+                    {/* Steps */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                     {thinkingSteps.map((step, i) => {
+                      const isDone = i < currentStep;
+                      const isCur = i === currentStep;
+                      const isFut = i > currentStep;
+                      return (
+                       <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, opacity: isFut ? 0.2 : 1, transition: "opacity 0.4s ease" }}>
+                        <div style={{
+                         width: 16, height: 16, borderRadius: "50%", flexShrink: 0, marginTop: 1,
+                         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9,
+                         background: isDone ? "rgba(0,204,68,0.15)" : isCur ? "rgba(245,216,0,0.15)" : "rgba(255,255,255,0.04)",
+                         border: isDone ? "1px solid rgba(0,204,68,0.4)" : isCur ? "1px solid rgba(245,216,0,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                         color: isDone ? "#00CC44" : "transparent",
+                       }}>
+                        {isDone ? "✓" : ""}
+                       </div>
+                       <span style={{
+                        fontSize: 12.5, lineHeight: 1.4,
+                        color: isDone ? "rgba(255,255,255,0.3)" : isCur ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.2)",
+                        fontWeight: isCur ? 500 : 400,
+                        textDecoration: isDone ? "line-through" : "none",
+                       }}>
+                        {step.replace(/^[^\w\s]*\s*/, "")}
+                       </span>
+                      </div>
+                     );
+                   })}
+                 </div>
+                </div>
+              ) : (
                       <div>{msg.content}</div>
                     )}
                     {msg.files && <FilesDisplay files={msg.files} />}
