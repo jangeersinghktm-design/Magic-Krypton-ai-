@@ -12,7 +12,7 @@
   },
   "crons": [
     {
-      "path": "/api/credits"
+      "path": "/api/credits",
       "schedule": "0 0 * * *"
     }
   ]
