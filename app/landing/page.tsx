@@ -400,50 +400,48 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* ── HERO ── */}
-      <section style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", padding: isMobile ? "80px 20px 60px" : "120px 24px 80px", textAlign:"center" }}>
+             {/* ── HERO ── */}
+      <section style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight: isMobile ? "auto" : "100vh", padding: isMobile ? "70px 16px 40px" : "100px 24px 60px", textAlign:"center" }}>
 
         {/* Badge */}
-        <div className="fade-up" style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(245,197,66,0.06)", border:`1px solid rgba(245,197,66,0.15)`, borderRadius:"20px", padding:"5px 16px", marginBottom:"1.5rem", fontSize:"12px" }}>
+        <div className="fade-up" style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(245,197,66,0.06)", border:`1px solid rgba(245,197,66,0.15)`, borderRadius:"20px", padding:"5px 16px", marginBottom:"1.2rem", fontSize:"12px" }}>
           <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:"#00D084", display:"inline-block", animation:"pulse 2s infinite" }} />
           <span className="grad-text" style={{ fontWeight:600 }}>✨ Websites, Apps & Games Generated in Seconds</span>
         </div>
 
         {/* AI Orb */}
-        <div style={{ position:"relative", width: isMobile ? 120 : 160, height: isMobile ? 120 : 160, margin:"0 auto 2rem" }}>
-          {/* Outer ring */}
+        <div style={{ position:"relative", width: isMobile ? 90 : 140, height: isMobile ? 90 : 140, margin:"0 auto 1.5rem" }}>
           <div style={{ position:"absolute", inset:-12, borderRadius:"50%", border:"1px solid transparent", background:"linear-gradient(#050505,#050505) padding-box, linear-gradient(135deg,var(--ga),var(--gb)) border-box", animation:"orbRotate 8s linear infinite", opacity:0.6 }} />
-          {/* Glow */}
           <div className="grad-glow" style={{ position:"absolute", inset:0, borderRadius:"50%", filter:"blur(20px)", background:"linear-gradient(135deg,rgba(var(--ga-rgb),0.3),rgba(var(--gb-rgb),0.3))" }} />
-          {/* Core */}
           <div style={{ position:"absolute", inset:0, borderRadius:"50%", background:"radial-gradient(circle at 40% 35%, rgba(var(--ga-rgb),0.15) 0%, #0d0d0d 60%)", border:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", animation:"orbFloat 6s ease-in-out infinite" }}>
-            <img src="/logo.png" alt="Kr" style={{ width: isMobile ? 60 : 80, height: isMobile ? 60 : 80, objectFit:"contain" }} />
+            <img src="/logo.png" alt="Kr" style={{ width: isMobile ? 45 : 70, height: isMobile ? 45 : 70, objectFit:"contain" }} />
           </div>
         </div>
 
         {/* H1 */}
-        <h1 className="fade-up" style={{ fontFamily:"'Syne',sans-serif", fontSize: isMobile ? "clamp(28px,7vw,40px)" : "clamp(42px,5vw,68px)", fontWeight:800, lineHeight:1.07, marginBottom:"1.2rem", maxWidth:"880px", animationDelay:"0.1s" }}>
+        <h1 className="fade-up" style={{ fontFamily:"'Syne',sans-serif", fontSize: isMobile ? "clamp(24px,6vw,34px)" : "clamp(38px,4vw,58px)", fontWeight:800, lineHeight:1.1, marginBottom:"0.8rem", maxWidth:"880px", animationDelay:"0.1s" }}>
           Build Websites, Apps & Games with AI.
           <br />
           <span className="grad-text">Go from Idea to Production in Minutes.</span>
         </h1>
 
-        <p className="fade-up" style={{ color:T.sub, fontSize: isMobile ? "15px" : "18px", lineHeight:1.7, maxWidth:"560px", marginBottom:"2.5rem", animationDelay:"0.2s" }}>
+        <p className="fade-up" style={{ color:T.sub, fontSize: isMobile ? "14px" : "17px", lineHeight:1.7, maxWidth:"520px", marginBottom: isMobile ? "1.5rem" : "2rem", animationDelay:"0.2s" }}>
           Describe what you want. Krypton AI builds it — complete, responsive, and ready to deploy.
         </p>
 
         {/* CTA Buttons */}
-        <div className="fade-up" style={{ display:"flex", gap:"12px", flexWrap:"wrap", justifyContent:"center", marginBottom:"2.5rem", animationDelay:"0.3s" }}>
+        <div className="fade-up" style={{ display:"flex", gap:"10px", flexWrap:"wrap", justifyContent:"center", marginBottom: isMobile ? "1.5rem" : "2rem", animationDelay:"0.3s" }}>
           <button className="grad-bg shine-btn" onClick={() => router.push("/auth/signup")}
-            style={{ padding: isMobile ? "13px 28px" : "15px 36px", border:"none", borderRadius:"14px", color:"#050505", fontSize: isMobile ? "14px" : "16px", fontWeight:700, cursor:"pointer" }}>
+            style={{ padding: isMobile ? "12px 24px" : "14px 32px", border:"none", borderRadius:"12px", color:"#050505", fontSize: isMobile ? "14px" : "15px", fontWeight:700, cursor:"pointer" }}>
             Start Building Free →
           </button>
-          <button onClick={() => scrollTo("examples")} style={{ padding: isMobile ? "13px 28px" : "15px 36px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"14px", color:T.text, fontSize: isMobile ? "14px" : "16px", fontWeight:600, cursor:"pointer", transition:"all 0.2s" }}
+          <button onClick={() => scrollTo("examples")} style={{ padding: isMobile ? "12px 24px" : "14px 32px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"12px", color:T.text, fontSize: isMobile ? "14px" : "15px", fontWeight:600, cursor:"pointer", transition:"all 0.2s" }}
             onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.08)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.2)"; }}
             onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; }}>
             See Examples
           </button>
         </div>
+        
 
         {/* Prompt input mockup */}
         <div className="fade-up" style={{ width:"100%", maxWidth:"640px", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"16px", padding:"16px 20px", animationDelay:"0.4s" }}>
