@@ -348,7 +348,7 @@ export default function LandingPage(){
       )}
 
       {/* ══════════ HERO ══════════ */}
-      <section style={{position:"relative",zIndex:1,paddingTop:"clamp(96px,10vw,130px)",paddingBottom:"clamp(60px,7vw,90px)"}}>
+      <section style={{position:"relative",zIndex:1,paddingTop:"clamp(72px,8vw,110px)",paddingBottom:"clamp(48px,6vw,80px)"}}>
         <div style={{width:"100%",maxWidth:1400,margin:"0 auto",padding:"0 clamp(20px,4vw,64px)",display:"grid",gridTemplateColumns:isDesk?"1fr 1fr":"1fr",gap:48,alignItems:"center"}}>
 
           {/* LEFT */}
@@ -361,9 +361,9 @@ export default function LandingPage(){
             </div>
 
             {/* H1 */}
-            <h1 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(34px,5vw,70px)",fontWeight:800,lineHeight:1.05,marginBottom:20,maxWidth:540,color:WHITE}}>
+            <h1 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(28px,4vw,64px)",fontWeight:800,lineHeight:1.08,marginBottom:16,maxWidth:540,color:WHITE}}>
               Build{" "}
-              <span style={gtext}>Websites,<br/>Apps &amp; Games</span>
+              <span style={gtext}>Websites, Apps &amp; Games</span>
               {" "}with AI.
             </h1>
 
@@ -372,15 +372,15 @@ export default function LandingPage(){
             </p>
 
             {/* CTA Buttons */}
-            <div style={{display:"flex",gap:12,flexWrap:"wrap",justifyContent:isDesk?"flex-start":"center",marginBottom:32}}>
+            <div style={{display:"flex",flexDirection:"row",gap:10,flexWrap:"wrap",justifyContent:isDesk?"flex-start":"center",marginBottom:28}}>
               <button className="gb shine" onClick={()=>router.push("/auth/signup")}
-                style={{display:"inline-flex",alignItems:"center",padding:"14px 32px",border:"none",borderRadius:12,color:"#050505",fontSize:15,fontWeight:700,cursor:"pointer",transition:"transform .2s,box-shadow .2s",whiteSpace:"nowrap"}}
+                style={{display:"inline-flex",alignItems:"center",padding:"12px 24px",border:"none",borderRadius:12,color:"#050505",fontSize:14,fontWeight:700,cursor:"pointer",transition:"transform .2s,box-shadow .2s",whiteSpace:"nowrap"}}
                 onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 12px 32px rgba(var(--ga-rgb),.38)";}}
                 onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
                 Start Building Free →
               </button>
               <button onClick={()=>goto("examples")}
-                style={{display:"inline-flex",alignItems:"center",padding:"14px 32px",border:"1px solid rgba(255,255,255,.14)",background:"rgba(255,255,255,.05)",borderRadius:12,color:WHITE,fontSize:15,fontWeight:600,cursor:"pointer",transition:"all .2s",whiteSpace:"nowrap"}}
+                style={{display:"inline-flex",alignItems:"center",padding:"12px 24px",border:"1px solid rgba(255,255,255,.14)",background:"rgba(255,255,255,.05)",borderRadius:12,color:WHITE,fontSize:14,fontWeight:600,cursor:"pointer",transition:"all .2s",whiteSpace:"nowrap"}}
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,.1)";e.currentTarget.style.transform="translateY(-2px)";}}
                 onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,.05)";e.currentTarget.style.transform="none";}}>
                 See Examples
