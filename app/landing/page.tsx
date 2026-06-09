@@ -3,23 +3,22 @@
 import { useState, useEffect, useCallback, useRef, CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 
-// ── Gradient Themes — cycle every 6s, 800ms transition ──
+/* ─────────────────────────────────────────────
+   GRADIENT THEMES  — cycle every 3 s, 800 ms ease
+───────────────────────────────────────────── */
 const THEMES = [
-  { a: "#F5C542", b: "#00D084", ar: "245,197,66",   br: "0,208,132"  }, // Gold + Green
-  { a: "#8B5CF6", b: "#EC4899", ar: "139,92,246",   br: "236,72,153" }, // Purple + Pink
-  { a: "#FACC15", b: "#FB923C", ar: "250,204,21",   br: "251,146,60"  }, // Yellow + Orange
-  { a: "#3B82F6", b: "#06B6D4", ar: "59,130,246",   br: "6,182,212"  }, // Blue + Cyan
-  { a: "#7C3AED", b: "#2563EB", ar: "124,58,237", br: "37,99,235" }, // Purple + Electric Blue
-  { a: "#10B981", b: "#14B8A6", ar: "16,185,129",   br: "20,184,166" }, // Emerald + Teal
-  { a: "#14B8A6", b: "#06B6D4", ar: "20,184,166", br: "6,182,212" }, // Teal + Cyan
-  { a: "#6366F1", b: "#8B5CF6", ar: "99,102,241", br: "139,92,246" }, // Indigo + Purple
+  { a: "#F5C542", b: "#00D084" },  // Gold  + Green
+  { a: "#8B5CF6", b: "#EC4899" },  // Purple+ Pink
+  { a: "#FACC15", b: "#FB923C" },  // Yellow+ Orange
+  { a: "#3B82F6", b: "#06B6D4" },  // Blue  + Cyan
+  { a: "#7C3AED", b: "#2563EB" },  // Violet+ Indigo
+  { a: "#10B981", b: "#14B8A6" },  // Emerald+Teal
 ];
 
-const T = {
-  bg: "#050505", card: "#0D0D0D",
-  border: "rgba(255,255,255,0.08)", text: "#FFFFFF",
-  sub: "#B3B3B3", muted: "#6B7280",
-};
+/* ─────────────────────────────────────────────
+   STATIC DATA
+───────────────────────────────────────────── */
+const T = { bg:"#050505", card:"#0D0D0D", text:"#FFFFFF", sub:"#B0B0B0", muted:"#6B7280" };
 
 const PROMPTS = [
   "Build a SaaS dashboard with dark mode...",
@@ -30,785 +29,786 @@ const PROMPTS = [
   "Create a fitness tracking app...",
 ];
 
-const NAV_LINKS = ["Features", "Pricing", "Examples", "Roadmap"];
+const NAV_LINKS = ["Features","Pricing","Examples","Roadmap"];
 
 const FEATURES = [
-  { icon: "🌐", title: "Websites", desc: "Landing pages, portfolios, business sites — pixel-perfect and responsive." },
-  { icon: "⚙️", title: "Web Apps", desc: "Dashboards, CRM tools, productivity apps with full interactivity." },
-  { icon: "🎮", title: "Browser Games", desc: "Snake, 2048, puzzle games — fully playable in the browser." },
-  { icon: "🧰", title: "Business Tools", desc: "Calculators, forms, trackers — tools that actually work." },
+  { icon:"🌐", title:"Websites",      desc:"Landing pages, portfolios, business sites — pixel-perfect and responsive." },
+  { icon:"⚙️", title:"Web Apps",      desc:"Dashboards, CRM tools, productivity apps with full interactivity." },
+  { icon:"🎮", title:"Browser Games", desc:"Snake, 2048, puzzle games — fully playable in the browser." },
+  { icon:"🧰", title:"Business Tools",desc:"Calculators, forms, trackers — tools that actually work." },
 ];
 
 const STATS = [
-  { value: 12000, label: "Projects Generated", suffix: "+" },
-  { value: 98,    label: "Satisfaction Rate",  suffix: "%" },
-  { value: 8,     label: "Seconds to Build",   suffix: "s" },
-  { value: 22,    label: "Premium Templates",  suffix: "+" },
+  { value:12000, label:"Projects Generated", suffix:"+" },
+  { value:98,    label:"Satisfaction Rate",  suffix:"%" },
+  { value:8,     label:"Seconds to Build",   suffix:"s" },
+  { value:22,    label:"Premium Templates",  suffix:"+" },
 ];
 
 const MARQUEE_ITEMS = [
-  "🌐 Websites", "⚙️ Web Apps", "🎮 Browser Games",
-  "📊 Dashboards", "🛒 E-Commerce", "📝 Forms & Tools",
-  "💼 Portfolios", "📈 Analytics", "🤖 AI Features",
-  "📱 Mobile-First", "🔒 Secure Output", "⚡ Instant Build",
+  "🌐 Websites","⚙️ Web Apps","🎮 Browser Games","📊 Dashboards",
+  "🛒 E-Commerce","📝 Forms & Tools","💼 Portfolios","📈 Analytics",
+  "🤖 AI Features","📱 Mobile-First","🔒 Secure Output","⚡ Instant Build",
 ];
 
 const PLANS = [
-  { name: "Free", emoji: "🟢", monthlyPrice: "$0", yearlyPrice: "$0", credits: "5 Generations / Day", highlight: false, cta: "Get Started Free",
-    included: ["Website Generator","App Generator","Game Generator","Live Preview","Mobile Responsive Output","Download HTML","Community Support"],
-    locked: ["Save Projects","Project History","Advanced AI Model","Team Workspace","API Access"] },
-  { name: "Pro", emoji: "🔥", monthlyPrice: "$25", yearlyPrice: "$20", credits: "100 Generations / Month", highlight: true, cta: "Start Pro",
-    included: ["Everything in Free","Save Projects","Project History","Faster Generation","Better AI Quality","Export Full Source Code","Private Projects","Premium Templates","Email Support"],
-    locked: ["Team Workspace","API Access"] },
-  { name: "Premium", emoji: "💎", monthlyPrice: "$69", yearlyPrice: "$55", credits: "300 Generations / Month", highlight: false, cta: "Start Premium",
-    included: ["Everything in Pro","Fastest AI Model","Unlimited Project Saves","Version History","Team Collaboration (5 Users)","Priority Support"],
-    locked: ["API Access"] },
-  { name: "Business", emoji: "🏢", monthlyPrice: "$149", yearlyPrice: "$119", credits: "100 Generations / Day", highlight: false, cta: "Contact Us",
-    included: ["Everything in Premium","API Access","Unlimited Team Members","Admin Dashboard","White Label Support","Business SLA"],
-    locked: [] },
+  { name:"Free",     emoji:"🟢", monthly:"$0",   yearly:"$0",   credits:"5 / Day",     hot:false, cta:"Get Started Free",
+    inc:["Website Generator","App Generator","Game Generator","Live Preview","Download HTML","Community Support"],
+    off:["Save Projects","Project History","Advanced AI","Team Workspace","API Access"] },
+  { name:"Pro",      emoji:"🔥", monthly:"$25",  yearly:"$20",  credits:"100 / Month",  hot:true,  cta:"Start Pro",
+    inc:["Everything in Free","Save Projects","Project History","Faster Generation","Better AI Quality","Export Source Code","Premium Templates","Email Support"],
+    off:["Team Workspace","API Access"] },
+  { name:"Premium",  emoji:"💎", monthly:"$69",  yearly:"$55",  credits:"300 / Month",  hot:false, cta:"Start Premium",
+    inc:["Everything in Pro","Fastest AI Model","Unlimited Saves","Version History","Team (5 Users)","Priority Support"],
+    off:["API Access"] },
+  { name:"Business", emoji:"🏢", monthly:"$149", yearly:"$119", credits:"100 / Day",    hot:false, cta:"Contact Us",
+    inc:["Everything in Premium","API Access","Unlimited Team","Admin Dashboard","White Label","Business SLA"],
+    off:[] },
 ];
 
 const TESTIMONIALS = [
-  { stars: 5, text: "Generated my startup landing page in 2 minutes. Absolutely incredible.", name: "Alex", role: "Founder" },
-  { stars: 5, text: "Much faster than hiring freelancers. The quality is production-ready.", name: "Sarah", role: "Designer" },
-  { stars: 5, text: "Built a full CRM tool with Krypton AI in one afternoon. Game changer.", name: "Raj", role: "Product Manager" },
+  { stars:5, text:"Generated my startup landing page in 2 minutes. Absolutely incredible.", name:"Alex", role:"Founder" },
+  { stars:5, text:"Much faster than hiring freelancers. The quality is production-ready.",   name:"Sarah",role:"Designer" },
+  { stars:5, text:"Built a full CRM tool with Krypton AI in one afternoon. Game changer.",  name:"Raj",  role:"Product Manager" },
 ];
 
 const FAQS = [
-  { q: "What can Krypton AI build?", a: "Websites, web apps, browser games, dashboards, calculators, portfolios, and more — all as production-ready HTML files." },
-  { q: "How does Krypton AI work?", a: "Simply describe what you want to build in plain English. Krypton AI transforms your idea into a complete, responsive, and production-ready project within seconds." },
-  { q: "Can I download the code?", a: "Yes. Every project can be downloaded as a complete HTML file, ready to deploy anywhere." },
-  { q: "Do I need coding skills?", a: "No. Just describe what you want in plain English and Krypton AI generates it instantly." },
-  { q: "Is Krypton AI reliable?", a: "Yes. Krypton AI is built for speed, accuracy, and reliability, helping users generate high-quality projects with minimal effort." },
+  { q:"What can Krypton AI build?",   a:"Websites, web apps, browser games, dashboards, calculators, portfolios — all as production-ready HTML files." },
+  { q:"How does Krypton AI work?",    a:"Describe what you want in plain English. Krypton AI transforms your idea into a complete, responsive, production-ready project within seconds." },
+  { q:"Can I download the code?",     a:"Yes. Every project can be downloaded as a complete HTML file, ready to deploy anywhere." },
+  { q:"Do I need coding skills?",     a:"No. Just describe what you want in plain English and Krypton AI generates it instantly." },
+  { q:"Is Krypton AI reliable?",      a:"Yes. Built for speed, accuracy, and reliability — helping users generate high-quality projects with minimal effort." },
 ];
 
-// ── Helpers ──
-function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
-function hexToRgb(hex: string) {
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-  return [r,g,b];
-}
-function rgbToHex(r:number,g:number,b:number) {
-  return '#'+[r,g,b].map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('');
+const CODE_LINES = [
+  { c:"#569CD6", t:'<!DOCTYPE html>' },
+  { c:"#569CD6", t:'<html lang="en">' },
+  { c:"#6A9955", t:"  {/* AI-generated */}" },
+  { c:"#CE9178", t:'  <div class="app">' },
+  { c:"#DCDCAA", t:'    <header class="nav">' },
+  { c:"#4EC9B0", t:"      <KryptonAI />" },
+  { c:"#DCDCAA", t:"    </header>" },
+  { c:"#CE9178", t:"  </div>" },
+];
+
+/* ─────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────── */
+function lerp(a:number, b:number, t:number){ return a+(b-a)*t; }
+function hexToRgb(hex:string){ return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)); }
+function rgbToHex(r:number,g:number,b:number){
+  return "#"+[r,g,b].map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,"0")).join("");
 }
 
-// ── Counter hook ──
-function useCounter(target: number, duration = 2000) {
+/* ─────────────────────────────────────────────
+   ANIMATED COUNTER
+───────────────────────────────────────────── */
+function Counter({ value, suffix }:{ value:number; suffix:string }) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      obs.disconnect();
-      const start = performance.now();
-      const step = (now: number) => {
-        const t = Math.min((now - start) / duration, 1);
-        const ease = 1 - Math.pow(1 - t, 3);
-        setCount(Math.round(ease * target));
-        if (t < 1) requestAnimationFrame(step);
+  useEffect(()=>{
+    const el = ref.current; if(!el) return;
+    const obs = new IntersectionObserver(([e])=>{
+      if(!e.isIntersecting) return; obs.disconnect();
+      const t0 = performance.now();
+      const step = (now:number)=>{
+        const t = Math.min((now-t0)/2000,1);
+        setCount(Math.round((1-Math.pow(1-t,3))*value));
+        if(t<1) requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
-    }, { threshold: 0.3 });
+    },{ threshold:0.3 });
     obs.observe(el);
-    return () => obs.disconnect();
-  }, [target, duration]);
-  return { count, ref };
-}
-
-function CounterCard({ value, label, suffix }: { value: number; label: string; suffix: string }) {
-  const { count, ref } = useCounter(value);
+    return ()=>obs.disconnect();
+  },[value]);
   return (
-    <div ref={ref} style={{ textAlign: "center", padding: "28px 16px" }}>
-      <div className="grad-text" style={{ fontSize: "clamp(36px,5vw,56px)", fontWeight: 800, fontFamily: "'Syne',sans-serif", lineHeight:1 }}>
+    <div ref={ref} style={{ textAlign:"center", padding:"32px 16px" }}>
+      <div className="gt" style={{ fontSize:"clamp(36px,4vw,54px)", fontWeight:800, fontFamily:"'Syne',sans-serif", lineHeight:1 }}>
         {count}{suffix}
       </div>
-      <div style={{ color: T.muted, fontSize: "13px", marginTop: "8px", letterSpacing:"0.02em" }}>{label}</div>
+      <div style={{ color:T.muted, fontSize:"13px", marginTop:"8px" }}>{STATS.find(s=>s.value===value)?.label}</div>
     </div>
   );
 }
 
-// ── Floating Particle ──
-function Particle({ style }: { style: CSSProperties }) {
-  return <div className="particle" style={style} />;
-}
+/* ─────────────────────────────────────────────
+   PARTICLE
+───────────────────────────────────────────── */
+function Particle({ s }:{ s:CSSProperties }){ return <div className="ptcl" style={s} />; }
 
+/* ─────────────────────────────────────────────
+   LANDING PAGE
+───────────────────────────────────────────── */
 export default function LandingPage() {
   const router = useRouter();
-  const [promptIndex, setPromptIndex] = useState(0);
-  const [displayed, setDisplayed] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const [billing, setBilling] = useState<"monthly"|"yearly">("monthly");
-  const [isMobile, setIsMobile] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number|null>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [navScrolled, setNavScrolled] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const themeRef = useRef(0);
+
+  /* state */
+  const [promptIdx, setPromptIdx] = useState(0);
+  const [typed,     setTyped]     = useState("");
+  const [dropdown,  setDropdown]  = useState(false);
+  const [mobMenu,   setMobMenu]   = useState(false);
+  const [billing,   setBilling]   = useState<"monthly"|"yearly">("monthly");
+  const [openFaq,   setOpenFaq]   = useState<number|null>(null);
+  const [scrolled,  setScrolled]  = useState(false);
+  const [mounted,   setMounted]   = useState(false);      // SSR safety
+  const [isDesktop, setIsDesktop] = useState(false);      // for JS-only branches
+  const [liveLines, setLiveLines] = useState(847);
+
+  /* refs */
+  const dropRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>();
-  const [liveCode, setLiveCode] = useState(0);
 
-  // ── Responsive ──
-  useEffect(() => {
-    const check = () => {
-      const w = window.innerWidth;
-      setIsMobile(w < 768);
-      setIsTablet(w >= 768 && w < 1200);
-    };
+  /* ── mount + responsive ── */
+  useEffect(()=>{
+    const check = ()=>{ const w=window.innerWidth; setIsDesktop(w>=1200); };
     check();
+    setMounted(true);
     window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+    return ()=>window.removeEventListener("resize", check);
+  },[]);
 
-  // ── Nav scroll effect ──
-  useEffect(() => {
-    const onScroll = () => setNavScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  /* ── nav scroll ── */
+  useEffect(()=>{
+    const h = ()=>setScrolled(window.scrollY>20);
+    window.addEventListener("scroll",h,{passive:true});
+    return ()=>window.removeEventListener("scroll",h);
+  },[]);
 
-  // ── Mouse glow ──
-  useEffect(() => {
-    const handle = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
-    window.addEventListener("mousemove", handle, { passive: true });
-    return () => window.removeEventListener("mousemove", handle);
-  }, []);
+  /* ── live code counter ── */
+  useEffect(()=>{
+    const iv = setInterval(()=>setLiveLines(p=>p+Math.floor(Math.random()*8+2)),120);
+    return ()=>clearInterval(iv);
+  },[]);
 
-  // ── Live code counter (hero dashboard mockup) ──
-  useEffect(() => {
-    const iv = setInterval(() => setLiveCode(p => p + Math.floor(Math.random() * 12 + 3)), 80);
-    return () => clearInterval(iv);
-  }, []);
-
-  // ── Gradient cycling — 6s interval, 800ms smooth transition ──
-  useEffect(() => {
+  /* ── gradient theme cycle — 3 s / 800 ms ── */
+  useEffect(()=>{
     const root = document.documentElement;
-    let current = 0;
-    let transitioning = false;
-
-    const setVars = (a: number[], b: number[]) => {
-      root.style.setProperty("--ga", rgbToHex(a[0],a[1],a[2]));
-      root.style.setProperty("--gb", rgbToHex(b[0],b[1],b[2]));
-      root.style.setProperty("--ga-rgb", `${Math.round(a[0])},${Math.round(a[1])},${Math.round(a[2])}`);
-      root.style.setProperty("--gb-rgb", `${Math.round(b[0])},${Math.round(b[1])},${Math.round(b[2])}`);
+    let cur=0, busy=false;
+    const set=(a:number[],b:number[])=>{
+      root.style.setProperty("--ga",rgbToHex(a[0],a[1],a[2]));
+      root.style.setProperty("--gb",rgbToHex(b[0],b[1],b[2]));
+      root.style.setProperty("--ga-rgb",a.map(Math.round).join(","));
+      root.style.setProperty("--gb-rgb",b.map(Math.round).join(","));
     };
-
-    const doTransition = (fromIdx: number, toIdx: number) => {
-      if (transitioning) return;
-      transitioning = true;
-      const from = THEMES[fromIdx], to = THEMES[toIdx];
-      const fa = hexToRgb(from.a), fb = hexToRgb(from.b);
-      const ta = hexToRgb(to.a),   tb = hexToRgb(to.b);
-      const dur = 800; // 800ms smooth transition
-      const t0 = performance.now();
-      const step = (now: number) => {
-        const raw = Math.min((now - t0) / dur, 1);
-        const ease = raw < 0.5 ? 2*raw*raw : -1+(4-2*raw)*raw;
-        setVars(fa.map((v,i)=>lerp(v,ta[i],ease)), fb.map((v,i)=>lerp(v,tb[i],ease)));
-        if (raw < 1) { animRef.current = requestAnimationFrame(step); }
-        else transitioning = false;
+    const transit=(fi:number,ti:number)=>{
+      if(busy) return; busy=true;
+      const fa=hexToRgb(THEMES[fi].a), fb=hexToRgb(THEMES[fi].b);
+      const ta=hexToRgb(THEMES[ti].a), tb=hexToRgb(THEMES[ti].b);
+      const t0=performance.now();
+      const step=(now:number)=>{
+        const raw=Math.min((now-t0)/800,1);
+        const e=raw<.5?2*raw*raw:-1+(4-2*raw)*raw;
+        set(fa.map((v,i)=>lerp(v,ta[i],e)),fb.map((v,i)=>lerp(v,tb[i],e)));
+        if(raw<1){ animRef.current=requestAnimationFrame(step); } else busy=false;
       };
-      animRef.current = requestAnimationFrame(step);
+      animRef.current=requestAnimationFrame(step);
     };
+    set(hexToRgb(THEMES[0].a),hexToRgb(THEMES[0].b));
+    const iv = setInterval(()=>{ const n=(cur+1)%THEMES.length; transit(cur,n); cur=n; },3000);
+    return ()=>{ clearInterval(iv); if(animRef.current) cancelAnimationFrame(animRef.current); };
+  },[]);
 
-    setVars(hexToRgb(THEMES[0].a), hexToRgb(THEMES[0].b));
+  /* ── typewriter ── */
+  useEffect(()=>{
+    const target=PROMPTS[promptIdx];
+    let i=0; setTyped("");
+    const iv=setInterval(()=>{
+      if(i<target.length){ setTyped(target.slice(0,i+1)); i++; }
+      else{ clearInterval(iv); setTimeout(()=>setPromptIdx(p=>(p+1)%PROMPTS.length),2200); }
+    },42);
+    return ()=>clearInterval(iv);
+  },[promptIdx]);
 
-    const timer = setInterval(() => {
-      const next = (current + 1) % THEMES.length;
-      doTransition(current, next);
-      current = next;
-      themeRef.current = next;
-    }, 3000); // every 3 seconds
+  /* ── close dropdown outside click ── */
+  useEffect(()=>{
+    const h=(e:MouseEvent)=>{ if(dropRef.current&&!dropRef.current.contains(e.target as Node)) setDropdown(false); };
+    document.addEventListener("mousedown",h);
+    return ()=>document.removeEventListener("mousedown",h);
+  },[]);
 
-    return () => { clearInterval(timer); if (animRef.current) cancelAnimationFrame(animRef.current); };
-  }, []);
+  const scrollTo = useCallback((id:string)=>{
+    setMobMenu(false);
+    setTimeout(()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth"}),80);
+  },[]);
 
-  // ── Typewriter ──
-  useEffect(() => {
-    const target = PROMPTS[promptIndex];
-    let i = 0;
-    setDisplayed("");
-    const iv = setInterval(() => {
-      if (i < target.length) { setDisplayed(target.slice(0, i+1)); i++; }
-      else { clearInterval(iv); setTimeout(() => setPromptIndex(p => (p+1) % PROMPTS.length), 2500); }
-    }, 44);
-    return () => clearInterval(iv);
-  }, [promptIndex]);
-
-  // ── Click outside dropdown ──
-  useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowDropdown(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
-
-  const scrollTo = useCallback((id: string) => {
-    setMobileMenu(false);
-    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 100);
-  }, []);
-
-  const isDesktop = !isMobile && !isTablet;
-
+  /* ────────────────── RENDER ────────────────── */
   return (
-    <div style={{ background: T.bg, color: T.text, fontFamily: "'DM Sans',sans-serif", minHeight: "100vh", overflowX: "hidden", position: "relative" }}>
+    <div style={{ background:T.bg, color:T.text, fontFamily:"'DM Sans',system-ui,sans-serif", minHeight:"100vh" }}>
 
-      {/* ── Global CSS ── */}
+      {/* ══════════════════════════════════════
+          GLOBAL STYLES
+      ══════════════════════════════════════ */}
       <style>{`
-        :root {
-          --ga: #F5C542; --gb: #00D084;
-          --ga-rgb: 245,197,66; --gb-rgb: 0,208,132;
+        :root{
+          --ga:#F5C542; --gb:#00D084;
+          --ga-rgb:245,197,66; --gb-rgb:0,208,132;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+        html,body{ overflow-x:hidden; }
 
-        /* Gradient utilities */
-        .grad-text {
-          background: linear-gradient(135deg, var(--ga) 0%, var(--gb) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          transition: --ga 0.8s ease, --gb 0.8s ease;
+        /* ── gradient helpers ── */
+        .gt{
+          background:linear-gradient(135deg,var(--ga) 0%,var(--gb) 100%);
+          -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+          background-clip:text;
         }
-        .grad-bg {
-          background: linear-gradient(135deg, var(--ga) 0%, var(--gb) 100%) !important;
-        }
-        .grad-border {
-          border: 1px solid rgba(var(--ga-rgb), 0.35) !important;
-          transition: border-color 0.8s ease;
-        }
-        .grad-glow {
-          box-shadow: 0 0 40px rgba(var(--ga-rgb),0.22), 0 0 80px rgba(var(--gb-rgb),0.12);
-          transition: box-shadow 0.8s ease;
-        }
-        .grad-icon { filter: drop-shadow(0 0 8px rgba(var(--ga-rgb),0.6)); }
+        .gb{ background:linear-gradient(135deg,var(--ga) 0%,var(--gb) 100%)!important; }
+        .gg{ box-shadow:0 0 40px rgba(var(--ga-rgb),.2),0 0 80px rgba(var(--gb-rgb),.1); }
 
-        /* Shine button */
-        .shine-btn { position: relative; overflow: hidden; }
-        .shine-btn::after {
-          content: '';
-          position: absolute;
-          top: -50%; left: -60%;
-          width: 40%; height: 200%;
-          background: linear-gradient(to right, transparent, rgba(255,255,255,0.28), transparent);
-          transform: skewX(-20deg);
-          animation: shineLoop 3.5s ease-in-out infinite;
+        /* ── shine button ── */
+        .shine{ position:relative; overflow:hidden; }
+        .shine::after{
+          content:''; position:absolute;
+          top:-50%; left:-60%; width:40%; height:200%;
+          background:linear-gradient(to right,transparent,rgba(255,255,255,.28),transparent);
+          transform:skewX(-20deg);
+          animation:shineL 3.5s ease-in-out infinite;
         }
 
-        /* Scroll reveal */
-        .fade-up { animation: fadeUp 0.7s ease forwards; }
-        .reveal {
-          opacity: 0;
-          transform: translateY(24px);
-          transition: opacity 0.6s ease, transform 0.6s ease;
-        }
-        .reveal.visible { opacity: 1; transform: translateY(0); }
-
-        /* Floating particles */
-        .particle {
-          position: absolute;
-          border-radius: 50%;
-          pointer-events: none;
-          background: radial-gradient(circle, rgba(var(--ga-rgb),0.5) 0%, transparent 70%);
-          animation: particleFloat var(--dur, 12s) ease-in-out infinite var(--delay, 0s);
-          transition: background 0.8s ease;
+        /* ── particles ── */
+        .ptcl{
+          position:absolute; border-radius:50%; pointer-events:none;
+          background:radial-gradient(circle,rgba(var(--ga-rgb),.45) 0%,transparent 70%);
+          animation:pfloat var(--d,12s) ease-in-out infinite var(--dl,0s);
         }
 
-        /* Keyframes */
-        @keyframes shineLoop {
-          0%   { left: -60%; opacity: 0; }
-          10%  { opacity: 1; }
-          40%  { left: 130%; opacity: 1; }
-          41%  { opacity: 0; }
-          100% { left: 130%; opacity: 0; }
-        }
-        @keyframes fadeUp    { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes pulse     { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
-        @keyframes blink     { 0%,100%{opacity:1} 50%{opacity:0} }
-        @keyframes marquee   { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-        @keyframes gridFade  { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
-        @keyframes orbFloat  { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-10px) scale(1.04)} }
-        @keyframes orbRotate { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-        @keyframes gradMove  { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(4%,-4%) scale(1.06)} 66%{transform:translate(-3%,3%) scale(0.97)} 100%{transform:translate(0,0) scale(1)} }
-        @keyframes gradMove2 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(-5%,5%) scale(1.08)} 100%{transform:translate(0,0) scale(1)} }
-        @keyframes gradMove3 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(5%,-3%) scale(1.06)} 100%{transform:translate(0,0) scale(1)} }
-        @keyframes glowPulse { 0%,100%{opacity:0.55} 50%{opacity:0.95} }
-        @keyframes particleFloat {
-          0%   { transform: translate(0, 0) scale(1);   opacity: 0; }
-          10%  { opacity: 1; }
-          50%  { transform: translate(var(--tx, 30px), var(--ty, -60px)) scale(1.2); opacity: 0.7; }
-          90%  { opacity: 0.3; }
-          100% { transform: translate(0, 0) scale(1);   opacity: 0; }
-        }
-        @keyframes dashCard  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-        @keyframes codeType  { from{width:0} to{width:100%} }
-        @keyframes barGrow   { from{height:0} to{height:var(--h)} }
+        /* ── nav ── */
+        .desk-nav{ display:none; }
+        @media(min-width:768px){ .desk-nav{ display:flex!important; } }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #080808; }
-        ::-webkit-scrollbar-thumb { background: rgba(var(--ga-rgb),0.3); border-radius: 3px; }
+        /* ── hero layout ── */
+        .hero-grid{
+          display:grid;
+          grid-template-columns:1fr;
+          gap:48px;
+          align-items:center;
+          width:100%;
+          max-width:1400px;
+          margin:0 auto;
+          padding:0 clamp(20px,4vw,64px);
+        }
+        @media(min-width:1200px){
+          .hero-grid{ grid-template-columns:1fr 1fr; }
+        }
 
-        /* Desktop nav */
-        .desk-nav { display: none; }
-        @media (min-width: 768px) { .desk-nav { display: flex !important; } }
-        @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        /* ── hero left alignment ── */
+        .hero-left{
+          display:flex; flex-direction:column;
+          align-items:center; text-align:center;
+        }
+        @media(min-width:1200px){
+          .hero-left{ align-items:flex-start; text-align:left; }
+        }
+
+        /* ── hero dashboard — hide on mobile/tablet ── */
+        .hero-dash{ display:none; }
+        @media(min-width:1200px){ .hero-dash{ display:block; } }
+
+        /* ── section containers ── */
+        .wrap{
+          width:100%; max-width:1280px;
+          margin:0 auto;
+          padding:0 clamp(20px,4vw,64px);
+        }
+        .wrap-narrow{ max-width:700px; margin:0 auto; padding:0 clamp(20px,4vw,64px); }
+
+        /* ── section padding ── */
+        .sec{ padding:clamp(60px,8vw,100px) 0; position:relative; z-index:1; }
+        .sec-alt{ background:rgba(255,255,255,.018); border-top:1px solid rgba(255,255,255,.05); }
+
+        /* ── grid utilities ── */
+        .grid-2{ display:grid; grid-template-columns:1fr; gap:16px; }
+        .grid-3{ display:grid; grid-template-columns:1fr; gap:16px; }
+        .grid-4{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+        @media(min-width:768px){
+          .grid-2{ grid-template-columns:repeat(2,1fr); }
+          .grid-3{ grid-template-columns:repeat(2,1fr); }
+          .grid-4{ grid-template-columns:repeat(2,1fr); }
+        }
+        @media(min-width:1200px){
+          .grid-3{ grid-template-columns:repeat(3,1fr); }
+          .grid-4{ grid-template-columns:repeat(4,1fr); }
+        }
+
+        /* ── stats ── */
+        .stats-grid{
+          display:grid; grid-template-columns:repeat(2,1fr);
+          gap:1px; background:rgba(255,255,255,.06);
+          border-radius:20px; overflow:hidden;
+          border:1px solid rgba(255,255,255,.07);
+        }
+        @media(min-width:768px){ .stats-grid{ grid-template-columns:repeat(4,1fr); } }
+
+        /* ── cards ── */
+        .card{
+          background:rgba(255,255,255,.025);
+          border:1px solid rgba(255,255,255,.08);
+          border-radius:18px; padding:24px;
+          transition:all .3s ease;
+          backdropFilter:blur(12px);
+        }
+        .card:hover{
+          border-color:rgba(var(--ga-rgb),.3);
+          transform:translateY(-4px);
+          box-shadow:0 20px 48px rgba(0,0,0,.45),0 0 0 1px rgba(var(--ga-rgb),.08);
+        }
+
+        /* ── buttons ── */
+        .btn-primary{
+          display:inline-flex; align-items:center; justify-content:center;
+          padding:14px 32px; border:none; border-radius:12px;
+          color:#050505; font-size:15px; font-weight:700;
+          cursor:pointer; white-space:nowrap;
+          transition:transform .2s ease, box-shadow .2s ease;
+        }
+        .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 12px 32px rgba(var(--ga-rgb),.38); }
+
+        .btn-ghost{
+          display:inline-flex; align-items:center; justify-content:center;
+          padding:14px 32px; border:1px solid rgba(255,255,255,.12);
+          background:rgba(255,255,255,.04); border-radius:12px;
+          color:#fff; font-size:15px; font-weight:600;
+          cursor:pointer; white-space:nowrap;
+          transition:all .2s ease;
+        }
+        .btn-ghost:hover{
+          background:rgba(255,255,255,.08);
+          border-color:rgba(255,255,255,.22);
+          transform:translateY(-2px);
+        }
+
+        /* ── animations ── */
+        @keyframes shineL{
+          0%{left:-60%;opacity:0} 10%{opacity:1}
+          40%{left:130%;opacity:1} 41%{opacity:0} 100%{left:130%;opacity:0}
+        }
+        @keyframes fadeUp{ from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes pulse{ 0%,100%{opacity:.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.2)} }
+        @keyframes blink{ 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes marquee{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
+        @keyframes gridFade{ 0%,100%{opacity:.25} 50%{opacity:.5} }
+        @keyframes gm1{ 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(3%,-3%)scale(1.05)} }
+        @keyframes gm2{ 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(-4%,4%)scale(1.07)} }
+        @keyframes gm3{ 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(4%,-2%)scale(1.04)} }
+        @keyframes glow{ 0%,100%{opacity:.5} 50%{opacity:.9} }
+        @keyframes pfloat{
+          0%,100%{transform:translate(0,0)scale(1);opacity:0}
+          10%{opacity:.8}
+          50%{transform:translate(var(--tx,30px),var(--ty,-60px))scale(1.3);opacity:.5}
+          90%{opacity:.2}
+        }
+        @keyframes float1{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes float2{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+        @keyframes spin{ from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes fadeIn{ from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ── scrollbar ── */
+        ::-webkit-scrollbar{ width:4px; }
+        ::-webkit-scrollbar-track{ background:#080808; }
+        ::-webkit-scrollbar-thumb{ background:rgba(var(--ga-rgb),.3); border-radius:4px; }
+
+        @media(prefers-reduced-motion:reduce){
+          *,*::before,*::after{ animation-duration:.01ms!important; transition-duration:.01ms!important; }
         }
       `}</style>
 
-      {/* ── Floating Particles ── */}
-      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
+      {/* ══════════════════════════════════════
+          BACKGROUND LAYER
+      ══════════════════════════════════════ */}
+      <div style={{ position:"fixed", inset:0, zIndex:0, overflow:"hidden", pointerEvents:"none" }}>
+        {/* Aurora blobs */}
+        <div style={{ position:"absolute", top:"-5%", left:"-5%", width:"50vw", height:"50vw", borderRadius:"50%", filter:"blur(90px)", background:"radial-gradient(circle,rgba(var(--ga-rgb),.35) 0%,transparent 70%)", animation:"gm1 20s ease-in-out infinite,glow 9s ease-in-out infinite" }} />
+        <div style={{ position:"absolute", top:"-10%", right:"-10%", width:"60vw", height:"60vw", borderRadius:"50%", filter:"blur(90px)", background:"radial-gradient(circle,rgba(var(--gb-rgb),.28) 0%,transparent 70%)", animation:"gm2 24s ease-in-out infinite,glow 11s ease-in-out infinite" }} />
+        <div style={{ position:"absolute", bottom:"-10%", left:"20%", width:"55vw", height:"55vw", borderRadius:"50%", filter:"blur(90px)", background:"radial-gradient(circle,rgba(139,92,246,.18) 0%,transparent 70%)", animation:"gm3 22s ease-in-out infinite,glow 8s ease-in-out infinite" }} />
+        {/* Dot grid */}
+        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px)", backgroundSize:"36px 36px", animation:"gridFade 10s ease-in-out infinite" }} />
+        {/* Particles */}
         {[
-          { w:6,  h:6,  top:"15%", left:"8%",  dur:"14s", delay:"0s",   tx:"40px",  ty:"-80px" },
-          { w:4,  h:4,  top:"30%", left:"92%", dur:"18s", delay:"-6s",  tx:"-30px", ty:"-60px" },
-          { w:8,  h:8,  top:"60%", left:"5%",  dur:"20s", delay:"-3s",  tx:"50px",  ty:"-100px" },
-          { w:3,  h:3,  top:"75%", left:"80%", dur:"12s", delay:"-9s",  tx:"-20px", ty:"-40px" },
-          { w:5,  h:5,  top:"45%", left:"50%", dur:"16s", delay:"-4s",  tx:"25px",  ty:"-70px" },
-          { w:7,  h:7,  top:"20%", left:"70%", dur:"22s", delay:"-11s", tx:"-40px", ty:"-90px" },
-          { w:4,  h:4,  top:"85%", left:"30%", dur:"15s", delay:"-7s",  tx:"35px",  ty:"-55px" },
-          { w:6,  h:6,  top:"10%", left:"45%", dur:"19s", delay:"-2s",  tx:"-25px", ty:"-75px" },
-          { w:3,  h:3,  top:"55%", left:"88%", dur:"13s", delay:"-5s",  tx:"-15px", ty:"-50px" },
-          { w:5,  h:5,  top:"40%", left:"18%", dur:"17s", delay:"-8s",  tx:"30px",  ty:"-65px" },
-        ].map((p, i) => (
-          <Particle key={i} style={{ width:p.w, height:p.h, top:p.top, left:p.left, "--dur":p.dur, "--delay":p.delay, "--tx":p.tx, "--ty":p.ty } as CSSProperties} />
+           { w:5,h:5, top:"14%",left:"8%",  d:"16s",dl:"0s",    tx:"40px",  ty:"-80px" },
+          { w:3,h:3, top:"32%",left:"91%", d:"20s",dl:"-7s",   tx:"-30px", ty:"-55px" },
+          { w:7,h:7, top:"62%",left:"6%",  d:"22s",dl:"-3s",   tx:"55px",  ty:"-90px" },
+          { w:4,h:4, top:"78%",left:"82%", d:"14s",dl:"-10s",  tx:"-25px", ty:"-45px" },
+          { w:5,h:5, top:"45%",left:"50%", d:"18s",dl:"-5s",   tx:"28px",  ty:"-70px" },
+          { w:6,h:6, top:"20%",left:"68%", d:"24s",dl:"-12s",  tx:"-38px", ty:"-85px" },
+          { w:3,h:3, top:"86%",left:"28%", d:"16s",dl:"-8s",   tx:"32px",  ty:"-50px" },
+          { w:4,h:4, top:"10%",left:"42%", d:"20s",dl:"-2s",   tx:"-20px", ty:"-72px" },
+        ].map((p,i)=>(
+          <Particle key={i} s={{ width:p.w,height:p.h,top:p.top,left:p.left,"--d":p.d,"--dl":p.dl,"--tx":p.tx,"--ty":p.ty } as CSSProperties} />
         ))}
-
-        {/* Aurora glows */}
-        <div style={{ position:"absolute", top:"5%",  left:"5%",   width:"55vw", height:"55vw", borderRadius:"50%", filter:"blur(100px)", background:"radial-gradient(circle, rgba(245,197,66,0.4) 0%, transparent 70%)", animation:"gradMove 22s ease-in-out infinite, glowPulse 9s ease-in-out infinite" }} />
-        <div style={{ position:"absolute", top:"-5%", right:"-10%", width:"65vw", height:"65vw", borderRadius:"50%", filter:"blur(100px)", background:"radial-gradient(circle, rgba(0,208,132,0.3) 0%, transparent 70%)", animation:"gradMove2 26s ease-in-out infinite, glowPulse 11s ease-in-out infinite" }} />
-        <div style={{ position:"absolute", bottom:"-10%", left:"15%", width:"60vw", height:"60vw", borderRadius:"50%", filter:"blur(100px)", background:"radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)", animation:"gradMove3 24s ease-in-out infinite, glowPulse 8s ease-in-out infinite" }} />
-        <div style={{ position:"absolute", top:"30%",  right:"5%",  width:"45vw", height:"45vw", borderRadius:"50%", filter:"blur(80px)", background:"radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)", animation:"gradMove 28s ease-in-out infinite reverse, glowPulse 10s ease-in-out infinite" }} />
-
-        {/* Animated grid */}
-        <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)", backgroundSize:"56px 56px", animation:"gridFade 8s ease-in-out infinite" }} />
-
-        {/* Mouse glow — desktop only */}
-        {isDesktop && (
-          <div style={{ position:"absolute", width:"500px", height:"500px", borderRadius:"50%", filter:"blur(100px)", background:"radial-gradient(circle, rgba(var(--ga-rgb),0.07) 0%, transparent 70%)", left: mousePos.x - 250, top: mousePos.y - 250, pointerEvents:"none", transition:"left 0.25s ease, top 0.25s ease" }} />
-        )}
       </div>
 
-      {/* ── NAVBAR ── */}
+      {/* ══════════════════════════════════════
+          NAVBAR
+      ══════════════════════════════════════ */}
       <nav style={{
-        position:"fixed", top:0, left:0, right:0, zIndex:100,
-        borderBottom: navScrolled ? `1px solid rgba(255,255,255,0.08)` : "1px solid transparent",
-        background: navScrolled ? "rgba(5,5,5,0.95)" : "rgba(5,5,5,0.6)",
+        position:"fixed",top:0,left:0,right:0,zIndex:100,
+        height:62,display:"flex",alignItems:"center",justifyContent:"space-between",
+        padding:"0 clamp(16px,3vw,40px)",
+        background: scrolled ? "rgba(5,5,5,.96)" : "rgba(5,5,5,.5)",
+        borderBottom: scrolled ? "1px solid rgba(255,255,255,.07)" : "1px solid transparent",
         backdropFilter:"blur(28px)",
-        padding:"0 clamp(16px, 3vw, 40px)",
-        height:"62px", display:"flex", alignItems:"center", justifyContent:"space-between",
-        transition:"background 0.3s ease, border-color 0.3s ease",
+        transition:"all .3s ease",
       }}>
         {/* Logo + dropdown */}
-        <div ref={dropdownRef} style={{ position:"relative", display:"flex", alignItems:"center" }}>
-          <button onClick={e => { e.stopPropagation(); setShowDropdown(v => !v); }}
-            style={{ display:"flex", alignItems:"center", gap:"6px", background:"none", border:"none", cursor:"pointer", padding:"0" }}>
-            <img src="/logo.png" alt="Krypton AI" style={{ height:"44px", width:"auto", objectFit:"contain" }} />
-            <span style={{ color:"#555", fontSize:"10px", transition:"transform 0.2s", transform: showDropdown ? "rotate(180deg)" : "none" }}>▾</span>
+        <div ref={dropRef} style={{ position:"relative", display:"flex", alignItems:"center" }}>
+          <button onClick={e=>{e.stopPropagation();setDropdown(v=>!v);}}
+            style={{ display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:0 }}>
+            <img src="/logo.png" alt="Krypton AI" style={{ height:44,width:"auto",objectFit:"contain" }} />
+            <span style={{ color:"#555",fontSize:10,transition:"transform .2s",transform:dropdown?"rotate(180deg)":"none" }}>▾</span>
           </button>
-
-          {showDropdown && (
-            <div style={{ position:"absolute", top:"54px", left:0, background:"rgba(13,13,13,0.98)", border:`1px solid rgba(255,255,255,0.08)`, borderRadius:"18px", padding:"8px", minWidth:"230px", zIndex:200, boxShadow:"0 24px 64px rgba(0,0,0,0.9)", backdropFilter:"blur(20px)" }}>
+          {dropdown && (
+            <div style={{ position:"absolute",top:54,left:0,background:"rgba(12,12,12,.98)",border:"1px solid rgba(255,255,255,.08)",borderRadius:18,padding:8,minWidth:230,zIndex:200,boxShadow:"0 24px 64px rgba(0,0,0,.9)",backdropFilter:"blur(20px)" }}>
               {[
-                { icon:"🏠", label:"Home",       path:"/landing" },
-                { icon:"✨", label:"Features",   onClick:() => scrollTo("features") },
-                { icon:"🖼️", label:"Templates",  path:"/templates" },
-                { icon:"💰", label:"Pricing",    onClick:() => scrollTo("pricing") },
-                { icon:"❓", label:"FAQ",         onClick:() => scrollTo("faq") },
-              ].map(item => (
-                <button key={item.label} onClick={() => { if ((item as any).path) router.push((item as any).path); else if ((item as any).onClick) (item as any).onClick(); setShowDropdown(false); }}
-                  style={{ width:"100%", textAlign:"left", padding:"10px 12px", background:"none", border:"none", color:T.muted, fontSize:"13px", cursor:"pointer", borderRadius:"10px", display:"flex", alignItems:"center", gap:"9px", transition:"all 0.15s" }}
-                  onMouseEnter={e => { e.currentTarget.style.background="#1a1a1a"; e.currentTarget.style.color=T.text; }}
-                  onMouseLeave={e => { e.currentTarget.style.background="none"; e.currentTarget.style.color=T.muted; }}>
-                  <span style={{ fontSize:"15px" }}>{item.icon}</span> {item.label}
+                { icon:"🏠", label:"Home",      path:"/landing" },
+                { icon:"✨", label:"Features",  cb:()=>scrollTo("features") },
+                { icon:"🖼️", label:"Templates", path:"/templates" },
+                { icon:"💰", label:"Pricing",   cb:()=>scrollTo("pricing") },
+                { icon:"❓", label:"FAQ",        cb:()=>scrollTo("faq") },
+              ].map(it=>(
+                <button key={it.label}
+                  onClick={()=>{ if((it as any).path) router.push((it as any).path); else (it as any).cb(); setDropdown(false); }}
+                  style={{ width:"100%",textAlign:"left",padding:"10px 12px",background:"none",border:"none",color:T.muted,fontSize:13,cursor:"pointer",borderRadius:10,display:"flex",alignItems:"center",gap:9,transition:"all .15s" }}
+                  onMouseEnter={e=>{e.currentTarget.style.background="#1a1a1a";e.currentTarget.style.color="#fff";}}
+                  onMouseLeave={e=>{e.currentTarget.style.background="none";e.currentTarget.style.color=T.muted;}}>
+                  <span style={{fontSize:15}}>{it.icon}</span>{it.label}
                 </button>
               ))}
-              <div style={{ height:"1px", background:"rgba(255,255,255,0.06)", margin:"6px 0" }} />
-              <button onClick={() => { router.push("/auth/login"); setShowDropdown(false); }}
-                style={{ width:"100%", textAlign:"left", padding:"10px 12px", background:"none", border:"none", color:T.muted, fontSize:"13px", cursor:"pointer", borderRadius:"10px", display:"flex", alignItems:"center", gap:"9px" }}>
+              <div style={{ height:1,background:"rgba(255,255,255,.06)",margin:"6px 0" }} />
+              <button onClick={()=>{router.push("/auth/login");setDropdown(false);}}
+                style={{ width:"100%",textAlign:"left",padding:"10px 12px",background:"none",border:"none",color:T.muted,fontSize:13,cursor:"pointer",borderRadius:10,display:"flex",alignItems:"center",gap:9 }}>
                 🚀 Login
               </button>
-              <button onClick={() => { router.push("/auth/signup"); setShowDropdown(false); }}
-                style={{ width:"100%", textAlign:"left", padding:"10px 12px", background:"rgba(var(--ga-rgb),0.1)", border:"1px solid rgba(var(--ga-rgb),0.2)", borderRadius:"10px", color:"#F5C542", fontSize:"13px", fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:"9px", marginTop:4, transition:"all 0.15s" }}
-                onMouseEnter={e => { e.currentTarget.style.background="rgba(var(--ga-rgb),0.18)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background="rgba(var(--ga-rgb),0.1)"; }}>
+              <button onClick={()=>{router.push("/auth/signup");setDropdown(false);}}
+                style={{ width:"100%",textAlign:"left",padding:"10px 12px",background:"rgba(var(--ga-rgb),.1)",border:"1px solid rgba(var(--ga-rgb),.2)",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:9,marginTop:4,transition:"all .15s" }}
+                className="gt">
                 🟢 Get Started Free
               </button>
             </div>
           )}
         </div>
 
-        {/* Center nav */}
-        <div className="desk-nav" style={{ gap:"28px", position:"absolute", left:"50%", transform:"translateX(-50%)" }}>
-          {NAV_LINKS.map(item => (
-            <button key={item} onClick={() => scrollTo(item.toLowerCase())}
-              style={{ background:"none", border:"none", color:T.muted, fontSize:"13px", cursor:"pointer", fontWeight:500, transition:"color 0.2s", padding:"4px 0", position:"relative" }}
-              onMouseEnter={e => e.currentTarget.style.color=T.text}
-              onMouseLeave={e => e.currentTarget.style.color=T.muted}>
-              {item}
+        {/* Center links */}
+        <div className="desk-nav" style={{ gap:32,position:"absolute",left:"50%",transform:"translateX(-50%)" }}>
+          {NAV_LINKS.map(l=>(
+            <button key={l} onClick={()=>scrollTo(l.toLowerCase())}
+              style={{ background:"none",border:"none",color:T.muted,fontSize:13,cursor:"pointer",fontWeight:500,transition:"color .2s",padding:"4px 0" }}
+              onMouseEnter={e=>e.currentTarget.style.color="#fff"}
+              onMouseLeave={e=>e.currentTarget.style.color=T.muted}>
+              {l}
             </button>
           ))}
         </div>
 
-        {/* Right side */}
-        <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
-          {!isMobile && (
-            <button onClick={() => router.push("/auth/login")}
-              style={{ padding:"7px 18px", background:"none", border:`1px solid rgba(255,255,255,0.1)`, borderRadius:"10px", color:T.muted, fontSize:"13px", cursor:"pointer", transition:"all 0.2s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor="rgba(var(--ga-rgb),0.5)"; e.currentTarget.style.color=T.text; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; e.currentTarget.style.color=T.muted; }}>
-              Login
-            </button>
-          )}
-          <button className="grad-bg shine-btn" onClick={() => router.push("/auth/signup")}
-            style={{ padding:"7px 18px", border:"none", borderRadius:"10px", color:"#050505", fontSize:"13px", fontWeight:700, cursor:"pointer", transition:"transform 0.15s, box-shadow 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 8px 24px rgba(var(--ga-rgb),0.35)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
+        {/* Right CTA */}
+        <div style={{ display:"flex",gap:8,alignItems:"center" }}>
+          <button onClick={()=>router.push("/auth/login")}
+            style={{ padding:"7px 18px",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:10,color:T.muted,fontSize:13,cursor:"pointer",transition:"all .2s",display:"none" }}
+            className="desk-nav"
+            onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(var(--ga-rgb),.5)";e.currentTarget.style.color="#fff";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,.1)";e.currentTarget.style.color=T.muted;}}>
+            Login
+          </button>
+          <button className="gb shine" onClick={()=>router.push("/auth/signup")}
+            style={{ padding:"7px 18px",border:"none",borderRadius:10,color:"#050505",fontSize:13,fontWeight:700,cursor:"pointer",transition:"transform .15s,box-shadow .15s" }}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(var(--ga-rgb),.35)";}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";}}>
             Get Started
           </button>
-          {isMobile && (
-            <button onClick={() => setMobileMenu(v => !v)}
-              style={{ background:"rgba(255,255,255,0.05)", border:`1px solid rgba(255,255,255,0.08)`, borderRadius:"9px", color:T.text, fontSize:"16px", cursor:"pointer", padding:"6px 10px", transition:"all 0.2s" }}>
-              {mobileMenu ? "✕" : "☰"}
-            </button>
-          )}
+          {/* Mobile hamburger — CSS controlled */}
+          <button onClick={()=>setMobMenu(v=>!v)}
+            style={{ background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.08)",borderRadius:9,color:"#fff",fontSize:16,cursor:"pointer",padding:"6px 10px",display:"none" }}
+            className="mob-ham">
+            {mobMenu ? "✕" : "☰"}
+          </button>
         </div>
       </nav>
 
       {/* Mobile menu */}
-      {mobileMenu && (
-        <div style={{ position:"fixed", top:"62px", left:0, right:0, background:"rgba(8,8,8,0.98)", borderBottom:`1px solid rgba(255,255,255,0.08)`, padding:"16px 20px", zIndex:99, backdropFilter:"blur(20px)", display:"flex", flexDirection:"column", gap:"4px" }}>
-          {NAV_LINKS.map(item => (
-            <button key={item} onClick={() => scrollTo(item.toLowerCase())}
-              style={{ background:"none", border:"none", color:T.sub, fontSize:"15px", cursor:"pointer", padding:"12px 0", textAlign:"left", fontWeight:500, borderBottom:`1px solid rgba(255,255,255,0.05)` }}>
-              {item}
+      {mounted && mobMenu && (
+        <div style={{ position:"fixed",top:62,left:0,right:0,background:"rgba(6,6,6,.98)",borderBottom:"1px solid rgba(255,255,255,.08)",padding:"16px 20px",zIndex:99,backdropFilter:"blur(20px)",display:"flex",flexDirection:"column",gap:4 }}>
+          {NAV_LINKS.map(l=>(
+            <button key={l} onClick={()=>scrollTo(l.toLowerCase())}
+              style={{ background:"none",border:"none",color:T.sub,fontSize:15,cursor:"pointer",padding:"12px 0",textAlign:"left",fontWeight:500,borderBottom:"1px solid rgba(255,255,255,.05)" }}>
+              {l}
             </button>
           ))}
-          <div style={{ display:"flex", gap:"8px", marginTop:"12px" }}>
-            <button onClick={() => { router.push("/auth/login"); setMobileMenu(false); }}
-              style={{ flex:1, background:"none", border:`1px solid rgba(255,255,255,0.1)`, borderRadius:"10px", color:T.text, fontSize:"14px", cursor:"pointer", padding:"11px" }}>
+          <div style={{ display:"flex",gap:8,marginTop:12 }}>
+            <button onClick={()=>{router.push("/auth/login");setMobMenu(false);}}
+              style={{ flex:1,background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:10,color:"#fff",fontSize:14,cursor:"pointer",padding:11 }}>
               Login
             </button>
-            <button className="grad-bg shine-btn" onClick={() => { router.push("/auth/signup"); setMobileMenu(false); }}
-              style={{ flex:1, border:"none", borderRadius:"10px", color:"#050505", fontSize:"14px", fontWeight:700, cursor:"pointer", padding:"11px" }}>
+            <button className="gb shine" onClick={()=>{router.push("/auth/signup");setMobMenu(false);}}
+              style={{ flex:1,border:"none",borderRadius:10,color:"#050505",fontSize:14,fontWeight:700,cursor:"pointer",padding:11 }}>
               Sign Up Free
             </button>
           </div>
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          HERO — Split layout on desktop
-      ══════════════════════════════════════════ */}
+      {/* ══════════════════════════════════════
+          HERO
+      ══════════════════════════════════════ */}
       <section style={{
-        position:"relative", zIndex:1,
-        minHeight: isMobile ? "auto" : "85vh",
-        maxHeight: isMobile ? "none" : "85vh",
-        paddingTop: isMobile ? "90px" : "62px",
-        paddingBottom: isMobile ? "60px" : "0",
-        display:"flex", alignItems:"center",
-        overflow: isMobile ? "visible" : "hidden",
+        position:"relative",zIndex:1,
+        paddingTop:"clamp(100px,12vw,140px)",
+        paddingBottom:"clamp(60px,8vw,100px)",
+        overflow:"hidden",
       }}>
-        <div style={{
-          width:"92%", maxWidth:"1600px", margin:"0 auto",
-          display:"grid",
-          gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr" : "1fr 1fr",
-          gap: isMobile ? "48px" : "48px",
-          alignItems:"center",
-          padding: isMobile ? "0" : isTablet ? "40px 0" : "0",
-        }}>
+        <div className="hero-grid">
 
-          {/* ── LEFT: Headline + CTAs ── */}
-          <div style={{ display:"flex", flexDirection:"column", alignItems: isMobile || isTablet ? "center" : "flex-start", textAlign: isMobile || isTablet ? "center" : "left" }}>
+          {/* ── LEFT ── */}
+          <div className="hero-left" style={{ animation:"fadeIn .7s ease forwards" }}>
 
             {/* Badge */}
-            <div className="fade-up" style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:"rgba(var(--ga-rgb),0.07)", border:"1px solid rgba(var(--ga-rgb),0.2)", borderRadius:"24px", padding:"5px 16px", marginBottom:"1.5rem", fontSize:"12px", fontWeight:600 }}>
-              <span style={{ width:"7px", height:"7px", borderRadius:"50%", background:"#00D084", display:"inline-block", animation:"pulse 2s infinite" }} />
-              <span className="grad-text">✨ Build Websites, Apps & Games with AI</span>
+            <div style={{ display:"inline-flex",alignItems:"center",gap:8,background:"rgba(var(--ga-rgb),.08)",border:"1px solid rgba(var(--ga-rgb),.2)",borderRadius:24,padding:"5px 16px",marginBottom:"1.4rem",fontSize:12,fontWeight:600 }}>
+              <span style={{ width:7,height:7,borderRadius:"50%",background:"var(--gb)",display:"inline-block",animation:"pulse 2s infinite" }} />
+              <span className="gt">✨ Build Websites, Apps &amp; Games with AI</span>
             </div>
 
             {/* H1 */}
-            <h1 className="fade-up" style={{
+            <h1 style={{
               fontFamily:"'Syne',sans-serif",
-              fontSize: isMobile ? "clamp(30px,8vw,42px)" : isTablet ? "clamp(40px,6vw,56px)" : "clamp(44px,4.5vw,72px)",
-              fontWeight:800, lineHeight:1.05, marginBottom:"1.2rem",
-              maxWidth: isDesktop ? "520px" : "800px",
-              animationDelay:"0.1s",
+              fontSize:"clamp(36px,5.5vw,72px)",
+              fontWeight:800,lineHeight:1.04,
+              marginBottom:"1.2rem",
+              maxWidth:560,
+              animationDelay:".1s",
             }}>
               Build{" "}
-              <span className="grad-text">Websites, Apps</span>
-              {" "}&{" "}
-              <span className="grad-text">Games</span>
-              {" "}with AI.
+              <span className="gt">Websites,<br />Apps &amp; Games</span>{" "}
+              with AI.
             </h1>
 
-            <p className="fade-up" style={{
-              color:T.sub, fontSize: isMobile ? "15px" : "17px", lineHeight:1.75,
-              maxWidth: isDesktop ? "440px" : "600px",
-              marginBottom:"2rem", animationDelay:"0.2s",
-            }}>
+            <p style={{ color:T.sub,fontSize:"clamp(15px,1.8vw,18px)",lineHeight:1.75,maxWidth:460,marginBottom:"2rem" }}>
               Describe what you want. Krypton AI builds it — complete, responsive, and ready to deploy in seconds.
             </p>
 
-            {/* CTA buttons */}
-            <div className="fade-up" style={{ display:"flex", gap:"12px", flexWrap:"wrap", justifyContent: isMobile || isTablet ? "center" : "flex-start", marginBottom:"2rem", animationDelay:"0.3s" }}>
-              <button className="grad-bg shine-btn" onClick={() => router.push("/auth/signup")}
-                style={{ padding: isMobile ? "13px 28px" : "14px 34px", border:"none", borderRadius:"14px", color:"#050505", fontSize: isMobile ? "14px" : "16px", fontWeight:700, cursor:"pointer", transition:"transform 0.2s, box-shadow 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 12px 32px rgba(var(--ga-rgb),0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
+            {/* CTAs */}
+            <div style={{ display:"flex",gap:12,flexWrap:"wrap",justifyContent:"inherit",marginBottom:"2rem" }}>
+              <button className="gb btn-primary shine" onClick={()=>router.push("/auth/signup")}>
                 Start Building Free →
               </button>
-              <button onClick={() => scrollTo("examples")}
-                style={{ padding: isMobile ? "13px 28px" : "14px 34px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"14px", color:T.text, fontSize: isMobile ? "14px" : "16px", fontWeight:600, cursor:"pointer", transition:"all 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.08)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.2)"; e.currentTarget.style.transform="translateY(-2px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.1)"; e.currentTarget.style.transform="none"; }}>
+              <button className="btn-ghost" onClick={()=>scrollTo("examples")}>
                 See Examples
               </button>
             </div>
 
             {/* Social proof */}
-            <div className="fade-up" style={{ display:"flex", alignItems:"center", gap:"12px", animationDelay:"0.4s" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:12 }}>
               <div style={{ display:"flex" }}>
-                {["👤","👤","👤","👤"].map((_, i) => (
-                  <div key={i} style={{ width:"28px", height:"28px", borderRadius:"50%", background:`linear-gradient(135deg, rgba(var(--ga-rgb),0.4), rgba(var(--gb-rgb),0.4))`, border:"2px solid #050505", marginLeft: i===0?0:"-8px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"11px" }}>
-                    {["A","S","R","J"][i]}
+                {["A","S","R","J"].map((l,i)=>(
+                  <div key={i} style={{ width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,rgba(var(--ga-rgb),.4),rgba(var(--gb-rgb),.4))",border:"2px solid #050505",marginLeft:i===0?0:-9,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700 }}>
+                    {l}
                   </div>
                 ))}
               </div>
               <div>
-                <div style={{ display:"flex", gap:"2px", marginBottom:"2px" }}>{"⭐⭐⭐⭐⭐".split("").map((s,i)=><span key={i} style={{fontSize:"11px"}}>{s}</span>)}</div>
-                <p style={{ color:T.muted, fontSize:"12px" }}>Trusted by 12,000+ builders</p>
+                <div style={{ fontSize:12,marginBottom:2 }}>⭐⭐⭐⭐⭐</div>
+                <p style={{ color:T.muted,fontSize:12 }}>Trusted by 12,000+ builders</p>
               </div>
             </div>
           </div>
 
-          {/* ── RIGHT: Interactive AI Dashboard Preview ── */}
-          {isDesktop && (
-            <div className="fade-up" style={{ position:"relative", height:"480px", animationDelay:"0.2s" }}>
+          {/* ── RIGHT — Dashboard Preview (desktop only via CSS) ── */}
+          <div className="hero-dash" style={{ position:"relative",height:460,animation:"fadeIn .8s ease .15s both" }}>
 
-              {/* Main dashboard card */}
-              <div style={{ position:"absolute", inset:0, background:"rgba(13,13,13,0.85)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"24px", overflow:"hidden", backdropFilter:"blur(20px)", boxShadow:"0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--ga-rgb),0.05)" }}>
+            {/* Main editor card */}
+            <div style={{ position:"absolute",inset:0,background:"rgba(11,11,11,.9)",border:"1px solid rgba(255,255,255,.1)",borderRadius:22,overflow:"hidden",backdropFilter:"blur(20px)",boxShadow:"0 32px 80px rgba(0,0,0,.7),0 0 0 1px rgba(var(--ga-rgb),.06)" }}>
 
-                {/* Titlebar */}
-                <div style={{ padding:"14px 18px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", gap:"10px", background:"rgba(255,255,255,0.02)" }}>
-                  <div style={{ display:"flex", gap:"6px" }}>
-                    <div style={{ width:"10px", height:"10px", borderRadius:"50%", background:"#EF4444" }} />
-                    <div style={{ width:"10px", height:"10px", borderRadius:"50%", background:"#F59E0B" }} />
-                    <div style={{ width:"10px", height:"10px", borderRadius:"50%", background:"#10B981" }} />
-                  </div>
-                  <div style={{ flex:1, textAlign:"center", fontSize:"11px", color:T.muted }}>kryptonai.tech — Live Editor</div>
-                  <div style={{ width:"6px", height:"6px", borderRadius:"50%", background:"#00D084", animation:"pulse 2s infinite" }} />
+              {/* Title bar */}
+              <div style={{ padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,.06)",background:"rgba(255,255,255,.02)",display:"flex",alignItems:"center",gap:10 }}>
+                <div style={{ display:"flex",gap:6 }}>
+                  {["#EF4444","#F59E0B","#10B981"].map(c=>(
+                    <div key={c} style={{ width:10,height:10,borderRadius:"50%",background:c }} />
+                  ))}
                 </div>
-
-                {/* Editor body */}
-                <div style={{ padding:"18px", height:"calc(100% - 48px)", display:"flex", flexDirection:"column", gap:"14px" }}>
-
-                  {/* Prompt input */}
-                  <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(var(--ga-rgb),0.2)", borderRadius:"12px", padding:"12px 16px" }}>
-                    <p style={{ color:"#444", fontSize:"11px", margin:"0 0 5px" }}>Describe your project:</p>
-                    <p style={{ color:"rgba(255,255,255,0.75)", fontSize:"13px", fontFamily:"monospace", margin:0, minHeight:"18px" }}>
-                      {displayed}
-                      <span style={{ display:"inline-block", width:"2px", height:"13px", background:"var(--ga)", marginLeft:"2px", verticalAlign:"middle", animation:"blink 1s infinite" }} />
-                    </p>
-                  </div>
-
-                  {/* Code preview */}
-                  <div style={{ background:"rgba(0,0,0,0.6)", borderRadius:"12px", padding:"14px 16px", flex:1, overflow:"hidden", position:"relative" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"10px" }}>
-                      <span style={{ fontSize:"10px", color:"var(--ga)", fontWeight:700, fontFamily:"monospace" }}>● GENERATING</span>
-                      <span style={{ fontSize:"10px", color:T.muted, fontFamily:"monospace" }}>{liveCode} lines written</span>
-                    </div>
-                    {[
-                      { color:"#569CD6", text:"<!DOCTYPE html>" },
-                      { color:"#569CD6", text:"<html lang=\"en\">" },
-                      { color:"#6A9955", text:"  {/* AI-generated component */}" },
-                      { color:"#CE9178", text:"  <div class=\"dashboard\">" },
-                      { color:"#DCDCAA", text:"    <header class=\"nav\">" },
-                      { color:"#4EC9B0", text:"      <KryptonAI />" },
-                      { color:"#DCDCAA", text:"    </header>" },
-                      { color:"#CE9178", text:"  </div>" },
-                    ].map((line, i) => (
-                      <p key={i} style={{ fontFamily:"monospace", fontSize:"11px", color:line.color, margin:"0 0 3px", opacity: i < 6 ? 1 : 0.3, whiteSpace:"nowrap", overflow:"hidden" }}>
-                        {line.text}
-                      </p>
-                    ))}
-                  </div>
-
-                  {/* Bottom stats row */}
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px" }}>
-                    {[
-                      { label:"Build Time", value:"4.2s",  color:"var(--ga)" },
-                      { label:"Lines",      value:"847",   color:"var(--gb)" },
-                      { label:"Quality",    value:"98%",   color:"#3B82F6" },
-                    ].map((stat, i) => (
-                      <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:"10px", padding:"10px 12px", textAlign:"center" }}>
-                        <p style={{ color:stat.color, fontSize:"16px", fontWeight:700, fontFamily:"'Syne',sans-serif", margin:"0 0 2px" }}>{stat.value}</p>
-                        <p style={{ color:T.muted, fontSize:"10px", margin:0 }}>{stat.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <span style={{ flex:1,textAlign:"center",fontSize:11,color:T.muted }}>kryptonai.tech — Live Editor</span>
+                <span style={{ width:7,height:7,borderRadius:"50%",background:"#10B981",animation:"pulse 2s infinite" }} />
               </div>
 
-              {/* Floating analytics card — top right */}
-              <div style={{ position:"absolute", top:"-18px", right:"-18px", background:"rgba(13,13,13,0.95)", border:"1px solid rgba(var(--ga-rgb),0.25)", borderRadius:"16px", padding:"14px 18px", boxShadow:"0 16px 40px rgba(0,0,0,0.5)", backdropFilter:"blur(16px)", animation:"dashCard 5s ease-in-out infinite", minWidth:"150px" }}>
-                <p style={{ color:T.muted, fontSize:"10px", margin:"0 0 4px", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.08em" }}>Projects Today</p>
-                <p className="grad-text" style={{ fontSize:"28px", fontWeight:800, fontFamily:"'Syne',sans-serif", margin:"0 0 4px" }}>1,247</p>
-                <p style={{ color:"#00D084", fontSize:"11px", margin:0 }}>▲ 18% from yesterday</p>
+              {/* Prompt bar */}
+              <div style={{ margin:"14px 16px",background:"rgba(255,255,255,.04)",border:"1px solid rgba(var(--ga-rgb),.18)",borderRadius:10,padding:"10px 14px" }}>
+                <p style={{ color:"#444",fontSize:11,marginBottom:4 }}>Describe your project:</p>
+                <p style={{ color:"rgba(255,255,255,.75)",fontSize:13,fontFamily:"monospace",minHeight:18 }}>
+                  {typed}
+                  <span style={{ display:"inline-block",width:2,height:13,background:"var(--ga)",marginLeft:2,verticalAlign:"middle",animation:"blink 1s infinite" }} />
+                </p>
               </div>
 
-              {/* Floating tech badge — bottom left */}
-              <div style={{ position:"absolute", bottom:"-16px", left:"-16px", background:"rgba(13,13,13,0.95)", border:"1px solid rgba(var(--gb-rgb),0.25)", borderRadius:"16px", padding:"12px 16px", boxShadow:"0 16px 40px rgba(0,0,0,0.5)", backdropFilter:"blur(16px)", animation:"dashCard 7s ease-in-out infinite 1s", display:"flex", alignItems:"center", gap:"10px" }}>
-                <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:"rgba(var(--gb-rgb),0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px" }}>⚡</div>
-                <div>
-                  <p style={{ fontSize:"12px", fontWeight:700, margin:"0 0 1px" }}>Instant Deploy</p>
-                  <p style={{ color:T.muted, fontSize:"10px", margin:0 }}>Zero config, live in 8s</p>
+              {/* Code preview */}
+              <div style={{ margin:"0 16px",background:"rgba(0,0,0,.55)",borderRadius:12,padding:"12px 14px",height:180,overflow:"hidden" }}>
+                <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10 }}>
+                  <span style={{ fontSize:10,color:"var(--ga)",fontWeight:700,fontFamily:"monospace" }}>● GENERATING</span>
+                  <span style={{ fontSize:10,color:T.muted,fontFamily:"monospace" }}>{liveLines} lines written</span>
                 </div>
+                {CODE_LINES.map((l,i)=>(
+                  <p key={i} style={{ fontFamily:"monospace",fontSize:11,color:l.c,margin:"0 0 3px",opacity:i<5?1:.3,whiteSpace:"nowrap" }}>
+                    {l.t}
+                  </p>
+                ))}
               </div>
 
-              {/* AI badge — top left */}
-              <div style={{ position:"absolute", top:"80px", left:"-20px", background:"rgba(13,13,13,0.95)", border:"1px solid rgba(139,92,246,0.3)", borderRadius:"14px", padding:"10px 14px", boxShadow:"0 12px 32px rgba(0,0,0,0.5)", backdropFilter:"blur(16px)", animation:"dashCard 6s ease-in-out infinite 2s" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                  <span style={{ fontSize:"14px" }}>🤖</span>
-                  <div>
-                    <p style={{ fontSize:"11px", fontWeight:700, margin:0, color:"#C4B5FD" }}>Claude Sonnet</p>
-                    <p style={{ color:T.muted, fontSize:"9px", margin:0 }}>Powering generations</p>
+              {/* Bottom stats */}
+              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,margin:"12px 16px" }}>
+                {[{v:"4.2s",l:"Build Time",c:"var(--ga)"},{v:`${liveLines}`,l:"Lines",c:"var(--gb)"},{v:"98%",l:"Quality",c:"#60A5FA"}].map(s=>(
+                  <div key={s.l} style={{ background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.06)",borderRadius:10,padding:"10px 12px",textAlign:"center" }}>
+                    <p style={{ color:s.c,fontSize:16,fontWeight:800,fontFamily:"'Syne',sans-serif",margin:"0 0 2px" }}>{s.v}</p>
+                    <p style={{ color:T.muted,fontSize:10,margin:0 }}>{s.l}</p>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
-          )}
 
-          {/* Tablet: centered AI orb instead of dashboard */}
-          {isTablet && (
-            <div style={{ display:"flex", justifyContent:"center" }}>
-              <div style={{ position:"relative", width:140, height:140 }}>
-                <div style={{ position:"absolute", inset:-12, borderRadius:"50%", border:"1px solid transparent", background:"linear-gradient(#050505,#050505) padding-box, linear-gradient(135deg,var(--ga),var(--gb)) border-box", animation:"orbRotate 8s linear infinite", opacity:0.6 }} />
-                <div className="grad-glow" style={{ position:"absolute", inset:0, borderRadius:"50%", filter:"blur(20px)", background:"linear-gradient(135deg,rgba(var(--ga-rgb),0.3),rgba(var(--gb-rgb),0.3))" }} />
-                <div style={{ position:"absolute", inset:0, borderRadius:"50%", background:"radial-gradient(circle at 40% 35%, rgba(var(--ga-rgb),0.15) 0%, #0d0d0d 60%)", border:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"center", animation:"orbFloat 6s ease-in-out infinite" }}>
-                  <img src="/logo.png" alt="Krypton AI" style={{ width:70, height:70, objectFit:"contain" }} />
-                </div>
+            {/* Floating card: Projects */}
+            <div style={{ position:"absolute",top:16,right:16,background:"rgba(11,11,11,.95)",border:"1px solid rgba(var(--ga-rgb),.25)",borderRadius:14,padding:"12px 16px",boxShadow:"0 16px 40px rgba(0,0,0,.5)",backdropFilter:"blur(16px)",animation:"float1 5s ease-in-out infinite",zIndex:10,minWidth:140 }}>
+              <p style={{ color:T.muted,fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:".08em",margin:"0 0 4px" }}>Projects Today</p>
+              <p className="gt" style={{ fontSize:26,fontWeight:800,fontFamily:"'Syne',sans-serif",margin:"0 0 3px" }}>1,247</p>
+              <p style={{ color:"#10B981",fontSize:11,margin:0 }}>▲ 18% yesterday</p>
+            </div>
+
+            {/* Floating card: Deploy */}
+            <div style={{ position:"absolute",bottom:16,left:16,background:"rgba(11,11,11,.95)",border:"1px solid rgba(var(--gb-rgb),.25)",borderRadius:14,padding:"10px 14px",boxShadow:"0 16px 40px rgba(0,0,0,.5)",backdropFilter:"blur(16px)",animation:"float2 7s ease-in-out infinite 1s",zIndex:10,display:"flex",alignItems:"center",gap:10 }}>
+              <div style={{ width:34,height:34,borderRadius:10,background:"rgba(var(--gb-rgb),.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16 }}>⚡</div>
+              <div>
+                <p style={{ fontSize:12,fontWeight:700,margin:"0 0 1px" }}>Instant Deploy</p>
+                <p style={{ color:T.muted,fontSize:10,margin:0 }}>Live in 8 seconds</p>
               </div>
             </div>
-          )}
+
+            {/* Floating card: AI model */}
+            <div style={{ position:"absolute",bottom:90,right:16,background:"rgba(11,11,11,.95)",border:"1px solid rgba(139,92,246,.3)",borderRadius:14,padding:"10px 14px",boxShadow:"0 12px 32px rgba(0,0,0,.5)",backdropFilter:"blur(16px)",animation:"float1 6s ease-in-out infinite 2s",zIndex:10,display:"flex",alignItems:"center",gap:8 }}>
+              <span style={{ fontSize:14 }}>🤖</span>
+              <div>
+                <p style={{ fontSize:11,fontWeight:700,margin:0,color:"#C4B5FD" }}>Claude Sonnet</p>
+                <p style={{ color:T.muted,fontSize:9,margin:0 }}>Powering generations</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── INFINITE MARQUEE ── */}
-      <div style={{ overflow:"hidden", borderTop:`1px solid rgba(255,255,255,0.06)`, borderBottom:`1px solid rgba(255,255,255,0.06)`, padding:"14px 0", background:"rgba(8,8,8,0.8)", position:"relative", zIndex:1 }}>
-        <div style={{ display:"flex", animation:"marquee 22s linear infinite", width:"max-content" }}>
-          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-            <span key={i} style={{ padding:"0 36px", fontSize:"13px", color:T.muted, whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:"8px" }}>
-              <span className="grad-text" style={{ fontWeight:600 }}>{item}</span>
-              <span style={{ color:"rgba(255,255,255,0.08)" }}>·</span>
+      {/* ══════════════════════════════════════
+          MARQUEE
+      ══════════════════════════════════════ */}
+      <div style={{ overflow:"hidden",borderTop:"1px solid rgba(255,255,255,.06)",borderBottom:"1px solid rgba(255,255,255,.06)",padding:"13px 0",background:"rgba(6,6,6,.8)",position:"relative",zIndex:1 }}>
+        <div style={{ display:"flex",animation:"marquee 24s linear infinite",width:"max-content" }}>
+          {[...MARQUEE_ITEMS,...MARQUEE_ITEMS].map((it,i)=>(
+            <span key={i} style={{ padding:"0 32px",fontSize:13,color:T.muted,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8 }}>
+              <span className="gt" style={{ fontWeight:600 }}>{it}</span>
+              <span style={{ color:"rgba(255,255,255,.08)" }}>·</span>
             </span>
           ))}
         </div>
       </div>
 
-      {/* ── STATS ── */}
-      <section style={{ position:"relative", zIndex:1, padding: isMobile ? "60px 20px" : "80px clamp(20px,4vw,60px)" }}>
-        <div style={{ width:"92%", maxWidth:"1100px", margin:"0 auto", display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap:"1px", background:"rgba(255,255,255,0.05)", borderRadius:"22px", overflow:"hidden", border:`1px solid rgba(255,255,255,0.06)` }}>
-          {STATS.map((s, i) => (
-            <div key={i} style={{ background:T.card }}>
-              <CounterCard value={s.value} label={s.label} suffix={s.suffix} />
-            </div>
-          ))}
+      {/* ══════════════════════════════════════
+          STATS
+      ══════════════════════════════════════ */}
+      <section className="sec" style={{ zIndex:1 }}>
+        <div className="wrap">
+          <div className="stats-grid">
+            {STATS.map(s=>(
+              <div key={s.label} style={{ background:T.card }}>
+                <Counter value={s.value} suffix={s.suffix} />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
-      <section id="features" style={{ scrollMarginTop:"80px", position:"relative", zIndex:1, padding: isMobile ? "60px 20px" : "80px clamp(20px,4vw,60px)" }}>
-        <div style={{ width:"92%", maxWidth:"1400px", margin:"0 auto" }}>
-          <p style={{ textAlign:"center", fontSize:"11px", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:"12px" }}><span className="grad-text">What You Can Build</span></p>
-          <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:"clamp(26px,4vw,48px)", fontWeight:800, textAlign:"center", marginBottom:"3rem" }}>
-            One AI. <span className="grad-text">Infinite Possibilities.</span>
+      {/* ══════════════════════════════════════
+          FEATURES
+      ══════════════════════════════════════ */}
+      <section id="features" className="sec sec-alt" style={{ scrollMarginTop:80, zIndex:1 }}>
+        <div className="wrap">
+          <p style={{ textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10 }}>
+            <span className="gt">What You Can Build</span>
+          </p>
+          <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:"clamp(26px,4vw,48px)",fontWeight:800,textAlign:"center",marginBottom:"3rem" }}>
+            One AI. <span className="gt">Infinite Possibilities.</span>
           </h2>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2,1fr)" : "repeat(4,1fr)", gap:"16px" }}>
-            {FEATURES.map((f, i) => (
-              <div key={i}
-                style={{ background:"rgba(13,13,13,0.8)", border:`1px solid rgba(255,255,255,0.07)`, borderRadius:"20px", padding:"28px 24px", transition:"all 0.3s", position:"relative", overflow:"hidden", backdropFilter:"blur(10px)" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor="rgba(var(--ga-rgb),0.35)"; e.currentTarget.style.transform="translateY(-5px)"; e.currentTarget.style.boxShadow="0 24px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(var(--ga-rgb),0.1)"; e.currentTarget.style.background="rgba(18,18,18,0.9)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(255,255,255,0.07)"; e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; e.currentTarget.style.background="rgba(13,13,13,0.8)"; }}>
-                <div style={{ width:"48px", height:"48px", borderRadius:"14px", background:"rgba(var(--ga-rgb),0.1)", border:"1px solid rgba(var(--ga-rgb),0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", marginBottom:"16px", transition:"background 0.8s ease" }}>
+          <div className="grid-4">
+            {FEATURES.map(f=>(
+              <div key={f.title} className="card">
+                <div style={{ width:46,height:46,borderRadius:13,background:"rgba(var(--ga-rgb),.1)",border:"1px solid rgba(var(--ga-rgb),.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,marginBottom:14 }}>
                   {f.icon}
                 </div>
-                <h3 style={{ fontFamily:"'Syne',sans-serif", fontSize:"17px", fontWeight:700, marginBottom:"8px" }}><span className="grad-text">{f.title}</span></h3>
-                <p style={{ color:T.sub, fontSize:"14px", lineHeight:1.7, margin:0 }}>{f.desc}</p>
+                <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:700,marginBottom:8 }}>
+                  <span className="gt">{f.title}</span>
+                </h3>
+                <p style={{ color:T.sub,fontSize:14,lineHeight:1.7,margin:0 }}>{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── EXAMPLES ── */}
-      <section id="examples" style={{ scrollMarginTop:"80px", position:"relative", zIndex:1, padding: isMobile ? "60px 20px" : "80px clamp(20px,4vw,60px)", background:"rgba(8,8,8,0.7)", borderTop:`1px solid rgba(255,255,255,0.05)` }}>
-        <div style={{ width:"92%", maxWidth:"1400px", margin:"0 auto" }}>
-          <p style={{ textAlign:"center", fontSize:"11px", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:"12px" }}><span className="grad-text">Examples</span></p>
-          <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:"clamp(26px,4vw,48px)", fontWeight:800, textAlign:"center", marginBottom:"3rem" }}>
-            See What&apos;s <span className="grad-text">Possible</span>
+      {/* ══════════════════════════════════════
+          EXAMPLES
+      ══════════════════════════════════════ */}
+      <section id="examples" className="sec" style={{ scrollMarginTop:80, zIndex:1 }}>
+        <div className="wrap">
+          <p style={{ textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10 }}>
+            <span className="gt">Examples</span>
+          </p>
+          <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:"clamp(26px,4vw,48px)",fontWeight:800,textAlign:"center",marginBottom:"3rem" }}>
+            See What&apos;s <span className="gt">Possible</span>
           </h2>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2,1fr)" : "repeat(3,1fr)", gap:"16px" }}>
+          <div className="grid-3">
             {[
-              { title:"SaaS Dashboard", tag:"Web App", emoji:"📊", accent:"245,197,66" },
-              { title:"Portfolio Site",  tag:"Website", emoji:"💼", accent:"0,208,132" },
-              { title:"Snake Game",      tag:"Game",    emoji:"🎮", accent:"139,92,246" },
-              { title:"Invoice Tool",    tag:"Tool",    emoji:"📋", accent:"59,130,246" },
-              { title:"Fitness App",     tag:"Web App", emoji:"💪", accent:"244,63,94" },
-              { title:"E-Commerce",      tag:"Website", emoji:"🛒", accent:"16,185,129" },
-            ].map((ex, i) => (
-              <div key={i}
-                style={{ background:`rgba(${ex.accent},0.06)`, border:`1px solid rgba(${ex.accent},0.15)`, borderRadius:"18px", overflow:"hidden", transition:"all 0.3s", cursor:"pointer" }}
-                onMouseEnter={e => { e.currentTarget.style.transform="translateY(-5px)"; e.currentTarget.style.boxShadow=`0 20px 48px rgba(${ex.accent},0.12)`; e.currentTarget.style.borderColor=`rgba(${ex.accent},0.35)`; }}
-                onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; e.currentTarget.style.borderColor=`rgba(${ex.accent},0.15)`; }}>
-                <div style={{ height:"140px", background:`linear-gradient(135deg, rgba(${ex.accent},0.12), rgba(${ex.accent},0.03))`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"44px" }}>
+              { title:"SaaS Dashboard", tag:"Web App", emoji:"📊", acc:"245,197,66" },
+              { title:"Portfolio Site",  tag:"Website", emoji:"💼", acc:"0,208,132" },
+              { title:"Snake Game",      tag:"Game",    emoji:"🎮", acc:"139,92,246" },
+              { title:"Invoice Tool",    tag:"Tool",    emoji:"📋", acc:"59,130,246" },
+              { title:"Fitness App",     tag:"Web App", emoji:"💪", acc:"244,63,94" },
+              { title:"E-Commerce",      tag:"Website", emoji:"🛒", acc:"16,185,129" },
+            ].map(ex=>(
+              <div key={ex.title}
+                style={{ background:`rgba(${ex.acc},.06)`,border:`1px solid rgba(${ex.acc},.15)`,borderRadius:18,overflow:"hidden",cursor:"pointer",transition:"all .3s" }}
+                onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-5px)";e.currentTarget.style.boxShadow=`0 20px 48px rgba(${ex.acc},.14)`;e.currentTarget.style.borderColor=`rgba(${ex.acc},.35)`;}}
+                onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor=`rgba(${ex.acc},.15)`;}}>
+                <div style={{ height:140,background:`linear-gradient(135deg,rgba(${ex.acc},.14),rgba(${ex.acc},.03))`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:44 }}>
                   {ex.emoji}
                 </div>
-                <div style={{ padding:"18px" }}>
-                  <span style={{ fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.1em", color:`rgba(${ex.accent},1)` }}>{ex.tag}</span>
-                  <p style={{ fontSize:"15px", fontWeight:600, margin:"5px 0 0", color:T.text }}>{ex.title}</p>
+                <div style={{ padding:"16px 18px" }}>
+                  <span style={{ fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",color:`rgba(${ex.acc},1)` }}>{ex.tag}</span>
+                  <p style={{ fontSize:15,fontWeight:600,margin:"5px 0 0" }}>{ex.title}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div style={{ textAlign:"center", marginTop:"2.5rem" }}>
-            <button className="grad-bg shine-btn" onClick={() => router.push("/auth/signup")}
-              style={{ padding:"12px 36px", border:"none", borderRadius:"12px", color:"#050505", fontSize:"14px", fontWeight:700, cursor:"pointer", transition:"transform 0.2s, box-shadow 0.2s" }}
-              onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 12px 32px rgba(var(--ga-rgb),0.35)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
+          <div style={{ textAlign:"center",marginTop:"2.5rem" }}>
+            <button className="gb btn-primary shine" onClick={()=>router.push("/auth/signup")}>
               Build Your Own →
             </button>
           </div>
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
-      <section style={{ position:"relative", zIndex:1, padding: isMobile ? "60px 20px" : "80px clamp(20px,4vw,60px)" }}>
-        <div style={{ width:"92%", maxWidth:"1400px", margin:"0 auto" }}>
-          <p style={{ textAlign:"center", fontSize:"11px", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:"12px" }}><span className="grad-text">Testimonials</span></p>
-          <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:"clamp(26px,4vw,48px)", fontWeight:800, textAlign:"center", marginBottom:"3rem" }}>
-            Loved by <span className="grad-text">Builders</span>
+      {/* ══════════════════════════════════════
+          TESTIMONIALS
+      ══════════════════════════════════════ */}
+      <section className="sec sec-alt" style={{ zIndex:1 }}>
+        <div className="wrap">
+          <p style={{ textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10 }}>
+            <span className="gt">Testimonials</span>
+          </p>
+          <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:"clamp(26px,4vw,48px)",fontWeight:800,textAlign:"center",marginBottom:"3rem" }}>
+            Loved by <span className="gt">Builders</span>
           </h2>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap:"16px" }}>
-            {TESTIMONIALS.map((t, i) => (
-              <div key={i}
-                style={{ background:"rgba(255,255,255,0.02)", border:`1px solid rgba(255,255,255,0.07)`, borderRadius:"20px", padding:"28px", backdropFilter:"blur(12px)", transition:"all 0.3s", position:"relative", overflow:"hidden" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor="rgba(var(--ga-rgb),0.3)"; e.currentTarget.style.transform="translateY(-4px)"; e.currentTarget.style.boxShadow="0 20px 48px rgba(0,0,0,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor="rgba(255,255,255,0.07)"; e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
-                {/* Subtle glow */}
-                <div style={{ position:"absolute", top:0, right:0, width:"80px", height:"80px", borderRadius:"50%", background:"radial-gradient(circle, rgba(var(--ga-rgb),0.08) 0%, transparent 70%)", pointerEvents:"none" }} />
-                <div style={{ marginBottom:"14px", fontSize:"14px" }}>{"⭐".repeat(t.stars)}</div>
-                <p style={{ color:T.sub, fontSize:"14px", lineHeight:1.75, marginBottom:"20px", fontStyle:"italic" }}>&ldquo;{t.text}&rdquo;</p>
-                <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                  <div style={{ width:"36px", height:"36px", borderRadius:"50%", background:"linear-gradient(135deg, rgba(var(--ga-rgb),0.3), rgba(var(--gb-rgb),0.3))", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", fontWeight:700, flexShrink:0 }}>
+          <div className="grid-3">
+            {TESTIMONIALS.map((t,i)=>(
+              <div key={i} className="card" style={{ position:"relative",overflow:"hidden" }}>
+                <div style={{ position:"absolute",top:0,right:0,width:80,height:80,borderRadius:"50%",background:"radial-gradient(circle,rgba(var(--ga-rgb),.08) 0%,transparent 70%)",pointerEvents:"none" }} />
+                <div style={{ fontSize:14,marginBottom:12 }}>{"⭐".repeat(t.stars)}</div>
+                <p style={{ color:T.sub,fontSize:14,lineHeight:1.75,marginBottom:20,fontStyle:"italic" }}>&ldquo;{t.text}&rdquo;</p>
+                <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+                  <div style={{ width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,rgba(var(--ga-rgb),.3),rgba(var(--gb-rgb),.3))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,flexShrink:0 }}>
                     {t.name[0]}
                   </div>
                   <div>
-                    <p style={{ fontWeight:700, fontSize:"14px", margin:0 }}>{t.name}</p>
-                    <p style={{ color:T.muted, fontSize:"12px", margin:"2px 0 0" }}>{t.role}</p>
+                    <p style={{ fontWeight:700,fontSize:14,margin:0 }}>{t.name}</p>
+                    <p style={{ color:T.muted,fontSize:12,margin:"2px 0 0" }}>{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -817,65 +817,73 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRICING ── */}
-      <section id="pricing" style={{ scrollMarginTop:"80px", position:"relative", zIndex:1, padding: isMobile ? "60px 20px" : "80px clamp(20px,4vw,60px)", background:"rgba(8,8,8,0.8)", borderTop:`1px solid rgba(255,255,255,0.05)` }}>
-        <div style={{ width:"92%", maxWidth:"1400px", margin:"0 auto" }}>
-          <p style={{ textAlign:"center", fontSize:"11px", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:"12px" }}><span className="grad-text">Pricing</span></p>
-          <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:"clamp(26px,4vw,48px)", fontWeight:800, textAlign:"center", marginBottom:"1rem" }}>
-            Simple, <span className="grad-text">Transparent Pricing</span>
+      {/* ══════════════════════════════════════
+          PRICING
+      ══════════════════════════════════════ */}
+      <section id="pricing" className="sec" style={{ scrollMarginTop:80, zIndex:1 }}>
+        <div className="wrap">
+          <p style={{ textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10 }}>
+            <span className="gt">Pricing</span>
+          </p>
+          <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:"clamp(26px,4vw,48px)",fontWeight:800,textAlign:"center",marginBottom:12 }}>
+            Simple, <span className="gt">Transparent Pricing</span>
           </h2>
-          <p style={{ color:T.sub, textAlign:"center", marginBottom:"2rem", fontSize:"15px" }}>Start free. Upgrade when you need more.</p>
+          <p style={{ color:T.sub,textAlign:"center",fontSize:16,marginBottom:"2rem" }}>Start free. Upgrade when you&apos;re ready.</p>
 
           {/* Billing toggle */}
-          <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:"10px", marginBottom:"2.5rem" }}>
-            {["monthly","yearly"].map(b => (
-              <button key={b} onClick={() => setBilling(b as any)}
-                style={{ padding:"8px 22px", borderRadius:"12px", border:"1px solid", borderColor: billing===b ? "rgba(var(--ga-rgb),0.4)" : "rgba(255,255,255,0.08)", background: billing===b ? "rgba(var(--ga-rgb),0.1)" : "transparent", color: billing===b ? "var(--ga)" : T.muted, fontWeight:600, fontSize:"13px", cursor:"pointer", transition:"all 0.2s", textTransform:"capitalize" }}>
-                {b} {b==="yearly" && <span style={{ fontSize:"10px", marginLeft:"4px", color:"#00D084" }}>Save 20%</span>}
+          <div style={{ display:"flex",justifyContent:"center",gap:8,marginBottom:"2.5rem" }}>
+            {(["monthly","yearly"] as const).map(b=>(
+              <button key={b} onClick={()=>setBilling(b)}
+                style={{ padding:"8px 22px",borderRadius:12,border:"1px solid",borderColor:billing===b?"rgba(var(--ga-rgb),.4)":"rgba(255,255,255,.08)",background:billing===b?"rgba(var(--ga-rgb),.1)":"transparent",color:billing===b?"var(--ga)":T.muted,fontWeight:600,fontSize:13,cursor:"pointer",transition:"all .2s",textTransform:"capitalize" }}>
+                {b}{b==="yearly"&&<span style={{ fontSize:10,marginLeft:4,color:"#10B981" }}> Save 20%</span>}
               </button>
             ))}
           </div>
 
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2,1fr)" : "repeat(4,1fr)", gap:"16px" }}>
-            {PLANS.map(plan => (
+          <div className="grid-4">
+            {PLANS.map(plan=>(
               <div key={plan.name}
-                style={{ background: plan.highlight ? "rgba(var(--ga-rgb),0.04)" : "rgba(13,13,13,0.8)", border: plan.highlight ? "1px solid rgba(var(--ga-rgb),0.35)" : `1px solid rgba(255,255,255,0.07)`, borderRadius:"20px", padding:"26px", position:"relative", boxShadow: plan.highlight ? "0 0 60px rgba(var(--ga-rgb),0.08)" : "none", transition:"all 0.3s", backdropFilter:"blur(10px)" }}
-                onMouseEnter={e => { e.currentTarget.style.transform="translateY(-5px)"; e.currentTarget.style.boxShadow= plan.highlight ? "0 20px 60px rgba(var(--ga-rgb),0.15)" : "0 20px 40px rgba(0,0,0,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow= plan.highlight ? "0 0 60px rgba(var(--ga-rgb),0.08)" : "none"; }}>
+                style={{ background:plan.hot?"rgba(var(--ga-rgb),.05)":"rgba(13,13,13,.8)",border:plan.hot?"1px solid rgba(var(--ga-rgb),.35)":"1px solid rgba(255,255,255,.07)",borderRadius:20,padding:24,position:"relative",backdropFilter:"blur(10px)",transition:"all .3s",boxShadow:plan.hot?"0 0 60px rgba(var(--ga-rgb),.08)":"none" }}
+                onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-5px)";e.currentTarget.style.boxShadow=plan.hot?"0 20px 60px rgba(var(--ga-rgb),.15)":"0 20px 40px rgba(0,0,0,.4)";}}
+                onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=plan.hot?"0 0 60px rgba(var(--ga-rgb),.08)":"none";}}>
 
-                {plan.highlight && (
-                  <div className="grad-bg" style={{ position:"absolute", top:"-13px", left:"50%", transform:"translateX(-50%)", color:"#050505", fontSize:"11px", fontWeight:700, padding:"4px 16px", borderRadius:"20px", whiteSpace:"nowrap" }}>
+                {plan.hot && (
+                  <div className="gb" style={{ position:"absolute",top:-13,left:"50%",transform:"translateX(-50%)",color:"#050505",fontSize:11,fontWeight:700,padding:"4px 16px",borderRadius:20,whiteSpace:"nowrap" }}>
                     ✨ Most Popular
                   </div>
                 )}
 
-                <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"6px" }}>
-                  <span style={{ fontSize:"18px" }}>{plan.emoji}</span>
-                  <h3 style={{ fontFamily:"'Syne',sans-serif", fontSize:"18px", fontWeight:700 }}><span className="grad-text">{plan.name}</span></h3>
+                <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
+                  <span style={{ fontSize:18 }}>{plan.emoji}</span>
+                  <h3 style={{ fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:700 }}><span className="gt">{plan.name}</span></h3>
                 </div>
-                <p style={{ color:"#00D084", fontSize:"11px", marginBottom:"12px", fontWeight:600 }}>{plan.credits}</p>
-                <div style={{ marginBottom:"18px" }}>
-                  <span style={{ fontSize:"36px", fontWeight:800 }}><span className="grad-text">{billing==="monthly" ? plan.monthlyPrice : plan.yearlyPrice}</span></span>
-                  <span style={{ color:T.muted, fontSize:"13px" }}>/mo</span>
+                <p style={{ color:"#10B981",fontSize:11,fontWeight:600,marginBottom:12 }}>{plan.credits}</p>
+                <div style={{ marginBottom:18 }}>
+                  <span className="gt" style={{ fontSize:36,fontWeight:800,fontFamily:"'Syne',sans-serif" }}>
+                    {billing==="monthly"?plan.monthly:plan.yearly}
+                  </span>
+                  <span style={{ color:T.muted,fontSize:13 }}>/mo</span>
                 </div>
-                {plan.included.map(f => (
-                  <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"8px" }}>
-                    <span className="grad-text" style={{ fontSize:"12px", flexShrink:0, fontWeight:700 }}>✓</span>
-                    <span style={{ fontSize:"13px", color:T.sub }}>{f}</span>
+
+                {plan.inc.map(f=>(
+                  <div key={f} style={{ display:"flex",alignItems:"flex-start",gap:8,marginBottom:8 }}>
+                    <span className="gt" style={{ fontSize:12,flexShrink:0,fontWeight:700 }}>✓</span>
+                    <span style={{ fontSize:13,color:T.sub }}>{f}</span>
                   </div>
                 ))}
-                {plan.locked.map(f => (
-                  <div key={f} style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"8px" }}>
-                    <span style={{ fontSize:"12px", flexShrink:0, color:"#2a2a2a" }}>✕</span>
-                    <span style={{ fontSize:"13px", color:"#333" }}>{f}</span>
+                {plan.off.map(f=>(
+                  <div key={f} style={{ display:"flex",alignItems:"flex-start",gap:8,marginBottom:8 }}>
+                    <span style={{ fontSize:12,flexShrink:0,color:"#2a2a2a" }}>✕</span>
+                    <span style={{ fontSize:13,color:"#333" }}>{f}</span>
                   </div>
                 ))}
+
                 <button
-                  className={plan.highlight ? "grad-bg shine-btn" : ""}
-                  onClick={() => router.push("/auth/signup")}
-                  style={{ width:"100%", marginTop:"18px", padding:"12px", background: plan.highlight ? undefined : "rgba(255,255,255,0.04)", border: plan.highlight ? "none" : `1px solid rgba(255,255,255,0.08)`, borderRadius:"12px", color: plan.highlight ? "#050505" : T.text, fontWeight:700, fontSize:"13px", cursor:"pointer", transition:"all 0.2s" }}
-                  onMouseEnter={e => { if (!plan.highlight) { e.currentTarget.style.background="rgba(255,255,255,0.08)"; e.currentTarget.style.transform="translateY(-1px)"; } }}
-                  onMouseLeave={e => { if (!plan.highlight) { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.transform="none"; } }}>
+                  className={plan.hot?"gb shine":""}
+                  onClick={()=>router.push("/auth/signup")}
+                  style={{ width:"100%",marginTop:18,padding:12,background:plan.hot?undefined:"rgba(255,255,255,.04)",border:plan.hot?"none":"1px solid rgba(255,255,255,.08)",borderRadius:12,color:plan.hot?"#050505":T.text,fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .2s" }}
+                  onMouseEnter={e=>{if(!plan.hot){e.currentTarget.style.background="rgba(255,255,255,.08)";e.currentTarget.style.transform="translateY(-1px)";}}}
+                  onMouseLeave={e=>{if(!plan.hot){e.currentTarget.style.background="rgba(255,255,255,.04)";e.currentTarget.style.transform="none";}}}>
                   {plan.cta}
                 </button>
               </div>
@@ -884,82 +892,90 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section id="faq" style={{ scrollMarginTop:"80px", position:"relative", zIndex:1, padding: isMobile ? "60px 20px" : "80px clamp(20px,4vw,60px)", borderTop:`1px solid rgba(255,255,255,0.05)` }}>
-        <div style={{ width:"92%", maxWidth:"720px", margin:"0 auto" }}>
-          <p style={{ textAlign:"center", fontSize:"11px", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", marginBottom:"12px" }}><span className="grad-text">FAQ</span></p>
-          <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:"clamp(26px,4vw,48px)", fontWeight:800, textAlign:"center", marginBottom:"2.5rem" }}>
-            <span className="grad-text">Frequently Asked</span>
+      {/* ══════════════════════════════════════
+          FAQ
+      ══════════════════════════════════════ */}
+      <section id="faq" className="sec sec-alt" style={{ scrollMarginTop:80, zIndex:1 }}>
+        <div className="wrap-narrow">
+          <p style={{ textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10 }}>
+            <span className="gt">FAQ</span>
+          </p>
+          <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:"clamp(26px,4vw,48px)",fontWeight:800,textAlign:"center",marginBottom:"2.5rem" }}>
+            <span className="gt">Frequently Asked</span>
           </h2>
-          {FAQS.map((item, i) => (
-            <div key={i} style={{ borderBottom:`1px solid rgba(255,255,255,0.06)`, overflow:"hidden" }}>
-              <button onClick={() => setOpenFaq(openFaq===i ? null : i)}
-                style={{ width:"100%", textAlign:"left", background:"none", border:"none", cursor:"pointer", padding:"20px 0", display:"flex", justifyContent:"space-between", alignItems:"center", gap:"12px", transition:"all 0.2s" }}>
-                <span style={{ fontWeight:700, fontSize:"15px" }}><span className="grad-text">{item.q}</span></span>
-                <span style={{ color:T.muted, transition:"transform 0.3s", transform: openFaq===i ? "rotate(45deg)" : "none", display:"inline-block", fontSize:"20px", flexShrink:0, lineHeight:1 }}>+</span>
+          {FAQS.map((item,i)=>(
+            <div key={i} style={{ borderBottom:"1px solid rgba(255,255,255,.06)" }}>
+              <button onClick={()=>setOpenFaq(openFaq===i?null:i)}
+                style={{ width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",padding:"20px 0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12 }}>
+                <span style={{ fontWeight:700,fontSize:15 }}><span className="gt">{item.q}</span></span>
+                <span style={{ color:T.muted,transition:"transform .3s",transform:openFaq===i?"rotate(45deg)":"none",display:"inline-block",fontSize:22,flexShrink:0,lineHeight:1 }}>+</span>
               </button>
               {openFaq===i && (
-                <p style={{ color:T.sub, fontSize:"14px", lineHeight:1.75, paddingBottom:"20px", margin:0 }}>{item.a}</p>
+                <p style={{ color:T.sub,fontSize:14,lineHeight:1.8,paddingBottom:20,margin:0 }}>{item.a}</p>
               )}
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── FINAL CTA ── */}
-      <section style={{ padding: isMobile ? "60px 20px" : "100px clamp(20px,4vw,60px)", textAlign:"center", borderTop:`1px solid rgba(255,255,255,0.05)`, position:"relative", zIndex:1, overflow:"hidden" }}>
-        {/* Background orb */}
-        <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:"600px", height:"600px", borderRadius:"50%", background:"radial-gradient(circle, rgba(var(--ga-rgb),0.06) 0%, transparent 70%)", pointerEvents:"none" }} />
-        <div style={{ width:"92%", maxWidth:"800px", margin:"0 auto", position:"relative" }}>
-          <div className="grad-glow" style={{ width:"100px", height:"100px", borderRadius:"50%", background:"linear-gradient(135deg,rgba(var(--ga-rgb),0.2),rgba(var(--gb-rgb),0.2))", margin:"0 auto 2rem", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"40px", border:"1px solid rgba(var(--ga-rgb),0.2)" }}>
+      {/* ══════════════════════════════════════
+          FINAL CTA
+      ══════════════════════════════════════ */}
+      <section className="sec" style={{ textAlign:"center", overflow:"hidden", zIndex:1 }}>
+        {/* Orb background */}
+        <div style={{ position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"70vw",height:"70vw",maxWidth:700,maxHeight:700,borderRadius:"50%",background:"radial-gradient(circle,rgba(var(--ga-rgb),.05) 0%,transparent 70%)",pointerEvents:"none" }} />
+        <div className="wrap" style={{ position:"relative" }}>
+          <div className="gg" style={{ width:90,height:90,borderRadius:"50%",background:"linear-gradient(135deg,rgba(var(--ga-rgb),.2),rgba(var(--gb-rgb),.2))",border:"1px solid rgba(var(--ga-rgb),.2)",margin:"0 auto 2rem",display:"flex",alignItems:"center",justifyContent:"center",fontSize:38 }}>
             ⚡
           </div>
-          <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize: isMobile ? "clamp(26px,7vw,38px)" : "clamp(36px,4vw,58px)", fontWeight:800, marginBottom:"1.5rem", lineHeight:1.1 }}>
+          <h2 style={{ fontFamily:"'Syne',sans-serif",fontSize:"clamp(30px,4.5vw,58px)",fontWeight:800,lineHeight:1.08,marginBottom:"1.4rem",maxWidth:680,margin:"0 auto 1.4rem" }}>
             The future of building is{" "}
-            <span className="grad-text">a sentence away.</span>
+            <span className="gt">a sentence away.</span>
           </h2>
-          <p style={{ color:T.sub, fontSize:"17px", marginBottom:"2.5rem", lineHeight:1.75, maxWidth:"520px", margin:"0 auto 2.5rem" }}>
+          <p style={{ color:T.sub,fontSize:17,lineHeight:1.75,maxWidth:500,margin:"0 auto 2.5rem" }}>
             Join thousands of builders creating the web with Krypton AI.
           </p>
-          <div style={{ display:"flex", gap:"12px", justifyContent:"center", flexWrap:"wrap" }}>
-            <button className="grad-bg shine-btn" onClick={() => router.push("/auth/signup")}
-              style={{ padding:"16px 44px", border:"none", borderRadius:"14px", color:"#050505", fontSize:"16px", fontWeight:700, cursor:"pointer", transition:"transform 0.2s, box-shadow 0.2s" }}
-              onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 16px 48px rgba(var(--ga-rgb),0.4)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform="none"; e.currentTarget.style.boxShadow="none"; }}>
-              Start Free — No credit card required →
-            </button>
-          </div>
-          <p style={{ color:T.muted, fontSize:"12px", marginTop:"1.2rem" }}>5 free generations every day. No card needed.</p>
+          <button className="gb btn-primary shine" onClick={()=>router.push("/auth/signup")}
+            style={{ fontSize:16,padding:"16px 44px" }}>
+            Start Free — No credit card required →
+          </button>
+          <p style={{ color:T.muted,fontSize:12,marginTop:"1.2rem" }}>5 free generations every day. No card needed.</p>
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer style={{ borderTop:`1px solid rgba(255,255,255,0.06)`, padding: isMobile ? "40px 20px 24px" : "64px clamp(20px,4vw,60px) 32px", background:"rgba(6,6,6,0.98)", position:"relative", zIndex:1 }}>
-        <div style={{ width:"92%", maxWidth:"1400px", margin:"0 auto" }}>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5,1fr)", gap: isMobile ? "28px" : "32px", marginBottom:"48px" }}>
+      {/* ══════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════ */}
+      <footer style={{ borderTop:"1px solid rgba(255,255,255,.06)",background:"rgba(4,4,4,.98)",position:"relative",zIndex:1 }}>
+        <div className="wrap" style={{ padding:"clamp(48px,6vw,72px) clamp(20px,4vw,64px) clamp(24px,3vw,40px)" }}>
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:28,marginBottom:48 }}
+            className="footer-grid">
             {[
-              { title:"Product",   links:[{label:"Features",href:"/landing#features"},{label:"Pricing",href:"/landing#pricing"},{label:"Roadmap",href:"/landing#roadmap"},{label:"Examples",href:"/landing#examples"}] },
-              { title:"Resources", links:[{label:"Documentation",href:"/docs"},{label:"Changelog",href:"/changelog"},{label:"Blog",href:"/blog"},{label:"Support",href:"/support"}] },
-              { title:"Company",   links:[{label:"About",href:"/about"},{label:"Contact",href:"/contact"}] },
-              { title:"Legal",     links:[{label:"Privacy Policy",href:"/privacy"},{label:"Terms of Service",href:"/terms"},{label:"Refund Policy",href:"/refund"}] },
-              { title:"Social",    links:[{label:"X (Twitter)",href:"https://twitter.com/kryptonai"},{label:"LinkedIn",href:"https://linkedin.com/company/kryptonai"},{label:"GitHub",href:"https://github.com/jangeersinghktm-design/Magic-Krypton-ai-"}] },
-            ].map(col => (
+              { title:"Product",   links:[{l:"Features",h:"/landing#features"},{l:"Pricing",h:"/landing#pricing"},{l:"Roadmap",h:"/landing#roadmap"},{l:"Examples",h:"/landing#examples"}] },
+              { title:"Resources", links:[{l:"Documentation",h:"/docs"},{l:"Changelog",h:"/changelog"},{l:"Blog",h:"/blog"},{l:"Support",h:"/support"}] },
+              { title:"Company",   links:[{l:"About",h:"/about"},{l:"Contact",h:"/contact"}] },
+              { title:"Legal",     links:[{l:"Privacy Policy",h:"/privacy"},{l:"Terms of Service",h:"/terms"},{l:"Refund Policy",h:"/refund"}] },
+              { title:"Social",    links:[{l:"X (Twitter)",h:"https://twitter.com/kryptonai"},{l:"LinkedIn",h:"https://linkedin.com/company/kryptonai"},{l:"GitHub",h:"https://github.com/jangeersinghktm-design/Magic-Krypton-ai-"}] },
+            ].map(col=>(
               <div key={col.title}>
-                <p style={{ fontWeight:700, fontSize:"13px", marginBottom:"14px" }}><span className="grad-text">{col.title}</span></p>
-                {col.links.map(link => (
-                  <a key={link.label} href={link.href}
-                    style={{ display:"block", color:T.muted, fontSize:"13px", marginBottom:"10px", textDecoration:"none", transition:"color 0.2s" }}
-                    onMouseEnter={e => e.currentTarget.style.color=T.text}
-                    onMouseLeave={e => e.currentTarget.style.color=T.muted}>
-                    {link.label}
+                <p style={{ fontWeight:700,fontSize:13,marginBottom:14 }}><span className="gt">{col.title}</span></p>
+                {col.links.map(link=>(
+                  <a key={link.l} href={link.h}
+                    style={{ display:"block",color:T.muted,fontSize:13,marginBottom:10,textDecoration:"none",transition:"color .2s" }}
+                    onMouseEnter={e=>e.currentTarget.style.color="#fff"}
+                    onMouseLeave={e=>e.currentTarget.style.color=T.muted}>
+                    {link.l}
                   </a>
                 ))}
               </div>
             ))}
           </div>
-          <div style={{ borderTop:`1px solid rgba(255,255,255,0.06)`, paddingTop:"24px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:"12px" }}>
-            <img src="/logo.png" alt="Krypton AI" style={{ height:"42px", width:"auto", objectFit:"contain" }} />
-            <p style={{ color:T.muted, fontSize:"12px", margin:0 }}>© 2026 Krypton AI. All rights reserved.</p>
+          <style>{`
+            @media(min-width:768px){ .footer-grid{ grid-template-columns:repeat(5,1fr)!important; } }
+          `}</style>
+          <div style={{ borderTop:"1px solid rgba(255,255,255,.06)",paddingTop:24,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12 }}>
+            <img src="/logo.png" alt="Krypton AI" style={{ height:42,objectFit:"contain" }} />
+            <p style={{ color:T.muted,fontSize:12,margin:0 }}>© 2026 Krypton AI. All rights reserved.</p>
           </div>
         </div>
       </footer>
