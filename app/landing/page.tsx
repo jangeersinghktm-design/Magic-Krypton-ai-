@@ -424,7 +424,7 @@ export default function LandingPage() {
         <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px)", backgroundSize:"36px 36px", animation:"gridFade 10s ease-in-out infinite" }} />
         {/* Particles */}
         {[
-           { w:5,h:5, top:"14%",left:"8%",  d:"16s",dl:"0s",    tx:"40px",  ty:"-80px" },
+          { w:5,h:5, top:"14%",left:"8%",  d:"16s",dl:"0s",    tx:"40px",  ty:"-80px" },
           { w:3,h:3, top:"32%",left:"91%", d:"20s",dl:"-7s",   tx:"-30px", ty:"-55px" },
           { w:7,h:7, top:"62%",left:"6%",  d:"22s",dl:"-3s",   tx:"55px",  ty:"-90px" },
           { w:4,h:4, top:"78%",left:"82%", d:"14s",dl:"-10s",  tx:"-25px", ty:"-45px" },
