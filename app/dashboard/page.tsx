@@ -152,7 +152,7 @@ export default function DashboardPage() {
 
   const [projects, setProjects]       = useState<Project[]>([]);
   const [loading, setLoading]         = useState(true);
-  const [credits, setCredits]         = useState<Credits>({ total: 100, used: 0, plan: "Free", resetDate: "" });
+  const [credits, setCredits]         = useState<Credits>({ total: 5, used: 0, plan: "free", resetDate: "Daily" });
   const [activities, setActivities]   = useState<Activity[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotif, setShowNotif]     = useState(false);
