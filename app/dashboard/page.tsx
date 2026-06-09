@@ -201,7 +201,7 @@ export default function DashboardPage() {
 
   const fetchCredits = async (uid: string) => {
     const { data } = await supabase.from("profiles")
-      .select("total_credits, used_credits, plan, credits_reset_date")
+      .select("total_credits, used_credits, plan, credits_reset_date, credits_last_reset")
       .eq("id", uid).single();
     if (data) setCredits({
   total: data.total_credits ?? 5,
