@@ -119,6 +119,7 @@ export default function LandingPage(){
   const[isDesk,setIsDesk]=useState(false);    // ≥1200px
   const[liveLines,setLines]=useState(847);
   const dropRef=useRef<HTMLDivElement>(null);
+  const containerRef=useRef<HTMLDivElement>(null);
   const aref=useRef<number>();
 
   /* responsive */
@@ -127,10 +128,12 @@ export default function LandingPage(){
     check();window.addEventListener("resize",check);return()=>window.removeEventListener("resize",check);
   },[]);
 
-  /* scroll */
+  /* scroll — listen on the fixed container */
+  const containerRef=useRef<HTMLDivElement>(null);
   useEffect(()=>{
-    const h=()=>setScrolled(window.scrollY>20);
-    window.addEventListener("scroll",h,{passive:true});return()=>window.removeEventListener("scroll",h);
+    const el=containerRef.current;if(!el)return;
+    const h=()=>setScrolled(el.scrollTop>20);
+    el.addEventListener("scroll",h,{passive:true});return()=>el.removeEventListener("scroll",h);
   },[]);
 
   /* live code counter */
@@ -179,18 +182,30 @@ export default function LandingPage(){
   },[]);
 
   const goto=useCallback((id:string)=>{
-    setMob(false);setTimeout(()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth"}),80);
+    setMob(false);
+    setTimeout(()=>{
+      const el=document.getElementById(id);
+      if(el&&containerRef.current){
+        const top=el.offsetTop-70;
+        containerRef.current.scrollTo({top,behavior:"smooth"});
+      }
+    },80);
   },[]);
 
   /* ── shared style tokens ── */
   const gtext:CSSProperties={background:"linear-gradient(135deg,var(--ga),var(--gb))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"};
   const gbg:CSSProperties={background:"linear-gradient(135deg,var(--ga),var(--gb))"};
-  const sec:CSSProperties={position:"relative",zIndex:1,padding:"clamp(64px,8vw,100px) 0"};
+  const sec:CSSProperties={padding:"clamp(64px,8vw,100px) 0"};
   const wrap:CSSProperties={width:"100%",maxWidth:1280,margin:"0 auto",padding:"0 clamp(20px,4vw,64px)"};
   const card:CSSProperties={background:"rgba(255,255,255,0.028)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:18,padding:"24px",transition:"all 0.3s ease"};
 
   return(
-    <div style={{background:BG,color:WHITE,fontFamily:"system-ui,-apple-system,sans-serif",minHeight:"100vh",overflowX:"hidden"}}>
+    <div ref={containerRef} style={{
+      position:"fixed", inset:0, zIndex:9999,
+      background:BG, color:WHITE,
+      fontFamily:"system-ui,-apple-system,sans-serif",
+      overflowY:"auto", overflowX:"hidden",
+    }}>
 
       {/* ── CSS: only gradient utilities + animations + keyframes ── */}
       <style>{`
@@ -219,7 +234,7 @@ export default function LandingPage(){
       `}</style>
 
       {/* ── Background ── */}
-      <div style={{position:"fixed",inset:0,zIndex:0,overflow:"hidden",pointerEvents:"none"}}>
+      <div style={{position:"absolute",inset:0,zIndex:0,overflow:"hidden",pointerEvents:"none"}}>
         <div style={{position:"absolute",top:"-5%",left:"-5%",width:"50vw",height:"50vw",borderRadius:"50%",filter:"blur(90px)",background:"radial-gradient(circle,rgba(var(--ga-rgb),.32) 0%,transparent 70%)",animation:"gm1 20s ease-in-out infinite,gl 9s ease-in-out infinite"}}/>
         <div style={{position:"absolute",top:"-10%",right:"-10%",width:"60vw",height:"60vw",borderRadius:"50%",filter:"blur(90px)",background:"radial-gradient(circle,rgba(var(--gb-rgb),.25) 0%,transparent 70%)",animation:"gm2 24s ease-in-out infinite,gl 11s ease-in-out infinite"}}/>
         <div style={{position:"absolute",bottom:"-10%",left:"20%",width:"55vw",height:"55vw",borderRadius:"50%",filter:"blur(90px)",background:"radial-gradient(circle,rgba(139,92,246,.16) 0%,transparent 70%)",animation:"gm3 22s ease-in-out infinite,gl 8s ease-in-out infinite"}}/>
@@ -238,7 +253,7 @@ export default function LandingPage(){
 
       {/* ══════════ NAVBAR ══════════ */}
       <nav style={{
-        position:"fixed",top:0,left:0,right:0,zIndex:100,
+        position:"sticky",top:0,left:0,right:0,zIndex:100,
         height:62,display:"flex",alignItems:"center",justifyContent:"space-between",
         padding:"0 clamp(16px,3vw,40px)",
         background:scrolled?"rgba(5,5,5,.97)":"rgba(5,5,5,.55)",
@@ -334,7 +349,7 @@ export default function LandingPage(){
       )}
 
       {/* ══════════ HERO ══════════ */}
-      <section style={{position:"relative",zIndex:1,paddingTop:"clamp(96px,10vw,130px)",paddingBottom:"clamp(60px,7vw,90px)",overflow:"hidden"}}>
+      <section style={{position:"relative",zIndex:1,paddingTop:"clamp(96px,10vw,130px)",paddingBottom:"clamp(60px,7vw,90px)"}}>
         <div style={{width:"100%",maxWidth:1400,margin:"0 auto",padding:"0 clamp(20px,4vw,64px)",display:"grid",gridTemplateColumns:isDesk?"1fr 1fr":"1fr",gap:48,alignItems:"center"}}>
 
           {/* LEFT */}
