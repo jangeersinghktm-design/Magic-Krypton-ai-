@@ -3,14 +3,16 @@
 import { useState, useEffect, useCallback, useRef, CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 
-// ── Gradient Themes — cycle every 3s, 800ms transition ──
+// ── Gradient Themes — cycle every 6s, 800ms transition ──
 const THEMES = [
   { a: "#F5C542", b: "#00D084", ar: "245,197,66",   br: "0,208,132"  }, // Gold + Green
   { a: "#8B5CF6", b: "#EC4899", ar: "139,92,246",   br: "236,72,153" }, // Purple + Pink
   { a: "#FACC15", b: "#FB923C", ar: "250,204,21",   br: "251,146,60"  }, // Yellow + Orange
   { a: "#3B82F6", b: "#06B6D4", ar: "59,130,246",   br: "6,182,212"  }, // Blue + Cyan
-  { a: "#EF4444", b: "#F43F5E", ar: "239,68,68",    br: "244,63,94"  }, // Red + Rose
+  { a: "#7C3AED", b: "#2563EB", ar: "124,58,237", br: "37,99,235" }, // Purple + Electric Blue
   { a: "#10B981", b: "#14B8A6", ar: "16,185,129",   br: "20,184,166" }, // Emerald + Teal
+  { a: "#14B8A6", b: "#06B6D4", ar: "20,184,166", br: "6,182,212" }, // Teal + Cyan
+  { a: "#6366F1", b: "#8B5CF6", ar: "99,102,241", br: "139,92,246" }, // Indigo + Purple
 ];
 
 const T = {
@@ -181,7 +183,7 @@ export default function LandingPage() {
     return () => clearInterval(iv);
   }, []);
 
-  // ── Gradient cycling — 3s interval, 800ms smooth transition ──
+  // ── Gradient cycling — 6s interval, 800ms smooth transition ──
   useEffect(() => {
     const root = document.documentElement;
     let current = 0;
