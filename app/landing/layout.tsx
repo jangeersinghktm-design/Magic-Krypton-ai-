@@ -3,9 +3,5 @@ export default function LandingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div style={{ marginLeft: 0 }}>
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
