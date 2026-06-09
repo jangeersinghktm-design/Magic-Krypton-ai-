@@ -133,6 +133,25 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
+      @keyframes themeShift {
+       0%,100% { --ga: #F5D800; --gb: #00CC44; }
+       17%  { --ga: #FF6B35; --gb: #F7C59F; }
+       34%  { --ga: #8B5CF6; --gb: #06B6D4; }
+       50%  { --ga: #EC4899; --gb: #F97316; }
+       67%  { --ga: #10B981; --gb: #3B82F6; }
+       84%  { --ga: #F59E0B; --gb: #EF4444; }
+      }
+
+     .grad-text {
+      background: linear-gradient(135deg, var(--ga, #F5D800), var(--gb, #00CC44)) !important;
+     -webkit-background-clip: text !important;
+     -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+     }
+
+     .grad-bg {
+      background: linear-gradient(135deg, var(--ga, #F5D800), var(--gb, #00CC44)) !important;
+     }
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { overflow-x: hidden; width: 100%; background: #050505; }
@@ -140,6 +159,40 @@ export default function LandingPage() {
         @keyframes orbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
         @keyframes orbRotate { to{transform:rotate(360deg)} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        :root {
+         --ga: #F5D800;
+         --gb: #00CC44;
+         --ga-rgb: 245,197,66;
+         --gb-rgb: 0,204,68;
+        }
+
+        @keyframes themeShift {
+         0%   { --ga: #F5D800; --gb: #00CC44; --ga-rgb: 245,197,66; --gb-rgb: 0,204,68; }
+         17%  { --ga: #FF6B35; --gb: #F7C59F; --ga-rgb: 255,107,53; --gb-rgb: 247,197,159; }
+         34%  { --ga: #8B5CF6; --gb: #06B6D4; --ga-rgb: 139,92,246; --gb-rgb: 6,182,212; }
+         50%  { --ga: #EC4899; --gb: #F97316; --ga-rgb: 236,72,153; --gb-rgb: 249,115,22; }
+         67%  { --ga: #10B981; --gb: #3B82F6; --ga-rgb: 16,185,129; --gb-rgb: 59,130,246; }
+         84%  { --ga: #F59E0B; --gb: #EF4444; --ga-rgb: 245,158,11; --gb-rgb: 239,68,68; }
+         100% { --ga: #F5D800; --gb: #00CC44; --ga-rgb: 245,197,66; --gb-rgb: 0,204,68; }
+        }
+
+        .grad-text {
+         background: linear-gradient(135deg, var(--ga), var(--gb)) !important;
+         -webkit-background-clip: text !important;
+         -webkit-text-fill-color: transparent !important;
+         background-clip: text !important;
+         animation: themeShift 18s ease infinite !important;
+        }
+
+       .grad-bg {
+        background: linear-gradient(135deg, var(--ga), var(--gb)) !important;
+        animation: themeShift 18s ease infinite !important;
+       }
+
+       .grad-glow {
+        background: linear-gradient(135deg, rgba(var(--ga-rgb),0.3), rgba(var(--gb-rgb),0.3)) !important;
+        animation: themeShift 18s ease infinite !important;
+       }
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
         @keyframes gradMove { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(3%,5%) scale(1.05)} }
         .fade-up { animation: fadeUp 0.6s ease both; }
@@ -158,7 +211,7 @@ export default function LandingPage() {
         }
       `}</style>
 
-      <div style={{ background: T.bg, color: T.text, fontFamily: "'DM Sans', sans-serif", overflowX: "hidden", width: "100%" }}>
+      <div style={{ background: T.bg, color: T.text, fontFamily: "'DM Sans', sans-serif", overflowX: "hidden", width: "100%", animation: "themeShift 18s ease infinite" }}>
 
         {/* ══ NAVBAR ══════════════════════════════════════════════ */}
         <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "0 5%", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", background: scrolled ? "rgba(5,5,5,0.95)" : "transparent", backdropFilter: scrolled ? "blur(20px)" : "none", borderBottom: scrolled ? `1px solid ${T.border}` : "none", transition: "all 0.3s" }}>
