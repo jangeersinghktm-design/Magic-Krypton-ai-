@@ -129,7 +129,6 @@ export default function LandingPage(){
   },[]);
 
   /* scroll — listen on the fixed container */
-  const containerRef=useRef<HTMLDivElement>(null);
   useEffect(()=>{
     const el=containerRef.current;if(!el)return;
     const h=()=>setScrolled(el.scrollTop>20);
