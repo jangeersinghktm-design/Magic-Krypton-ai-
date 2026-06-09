@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 
 // ── Gradient Themes — cycle every 3s, 800ms transition ──
@@ -128,7 +128,7 @@ function CounterCard({ value, label, suffix }: { value: number; label: string; s
 }
 
 // ── Floating Particle ──
-function Particle({ style }: { style: React.CSSProperties }) {
+function Particle({ style }: { style: CSSProperties }) {
   return <div className="particle" style={style} />;
 }
 
@@ -372,7 +372,7 @@ export default function LandingPage() {
           { w:3,  h:3,  top:"55%", left:"88%", dur:"13s", delay:"-5s",  tx:"-15px", ty:"-50px" },
           { w:5,  h:5,  top:"40%", left:"18%", dur:"17s", delay:"-8s",  tx:"30px",  ty:"-65px" },
         ].map((p, i) => (
-          <Particle key={i} style={{ width:p.w, height:p.h, top:p.top, left:p.left, "--dur":p.dur, "--delay":p.delay, "--tx":p.tx, "--ty":p.ty } as React.CSSProperties} />
+          <Particle key={i} style={{ width:p.w, height:p.h, top:p.top, left:p.left, "--dur":p.dur, "--delay":p.delay, "--tx":p.tx, "--ty":p.ty } as CSSProperties} />
         ))}
 
         {/* Aurora glows */}
@@ -943,7 +943,6 @@ export default function LandingPage() {
               { title:"Social",    links:[{label:"X (Twitter)",href:"https://twitter.com/kryptonai"},{label:"LinkedIn",href:"https://linkedin.com/company/kryptonai"},{label:"GitHub",href:"https://github.com/jangeersinghktm-design/Magic-Krypton-ai-"}] },
             ].map(col => (
               <div key={col.title}>
-                 <div key={col.title}>
                 <p style={{ fontWeight:700, fontSize:"13px", marginBottom:"14px" }}><span className="grad-text">{col.title}</span></p>
                 {col.links.map(link => (
                   <a key={link.label} href={link.href}
