@@ -261,69 +261,122 @@ function CreatePage() {
   }
   return ["🔍 Understanding request...", "🧠 Planning structure...", "🎨 Designing layout...", "⚙️ Building features...", "✨ Adding animations...", "📱 Making responsive...", "✅ Build complete!"];
 };
+
+  // ── FRIENDLY MESSAGES (never show raw errors) ─────────────────
+  const PROGRESS_MSGS = [
+    "Analyzing your request...",
+    "Planning the structure...",
+    "Generating your project...",
+    "Applying design system...",
+    "Optimizing output...",
+    "Running quality checks...",
+    "Applying final improvements...",
+    "Building preview...",
+  ];
+
+  const getProgressMsg = (attempt: number) => PROGRESS_MSGS[attempt % PROGRESS_MSGS.length];
+
+  const isCreditError = (code: string) =>
+    ["INSUFFICIENT_CREDITS", "DAILY_LIMIT"].includes(code);
+
+  // ── GENERATE ──────────────────────────────────────────────────
   const triggerGenerate = async (overridePrompt?: string) => {
     const p = overridePrompt || promptRef.current;
     if (!p.trim() || loading) return;
     if (remaining < CREDIT_COSTS.new_project) { setError("Insufficient credits! Please upgrade."); return; }
 
     setLoading(true);
-setError("");
-const steps = getThinkingSteps(p);
-setThinkingSteps(steps);
-setCurrentStep(0);
-const stepInterval = setInterval(() => {
-  setCurrentStep(prev => {
-    if (prev < steps.length - 1) return prev + 1;
-    clearInterval(stepInterval);
-    return prev;
-  });
-}, 1200);
+    setError("");
+    const steps = getThinkingSteps(p);
+    setThinkingSteps(steps);
+    setCurrentStep(0);
+    const stepInterval = setInterval(() => {
+      setCurrentStep(prev => {
+        if (prev < steps.length - 1) return prev + 1;
+        clearInterval(stepInterval);
+        return prev;
+      });
+    }, 1200);
     if (isMobile) setActiveTab("preview");
 
     addMsg({ role: "user", content: p });
     const aiMsgId = addMsg({ role: "ai", content: "", loading: true });
 
-    try {
-       const { data: { session } } = await supabase.auth.getSession();
-       if (!session) { setError("Please login again."); setLoading(false); return; }
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS = [2000, 5000, 10000];
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        // Show progress message on retries
+        if (attempt > 0) {
+          await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt - 1]));
+          updateMsg(aiMsgId, { content: "", loading: true });
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setError("Please login again."); setLoading(false); clearInterval(stepInterval); return; }
 
         const response = await fetch("/api/generate", {
-         method: "POST",
-         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-         },
-         body: JSON.stringify({ prompt: p }),
-       });
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ prompt: p }),
+          signal: AbortSignal.timeout(110000),
+        });
 
-       // Check if response is ok
-       if (!response.ok) {
-          const text = await response.text();
-          throw new Error(`Server error: ${text.slice(0, 100)}`);
-         }
+        let data: any = {};
+        try {
+          data = await response.json();
+        } catch {
+          // Non-JSON response — treat as retryable
+          if (attempt < MAX_RETRIES) continue;
+          throw new Error("retry");
+        }
 
-         const data = await response.json();
-      
-      if (data.html) {
-        setResult(data.html);
-        const name = p.slice(0, 40) || "Untitled Project";
-        setProjectName(name);
-        await saveProject(data.html, name);
-        await deductCredits(CREDIT_COSTS.new_project, `Generate: ${name}`);
-        updateMsg(aiMsgId, { content: "✅ Your project is ready!", loading: false, files: ["index.html"], credits: CREDIT_COSTS.new_project });
-        if (isMobile) setActiveTab("preview");
-      } else {
-        updateMsg(aiMsgId, { content: `❌ ${data.error || "Generation failed"}`, loading: false });
-        setError(data.error || "Generation failed");
+        // Credit/plan errors — show these (not retryable)
+        if (data.code && isCreditError(data.code)) {
+          updateMsg(aiMsgId, { content: data.error || "Insufficient credits.", loading: false });
+          setError(data.error || "Insufficient credits.");
+          clearInterval(stepInterval);
+          setLoading(false);
+          return;
+        }
+
+        // Success
+        if (data.html) {
+          clearInterval(stepInterval);
+          setResult(data.html);
+          const name = p.slice(0, 40) || "Untitled Project";
+          setProjectName(name);
+          await saveProject(data.html, name);
+          await deductCredits(CREDIT_COSTS.new_project, `Generate: ${name}`);
+          updateMsg(aiMsgId, { content: "✅ Your project is ready!", loading: false, files: ["index.html"], credits: CREDIT_COSTS.new_project });
+          if (isMobile) setActiveTab("preview");
+          setLoading(false);
+          setPrompt("");
+          promptRef.current = "";
+          return;
+        }
+
+        // AI error but retryable — loop continues
+        if (attempt < MAX_RETRIES) continue;
+
+        // All retries exhausted — show friendly message only
+        updateMsg(aiMsgId, { content: "Please try again with a different description.", loading: false });
+
+      } catch (err: any) {
+        if (attempt < MAX_RETRIES) continue;
+        // Final failure — never show raw error
+        updateMsg(aiMsgId, { content: "Please try again with a more detailed description.", loading: false });
       }
-    } catch (err: any) {
-      updateMsg(aiMsgId, { content: `❌ ${err.message}`, loading: false });
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      setPrompt("");
-      promptRef.current = "";
     }
+
+    clearInterval(stepInterval);
+    setLoading(false);
+    setPrompt("");
+    promptRef.current = "";
   };
 
   // ── AI EDIT ───────────────────────────────────────────────────
@@ -336,8 +389,9 @@ const stepInterval = setInterval(() => {
     addMsg({ role: "user", content: editPrompt });
     const aiMsgId = addMsg({ role: "ai", content: "", loading: true });
 
-    try {
-      const fullPrompt = `You are editing an existing HTML project.
+    const MAX_RETRIES = 2;
+    const RETRY_DELAYS = [3000, 7000];
+    const fullPrompt = `You are editing an existing HTML project.
 
 CURRENT PROJECT CODE:
 ${result.slice(0, 6000)}
@@ -350,34 +404,55 @@ Instructions:
 - Start with <!DOCTYPE html> and end with </html>
 - No markdown, no backticks`;
 
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: fullPrompt }),
-      });
-      const data = await response.json();
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt - 1]));
 
-      if (data.html) {
-        await saveVersion(result, `Before: ${editPrompt.slice(0, 40)}`, "pre-edit");
-        setResult(data.html);
-        await saveProject(data.html, projectName);
-        await deductCredits(CREDIT_COSTS.ai_edit, `Edit: ${editPrompt.slice(0, 40)}`);
-        const modifiedFiles = ["index.html"];
-        if (/style|color|css/i.test(editPrompt)) modifiedFiles.push("styles.css");
-        if (/hero|header|banner/i.test(editPrompt)) modifiedFiles.push("Hero.tsx");
-        if (/pricing/i.test(editPrompt)) modifiedFiles.push("Pricing.tsx");
-        updateMsg(aiMsgId, { content: "✅ Changes applied!", loading: false, files: modifiedFiles, credits: CREDIT_COSTS.ai_edit });
-        if (isMobile) setActiveTab("preview");
-      } else {
-        updateMsg(aiMsgId, { content: `❌ ${data.error || "Edit failed"}`, loading: false });
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setLoading(false); return; }
+
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ prompt: fullPrompt, isEdit: true }),
+          signal: AbortSignal.timeout(90000),
+        });
+
+        let data: any = {};
+        try { data = await response.json(); } catch { if (attempt < MAX_RETRIES) continue; break; }
+
+        if (data.html) {
+          await saveVersion(result, `Before: ${editPrompt.slice(0, 40)}`, "pre-edit");
+          setResult(data.html);
+          await saveProject(data.html, projectName);
+          await deductCredits(CREDIT_COSTS.ai_edit, `Edit: ${editPrompt.slice(0, 40)}`);
+          const modifiedFiles = ["index.html"];
+          if (/style|color|css/i.test(editPrompt)) modifiedFiles.push("styles.css");
+          if (/hero|header|banner/i.test(editPrompt)) modifiedFiles.push("Hero section");
+          if (/pricing/i.test(editPrompt)) modifiedFiles.push("Pricing section");
+          updateMsg(aiMsgId, { content: "✅ Changes applied!", loading: false, files: modifiedFiles, credits: CREDIT_COSTS.ai_edit });
+          if (isMobile) setActiveTab("preview");
+          setLoading(false);
+          setPrompt("");
+          promptRef.current = "";
+          return;
+        }
+
+        if (attempt < MAX_RETRIES) continue;
+        updateMsg(aiMsgId, { content: "Please describe the change differently and try again.", loading: false });
+
+      } catch {
+        if (attempt < MAX_RETRIES) continue;
+        updateMsg(aiMsgId, { content: "Please try again in a moment.", loading: false });
       }
-    } catch (err: any) {
-      updateMsg(aiMsgId, { content: `❌ ${err.message}`, loading: false });
-    } finally {
-      setLoading(false);
-      setPrompt("");
-      promptRef.current = "";
     }
+
+    setLoading(false);
+    setPrompt("");
+    promptRef.current = "";
   };
 
   const handleSend = () => {
