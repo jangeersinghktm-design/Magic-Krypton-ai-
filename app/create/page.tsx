@@ -271,13 +271,13 @@ setError("");
 const steps = getThinkingSteps(p);
 setThinkingSteps(steps);
 setCurrentStep(0);
-let stepInterval = setInterval(() => {
+const stepInterval = setInterval(() => {
   setCurrentStep(prev => {
     if (prev < steps.length - 1) return prev + 1;
     clearInterval(stepInterval);
     return prev;
   });
-}, 800);
+}, 1200);
     if (isMobile) setActiveTab("preview");
 
     addMsg({ role: "user", content: p });
@@ -536,34 +536,36 @@ Instructions:
                     {msg.loading ? (
                      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                      {/* Header */}
-                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                      <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(245,197,66,0.2)", borderTopColor: "#F5D800", animation: "spin 0.8s linear infinite", flexShrink: 0 }}/>
-                     <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Thinking...</span>
+                     <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>Building your project...</span>
                     </div>
                     {/* Steps */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, background: "rgba(255,255,255,0.02)", borderRadius: 10, padding: "10px 12px", border: "1px solid rgba(255,255,255,0.05)" }}>
                      {thinkingSteps.map((step, i) => {
                       const isDone = i < currentStep;
                       const isCur = i === currentStep;
                       const isFut = i > currentStep;
                       return (
-                       <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, opacity: isFut ? 0.2 : 1, transition: "opacity 0.4s ease" }}>
+                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, opacity: isFut ? 0.2 : 1, transition: "opacity 0.5s ease" }}>
                         <div style={{
-                         width: 16, height: 16, borderRadius: "50%", flexShrink: 0, marginTop: 1,
-                         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9,
+                         width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+                         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10,
                          background: isDone ? "rgba(0,204,68,0.15)" : isCur ? "rgba(245,216,0,0.15)" : "rgba(255,255,255,0.04)",
                          border: isDone ? "1px solid rgba(0,204,68,0.4)" : isCur ? "1px solid rgba(245,216,0,0.4)" : "1px solid rgba(255,255,255,0.08)",
                          color: isDone ? "#00CC44" : "transparent",
+                         transition: "all 0.3s ease",
                        }}>
                         {isDone ? "✓" : ""}
                        </div>
                        <span style={{
-                        fontSize: 12.5, lineHeight: 1.4,
-                        color: isDone ? "rgba(255,255,255,0.3)" : isCur ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.2)",
-                        fontWeight: isCur ? 500 : 400,
+                        fontSize: 13, lineHeight: 1.4,
+                        color: isDone ? "rgba(255,255,255,0.35)" : isCur ? "#FFD93D" : "rgba(255,255,255,0.2)",
+                        fontWeight: isCur ? 600 : 400,
                         textDecoration: isDone ? "line-through" : "none",
+                        transition: "all 0.3s ease",
                        }}>
-                        {step.replace(/^[^\w\s]*\s*/, "")}
+                        {step}
                        </span>
                       </div>
                      );
