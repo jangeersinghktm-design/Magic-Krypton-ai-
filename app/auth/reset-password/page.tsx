@@ -2,6 +2,7 @@
 
 // app/auth/reset-password/page.tsx
 import { useState, useEffect, Suspense } from "react";
+import KryptonLogo from "@/components/branding/KryptonLogo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -67,7 +68,7 @@ function ResetPasswordContent() {
 
       <div style={{ width: "100%", maxWidth: "460px", animation: "fadeIn 0.4s ease" }}>
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <img src="/logo.png" alt="Krypton AI" style={{ height: "80px", objectFit: "contain", marginBottom: "12px" }} />
+          <KryptonLogo size={52} showText={true} animated={true}/>
         </div>
 
         <div style={{ background: "#0D0D0D", border: "1px solid rgba(245,197,66,0.15)", borderRadius: "24px", padding: "40px", boxShadow: "0 0 60px rgba(245,197,66,0.06)" }}>
@@ -169,4 +170,3 @@ export default function ResetPasswordPage() {
     </Suspense>
   );
 }
-
