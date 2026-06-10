@@ -496,25 +496,28 @@ function CreatePage() {
       await sleep(500);
     }
 
-    // ── PHASE 3: Show Plan ────────────────────────────────────
-    setAgentPhase("planning");
-    const planId = addMsg({ type:"plan", plan: analysis.plan, currentTask:-1 });
-    await sleep(800);
-
-    // ── PHASE 4: Generate ─────────────────────────────────────
+    // ── PHASE 3 & 4: Plan + Generate with live text updates ──────
     setAgentPhase("generating");
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setAgentPhase("idle"); return; }
 
-    // Animate plan tasks during generation
-    let taskIdx = 0;
+    // Show live progress as simple text (not a list)
+    const progressMsgId = addMsg({ type:"ai", content:"Planning the implementation..." });
+    const progressSteps = [
+      "Setting up the project structure...",
+      "Designing the layout and components...",
+      "Writing the code...",
+      "Adding styles and animations...",
+      "Finalizing the output...",
+    ];
+    let stepIdx = 0;
     const taskInterval = setInterval(() => {
-      if (taskIdx < analysis.plan.length) {
-        updateMsg(planId, { currentTask: taskIdx++ });
+      if (stepIdx < progressSteps.length) {
+        updateMsg(progressMsgId, { content: progressSteps[stepIdx++] });
       } else {
         clearInterval(taskInterval);
       }
-    }, 1800);
+    }, 2000);
 
     let html = "";
     let creditsUsed = 1;
@@ -542,6 +545,11 @@ function CreatePage() {
         if (data.html) {
           html = data.html;
           creditsUsed = data.creditsUsed || 1;
+          // Use projectId from backend (backend already saved to DB)
+          if (data.projectId && !projectId) {
+            setProjectId(data.projectId);
+            window.history.replaceState({}, "", `/create?id=${data.projectId}`);
+          }
           break;
         }
         if (attempt < MAX_RETRIES) continue;
@@ -549,18 +557,28 @@ function CreatePage() {
     }
 
     clearInterval(taskInterval);
-    updateMsg(planId, { currentTask: analysis.plan.length });
+    updateMsg(progressMsgId, { content: "Reviewing and finalizing..." });
 
     if (!html) {
       addMsg({ type:"ai", content:"Please try again with a more detailed description of what you want to build." });
       setAgentPhase("idle"); return;
     }
 
-    // Save result
+    // Save result — backend already saved to DB, just update local state
     setResult(html);
     const pName = (analysis.summary || finalPrompt).slice(0, 45);
     setProjectName(pName);
-    await saveProject(html, pName);
+    // Only save to DB if backend didn't return a projectId (fallback)
+    if (!projectId) {
+      await saveProject(html, pName);
+    } else {
+      // Backend saved it — just update local cache
+      try {
+        localStorage.setItem(`kp_${projectId}`, JSON.stringify({
+          id: projectId, name: pName, html, prompt: finalPrompt, ts: Date.now()
+        }));
+      } catch {}
+    }
     if (creditsUsed) setCredits(c => ({ ...c, used: c.used + creditsUsed }));
     if (isMobile) setActiveTab("preview");
 
@@ -701,7 +719,8 @@ ${result.slice(0, 12000)}`,
       addMsg({
         type: "summary",
         summary: {
-          linesOfCode: updatedHTML.split("\n").length,
+          linesOfCode:    updatedHTML.split("
+").length,
           projectType:    "edit",
           componentsBuilt: changes.length,
           featuresAdded:   changes,
@@ -971,10 +990,24 @@ ${result.slice(0, 12000)}`,
                 )}
                 <div style={{ flex:1, display:"flex", alignItems:"flex-start", justifyContent:"center", overflow:"auto", background:result?(deviceMode!=="desktop"?"#222":"#fff"):"#0d0d0d" }}>
                   {result ? (
-                    <iframe key={`${result.length}-${deviceMode}`} srcDoc={result}
-                      onLoad={e => { (e.target as HTMLIFrameElement).style.opacity="1"; }}
-                      style={{ border:"none", width:deviceMode==="desktop"?"100%":deviceMode==="tablet"?"768px":"375px", height:"100%", minHeight:"100%", transition:"width .3s ease, opacity .3s ease", boxShadow:deviceMode!=="desktop"?"0 0 40px rgba(0,0,0,.7)":"none", flexShrink:0, opacity:0 }}
-                      sandbox="allow-scripts" title="Preview"/>
+                    <iframe
+                      key={`${result.length}-${deviceMode}`}
+                      srcDoc={result}
+                      style={{
+                        border: "none",
+                        width: deviceMode==="desktop" ? "100%" : deviceMode==="tablet" ? "768px" : "375px",
+                        height: "100%",
+                        minHeight: "100%",
+                        transition: "width .3s ease",
+                        boxShadow: deviceMode!=="desktop" ? "0 0 40px rgba(0,0,0,.7)" : "none",
+                        flexShrink: 0,
+                        display: "block",
+                        opacity: 1,
+                        background: "#fff",
+                      }}
+                      sandbox="allow-scripts allow-same-origin allow-forms"
+                      title="Live Preview"
+                    />
                   ) : (
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:10, color:"#222", width:"100%", height:"100%" }}>
                       <div style={{ fontSize:42 }}>✨</div>
