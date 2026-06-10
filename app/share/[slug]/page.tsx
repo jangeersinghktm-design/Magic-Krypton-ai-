@@ -1,5 +1,6 @@
 // app/share/[slug]/page.tsx
 import { createClient } from "@supabase/supabase-js";
+import KryptonLogo from "@/components/branding/KryptonLogo";
 import { notFound } from "next/navigation";
 
 export default async function SharePage({ params }: { params: { slug: string } }) {
@@ -73,7 +74,7 @@ export default async function SharePage({ params }: { params: { slug: string } }
       <body>
         <div className="bar">
           <div className="bar-left">
-            <img src="/logo.png" alt="Kr" style={{ height: "28px" }} />
+            <KryptonLogo size={26}/>
             <span className="title">{project.title}</span>
             <span className="badge">Built with Krypton AI</span>
           </div>
