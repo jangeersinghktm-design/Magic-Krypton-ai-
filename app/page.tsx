@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import CreditsDisplay from "@/components/CreditsDisplay";
 
 const G = "linear-gradient(135deg, #F5D800 0%, #AAEE00 45%, #00CC44 100%)";
 const T = {
@@ -98,7 +99,7 @@ export default function HomePage() {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    router.push(`/create?prompt=${encodeURIComponent(prompt)}&type=${buildType}`);
+    window.open(`/create?prompt=${encodeURIComponent(prompt)}&type=${buildType}`, "_blank");
   };
 
   const handleVoice = () => {
@@ -170,7 +171,7 @@ export default function HomePage() {
           <button onClick={() => router.push("/dashboard")} style={{ padding: "6px 12px", background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: "9px", color: T.muted, fontSize: "12px", cursor: "pointer" }}>
             Projects
           </button>
-          <button onClick={() => router.push("/create")} style={{ padding: "6px 14px", background: G, border: "none", borderRadius: "9px", color: "#050505", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={() => window.open("/create", "_blank")} style={{ padding: "6px 14px", background: G, border: "none", borderRadius: "9px", color: "#050505", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
             + New
           </button>
         </div>
@@ -258,7 +259,7 @@ export default function HomePage() {
             <p style={{ fontSize: "11px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>QUICK ACTIONS</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
               {QUICK_ACTIONS.map((action) => (
-                <button key={action.label} onClick={() => router.push(`/create?prompt=${encodeURIComponent(action.prompt)}&type=${action.type}`)}
+                <button key={action.label} onClick={() => window.open(`/create?prompt=${encodeURIComponent(action.prompt)}&type=${action.type}`, "_blank")}
                   style={{ padding: "14px 16px", background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: "12px", color: T.muted, fontSize: "13px", cursor: "pointer", textAlign: "center", transition: "all 0.18s", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.text; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}>
@@ -269,17 +270,30 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Credits Display */}
+          <div style={{ marginTop: "24px" }}>
+            <CreditsDisplay compact={false} />
+          </div>
+
           {/* Recent Projects */}
           {recentProjects.length > 0 && (
-            <div style={{ marginTop: "24px" }}>
-              <p style={{ fontSize: "11px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>RECENT PROJECTS</p>
+            <div style={{ marginTop: "28px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                <p style={{ fontSize: "11px", color: "#555", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>RECENT PROJECTS</p>
+                <button onClick={() => router.push("/dashboard")} style={{ fontSize: "11px", color: T.gold, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  View all →
+                </button>
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {recentProjects.slice(0, 3).map((p) => (
-                  <button key={p.id} onClick={() => router.push(`/create?id=${p.id}`)}
-                    style={{ padding: "12px 16px", background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: "10px", color: T.muted, fontSize: "13px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "10px", transition: "all 0.15s" }}>
-                    <span>📄</span>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title || "Untitled"}</span>
-                    <span style={{ marginLeft: "auto", fontSize: "11px", color: "#333" }}>{new Date(p.created_at).toLocaleDateString()}</span>
+                {recentProjects.slice(0, 5).map((p) => (
+                  <button key={p.id} onClick={() => window.open(`/create?id=${p.id}`, "_blank")}
+                    style={{ padding: "12px 16px", background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: "10px", color: T.muted, fontSize: "13px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: "10px", transition: "all 0.15s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.text; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}>
+                    <span style={{ fontSize: "16px" }}>📄</span>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{p.title || "Untitled Project"}</span>
+                    <span style={{ fontSize: "10px", color: "#333", flexShrink: 0 }}>{new Date(p.created_at).toLocaleDateString()}</span>
+                    <span style={{ fontSize: "11px", color: T.gold, flexShrink: 0 }}>Open ↗</span>
                   </button>
                 ))}
               </div>
@@ -291,3 +305,4 @@ export default function HomePage() {
     </div>
   );
 }
+                           
