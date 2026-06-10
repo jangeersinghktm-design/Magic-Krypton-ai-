@@ -283,7 +283,7 @@ function CreatePage() {
   const triggerGenerate = async (overridePrompt?: string) => {
     const p = overridePrompt || promptRef.current;
     if (!p.trim() || loading) return;
-    if (remaining < CREDIT_COSTS.new_project) { setError("Insufficient credits! Please upgrade."); return; }
+    if (remaining < 1) { setError("No credits left! Please upgrade or wait for daily reset."); return; }
 
     setLoading(true);
     setError("");
@@ -351,8 +351,16 @@ function CreatePage() {
           const name = p.slice(0, 40) || "Untitled Project";
           setProjectName(name);
           await saveProject(data.html, name);
-          await deductCredits(CREDIT_COSTS.new_project, `Generate: ${name}`);
-          updateMsg(aiMsgId, { content: "✅ Your project is ready!", loading: false, files: ["index.html"], credits: CREDIT_COSTS.new_project });
+          // Backend already deducted credits — just update UI from API response
+          if (data.creditsUsed) {
+            setCredits(c => ({ ...c, used: c.used + data.creditsUsed }));
+          }
+          updateMsg(aiMsgId, {
+            content: "✅ Your project is ready!",
+            loading: false,
+            files: ["index.html"],
+            credits: data.creditsUsed || 1,
+          });
           if (isMobile) setActiveTab("preview");
           setLoading(false);
           setPrompt("");
@@ -428,12 +436,15 @@ Instructions:
           await saveVersion(result, `Before: ${editPrompt.slice(0, 40)}`, "pre-edit");
           setResult(data.html);
           await saveProject(data.html, projectName);
-          await deductCredits(CREDIT_COSTS.ai_edit, `Edit: ${editPrompt.slice(0, 40)}`);
+          // Backend already deducted — just update UI
+          if (data.creditsUsed) {
+            setCredits(c => ({ ...c, used: c.used + data.creditsUsed }));
+          }
           const modifiedFiles = ["index.html"];
           if (/style|color|css/i.test(editPrompt)) modifiedFiles.push("styles.css");
           if (/hero|header|banner/i.test(editPrompt)) modifiedFiles.push("Hero section");
           if (/pricing/i.test(editPrompt)) modifiedFiles.push("Pricing section");
-          updateMsg(aiMsgId, { content: "✅ Changes applied!", loading: false, files: modifiedFiles, credits: CREDIT_COSTS.ai_edit });
+          updateMsg(aiMsgId, { content: "✅ Changes applied!", loading: false, files: modifiedFiles, credits: data.creditsUsed || 1 });
           if (isMobile) setActiveTab("preview");
           setLoading(false);
           setPrompt("");
