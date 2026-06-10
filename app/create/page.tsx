@@ -359,7 +359,7 @@ function CreatePage() {
       clearTimeout(saveConvTimer.current);
       saveConvTimer.current = setTimeout(() => {
         const toSave = messages.filter(m => !["thinking","progress"].includes(m.type)).map(m => ({ type:m.type, content:m.content||"" }));
-        supabase.from("projects").update({ conversation_history:toSave }).eq("id", projectId).catch(() => {});
+        void supabase.from("projects").update({ conversation_history:toSave }).eq("id", projectId);
       }, 10000);
     }
   }, [messages]);
