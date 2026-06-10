@@ -225,7 +225,7 @@ export default function HomePage() {
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
               <p style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:".1em" }}>Recent Projects</p>
               <button onClick={() => router.push("/dashboard")} style={{ fontSize:11, color:C.gold, background:"none", border:"none", cursor:"pointer", fontWeight:500 }}>
-                View all →
+                All projects →
               </button>
             </div>
 
@@ -253,7 +253,7 @@ export default function HomePage() {
                   const timeAgo = formatTimeAgo(date);
                   return (
                     <button key={p.id} className="proj-btn"
-                      onClick={() => window.open(`/create?id=${p.id}`, "_blank")}
+                      onClick={() => router.push(`/create?id=${p.id}`)}
                       style={{ padding:"13px 16px", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, color:C.text, fontSize:13, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:12, transition:"all .15s", width:"100%" }}>
                       <div style={{ width:36, height:36, borderRadius:10, background:"rgba(255,215,0,.08)", border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>📄</div>
                       <div style={{ flex:1, overflow:"hidden" }}>
@@ -285,4 +285,3 @@ function formatTimeAgo(date: Date): string {
   if (days < 7)    return `${days}d ago`;
   return date.toLocaleDateString();
 }
-                    
