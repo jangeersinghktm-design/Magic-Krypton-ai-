@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 import { useState, useRef } from "react";
+import CreditsDisplay from "@/components/CreditsDisplay";
 
 // ── Types ──────────────────────────────────────────────────────────
 type Tab = "code" | "seo" | "performance";
