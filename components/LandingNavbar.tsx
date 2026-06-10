@@ -4,6 +4,7 @@
 // Public dropdown before login, Private after login
 
 import { useState, useEffect, useRef } from "react";
+import KryptonLogo from "@/components/branding/KryptonLogo";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -252,7 +253,7 @@ export default function LandingNavbar() {
         {/* Logo + Dropdown */}
         <div ref={dropdownRef} style={{ position: "relative" }}>
           <div className="ln-logo" onClick={() => setShowDropdown(!showDropdown)}>
-            <img src="/logo.png" alt="Krypton AI" className="ln-logo-img" />
+            <KryptonLogo size={36} showText={true} animated={false}/>
             <span className={`ln-logo-chevron ${showDropdown ? "open" : ""}`}>▼</span>
           </div>
 
