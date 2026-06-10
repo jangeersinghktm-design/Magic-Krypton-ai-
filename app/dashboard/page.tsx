@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import KryptonLogo from "@/components/branding/KryptonLogo";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CreditsDisplay from "@/components/CreditsDisplay";
@@ -331,8 +332,7 @@ export default function DashboardPage() {
           display: "flex", alignItems: "center", gap: 12,
           position: "sticky", top: 0, zIndex: 100,
         }}>
-          <img src="/logo.png" alt="Kr" style={{ height: 36, width: "auto", cursor: "pointer" }}
-            onClick={() => router.push("/")} />
+          <KryptonLogo size={36} showText={false} onClick={() => router.push("/")} style={{ cursor:"pointer" }}/>
 
           <div style={{ display: "flex", gap: 2, marginLeft: 8 }}>
             {["Dashboard", "Projects", "Templates", "Community", "Marketplace", "Docs"].map(nav => (
