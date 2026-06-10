@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import KryptonLogo from "@/components/branding/KryptonLogo";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -30,11 +31,11 @@ const icons = {
   const navItems = [
   { label: "Home", href: "/", icon: icons.home },
   { label: "Create", href: "/create", icon: icons.create, children: [
-    { label: "Chatbot",    href: "/create?type=chatbot", icon: icons.chatbot },
-    { label: "Image Gen",  href: "/create?type=image",   icon: icons.image   },
-    { label: "Content",    href: "/create?type=content", icon: icons.content },
-    { label: "Code Gen",   href: "/create?type=code",    icon: icons.code    },
-    { label: "Screenshot", href: "/screenshot",          icon: icons.image   },
+    { label: "Chatbot",    href: "/chatbot",    icon: icons.chatbot, newTab: true },
+    { label: "Image Gen",  href: "/image-gen",  icon: icons.image,   newTab: true },
+    { label: "Content",    href: "/content",    icon: icons.content, newTab: true },
+    { label: "Code Gen",   href: "/create",     icon: icons.code,    newTab: true },
+    { label: "Screenshot", href: "/screenshot", icon: icons.image,   newTab: true },
   ]},
   { label: "Templates", href: "/templates", icon: icons.templates },
   { label: "AI Manager", href: "/project-manager", icon: icons.analytics },
@@ -163,8 +164,7 @@ export default function KryptonSidebar() {
         borderBottom: "1px solid rgba(245,197,66,0.12)",
         textDecoration: "none",
       }}>
-        <img src="/logo.png" alt="Krypton AI"
-          style={{ height: 48, width: "auto", objectFit: "contain" }} />
+        <KryptonLogo size={36} showText={true} animated={false}/>
       </Link>
 
       {/* ── Nav ── */}
@@ -236,7 +236,7 @@ export default function KryptonSidebar() {
                   marginTop: 2, marginBottom: 2,
                 }}>
                   {item.children!.map((child) => (
-                    <Link key={child.href} href={child.href} style={{
+                    <Link key={child.href} href={child.href} target={(child as any).newTab ? "_blank" : undefined} style={{
                       display: "flex", alignItems: "center", gap: 9,
                       padding: "7px 10px", borderRadius: 8,
                       textDecoration: "none", fontSize: 12.5,
@@ -246,7 +246,7 @@ export default function KryptonSidebar() {
                         : "transparent",
                       marginBottom: 1, transition: "all 0.15s",
                     }}>
-                      {child.icon}{child.label}
+                      {child.icon}{child.label}{(child as any).newTab && <span style={{ marginLeft: "auto", fontSize: 9, opacity: 0.4 }}>↗</span>}
                     </Link>
                   ))}
                 </div>
@@ -373,4 +373,3 @@ export default function KryptonSidebar() {
   );
                                              }
 
-              
