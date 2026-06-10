@@ -346,9 +346,9 @@ function CreatePage() {
     chatEndRef.current?.scrollIntoView({ behavior:"smooth" });
     if (projectId && messages.length > 0) {
       clearTimeout(saveConvTimer.current);
-      saveConvTimer.current = setTimeout(() => {
+       saveConvTimer.current = setTimeout(() => {
         const toSave = messages.filter(m => !["thinking","progress"].includes(m.type)).map(m => ({ type:m.type, content:m.content||"" }));
-        supabase.from("projects").update({ conversation_history:toSave }).eq("id", projectId).catch(() => {});
+        supabase.from("projects").update({ conversation_history:toSave }).eq("id", projectId).then(() => {}).catch(() => {});
       }, 10000);
     }
   }, [messages]);
