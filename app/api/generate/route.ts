@@ -615,12 +615,14 @@ export async function POST(req: NextRequest) {
 
     await supabase.from("profiles").update(creditUpdates).eq("id", user.id);
 
-    await supabase.from("credit_transactions").insert({
-      user_id: user.id,
-      amount: -creditCost,
-      type: "usage",
-      description: `${category}: ${prompt.slice(0, 60)}... (${creditCost} credits via ${usedProvider})`,
-    }).catch(() => {}); // Non-blocking
+    try {
+      await supabase.from("credit_transactions").insert({
+        user_id: user.id,
+        amount: -creditCost,
+        type: "usage",
+        description: `${category}: ${prompt.slice(0, 60)}... (${creditCost} credits via ${usedProvider})`,
+      });
+    } catch {} // Non-blocking
 
     // ── Save Project ──────────────────────────────────────────
     let savedProjectId = projectId;
