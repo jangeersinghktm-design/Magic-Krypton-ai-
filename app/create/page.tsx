@@ -701,7 +701,7 @@ ${result.slice(0, 12000)}`,
       addMsg({
         type: "summary",
         summary: {
-          linesOfCode:    updatedHTML.split("
+          linesOfCode: updatedHTML.split("\n").length,
 ").length,
           projectType:    "edit",
           componentsBuilt: changes.length,
