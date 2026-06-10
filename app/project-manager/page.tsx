@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import CreditsDisplay from "@/components/CreditsDisplay";
 
 const G = "linear-gradient(135deg, #F5D800 0%, #00CC44 100%)";
 const T = {
