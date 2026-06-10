@@ -1,39 +1,15 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="main" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="g" x1="128" y1="51" x2="410" y2="461" gradientUnits="userSpaceOnUse">
       <stop offset="0%"   stop-color="#FFD700"/>
-      <stop offset="48%"  stop-color="#FFB000"/>
+      <stop offset="55%"  stop-color="#FFB000"/>
       <stop offset="100%" stop-color="#FF7A00"/>
     </linearGradient>
-    <linearGradient id="shine" x1="0.1" y1="0" x2="0.5" y2="1">
-      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.55"/>
-      <stop offset="60%"  stop-color="#FFFFFF" stop-opacity="0.06"/>
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
   </defs>
-
-  <!-- Outer glow -->
-  <path d="M256 16L448 128V384L256 496L64 384V128Z" fill="url(#main)" opacity="0.18"/>
-
-  <!-- Main hexagon -->
-  <path d="M256 48L432 150V362L256 464L80 362V150Z" fill="url(#main)"/>
-
-  <!-- Inner ring -->
-  <path d="M256 80L408 170V342L256 432L104 342V170Z" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="6"/>
-
-  <!-- Shine -->
-  <path d="M256 48L432 150V280H80V150Z" fill="url(#shine)"/>
-
-  <!-- Bottom shadow -->
-  <path d="M80 320L256 416L432 320V362L256 464L80 362Z" fill="rgba(0,0,0,0.1)"/>
-
-  <!-- K lettermark -->
-  <rect x="148" y="164" width="56" height="184" rx="6" fill="#0A0A0A" opacity="0.88"/>
-  <path d="M204 256L300 164H364L264 258L364 348H300L204 264" stroke="#0A0A0A" stroke-width="54" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.88"/>
-
-  <!-- Sparkle dots -->
-  <circle cx="424" cy="112" r="22" fill="#FFE566" opacity="0.9"/>
-  <circle cx="460" cy="184" r="14" fill="#FF8C00" opacity="0.75"/>
-  <circle cx="92"  cy="400" r="12" fill="#FFD700" opacity="0.7"/>
-  <circle cx="60"  cy="320" r="9"  fill="#FFFFFF"  opacity="0.45"/>
+  <!-- Vertical stem -->
+  <line x1="128" y1="51"  x2="128" y2="461" stroke="url(#g)" stroke-width="44" stroke-linecap="square"/>
+  <!-- Upper arm -->
+  <line x1="128" y1="256" x2="410" y2="51"  stroke="url(#g)" stroke-width="44" stroke-linecap="square"/>
+  <!-- Lower arm -->
+  <line x1="128" y1="256" x2="410" y2="461" stroke="url(#g)" stroke-width="44" stroke-linecap="square"/>
 </svg>
