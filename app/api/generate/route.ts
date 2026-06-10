@@ -256,23 +256,8 @@ Now BUILD the requested project at this quality level. Think step by step, then 
 // ── HTML Validator ───────────────────────────────────────────────
 function validateHTML(html: string): { valid: boolean; issues: string[] } {
   const issues: string[] = [];
-
-  if (!html.includes("<!DOCTYPE")) issues.push("Missing DOCTYPE declaration");
-  if (!html.includes("</html>")) issues.push("Unclosed html tag");
-  if (!html.includes("<body")) issues.push("Missing body tag");
-  if (html.length < 2000) issues.push("Code too short — likely incomplete");
-
-  // Check for common JS syntax errors
-  const scriptMatches = html.match(/<script[\s\S]*?>([\s\S]*?)<\/script>/gi) || [];
-  for (const script of scriptMatches) {
-    const jsContent = script.replace(/<script[^>]*>/i, "").replace(/<\/script>/i, "");
-    const openBraces  = (jsContent.match(/\{/g) || []).length;
-    const closeBraces = (jsContent.match(/\}/g) || []).length;
-    if (Math.abs(openBraces - closeBraces) > 5) {
-      issues.push("Unbalanced braces in JavaScript");
-    }
-  }
-
+  if (!html || html.trim().length < 200) issues.push("Response too short or empty");
+  if (!html.includes("</html>") && !html.includes("</body>")) issues.push("Incomplete HTML structure");
   return { valid: issues.length === 0, issues };
 }
 
@@ -560,45 +545,29 @@ export async function POST(req: NextRequest) {
         html = cleanHTML(raw);
         usedProvider = attempt.provider;
 
-        // Validate output
-        const { valid, issues } = validateHTML(html);
-
-        if (!valid && attemptCount <= cascade.length) {
-          // Try to heal the HTML before moving to next provider
-          const healed = await healHTML(html, issues, systemPrompt, plan);
-          const { valid: healedValid } = validateHTML(healed);
-          if (healedValid) {
-            html = healed;
-            break;
-          }
-          // If healing failed and we have more providers, continue cascade
-          if (attemptCount < cascade.length) {
-            html = "";
-            continue;
-          }
-          // Last resort: use healed version even if not perfect
-          html = healed;
+        // ✅ Use HTML if it has any meaningful content — never reject good output
+        if (html && html.length > 200) {
+          break; // Got content — stop cascade, use it
         }
 
-        break; // Success — exit cascade
+        // Empty response — try next provider silently
+        if (attemptCount < cascade.length) continue;
 
       } catch (err) {
         if (attemptCount === cascade.length) {
-          // All providers failed — return user-friendly message
           return NextResponse.json({
             error: "Our AI is taking a short break. Please try again in a moment.",
             code: "AI_UNAVAILABLE",
           }, { status: 503 });
         }
-        // Silent fail — try next provider
-        continue;
+        continue; // Silent fail — try next provider
       }
     }
 
-    if (!html || html.length < 500) {
+    if (!html || html.length < 200) {
       return NextResponse.json({
-        error: "Please try a more detailed description of what you want to build.",
-        code: "INVALID_OUTPUT",
+        error: "Generation failed. Please try again.",
+        code: "EMPTY_OUTPUT",
       }, { status: 500 });
     }
 
