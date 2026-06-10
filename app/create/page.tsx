@@ -702,7 +702,6 @@ ${result.slice(0, 12000)}`,
         type: "summary",
         summary: {
           linesOfCode: updatedHTML.split("\n").length,
-").length,
           projectType:    "edit",
           componentsBuilt: changes.length,
           featuresAdded:   changes,
