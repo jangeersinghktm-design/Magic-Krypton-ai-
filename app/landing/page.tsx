@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import KryptonLogo from "@/components/branding/KryptonLogo";
 import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 
@@ -303,7 +304,7 @@ export default function LandingPage(){
         <div ref={dropRef} style={{position:"relative",display:"flex",alignItems:"center"}}>
           <button onClick={e=>{e.stopPropagation();setDrop(v=>!v);}}
             style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:0}}>
-            <img src="/logo.png" alt="Krypton AI" style={{height:44,objectFit:"contain"}}/>
+            <KryptonLogo size={36} showText={true} animated={false}/>
             <span style={{color:"#555",fontSize:10,transition:"transform .2s",display:"inline-block",transform:dropdown?"rotate(180deg)":"none"}}>▾</span>
           </button>
           {dropdown&&(
@@ -824,7 +825,7 @@ export default function LandingPage(){
             ))}
           </div>
           <div style={{borderTop:"1px solid rgba(255,255,255,.06)",paddingTop:24,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
-            <img src="/logo.png" alt="Krypton AI" style={{height:42,objectFit:"contain"}}/>
+            <KryptonLogo size={36} showText={true} animated={false}/>
             <p style={{color:MUTED,fontSize:12,margin:0}}>© 2026 Krypton AI. All rights reserved.</p>
           </div>
         </div>
