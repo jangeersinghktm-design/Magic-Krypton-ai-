@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import KryptonLogo from "@/components/branding/KryptonLogo";
 
 // ── Types ─────────────────────────────────────────────────────────
 type AgentPhase = "idle"|"analyzing"|"questioning"|"planning"|"generating"|"validating"|"complete";
@@ -79,11 +80,18 @@ function ThinkingMsg({ msg }: { msg: AgentMsg }) {
   );
 }
 
-function QuestionMsg({ msg, onAnswer }: { msg: AgentMsg; onAnswer: (q: string, a: string) => void }) {
+function QuestionMsg({ msg, onAnswer }: { msg: AgentMsg; onAnswer: (answers: string[]) => void }) {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const qs = msg.questions || [];
-  const allAnswered = qs.every((_, i) => answers[i]?.trim());
+  const anyAnswered = qs.some((_, i) => answers[i]?.trim());
+
+  const handleSubmit = () => {
+    if (submitted) return;
+    setSubmitted(true);
+    const finalAnswers = qs.map((_, i) => answers[i]?.trim() || "No preference");
+    onAnswer(finalAnswers);
+  };
 
   if (submitted || msg.answers?.length) {
     return (
@@ -91,7 +99,7 @@ function QuestionMsg({ msg, onAnswer }: { msg: AgentMsg; onAnswer: (q: string, a
         {qs.map((q, i) => (
           <div key={i} style={{ background:"rgba(0,208,132,.06)", border:"1px solid rgba(0,208,132,.15)", borderRadius:10, padding:"10px 14px" }}>
             <div style={{ fontSize:11, color:"#00D084", marginBottom:4 }}>✓ {q}</div>
-            <div style={{ fontSize:13, color:"#888" }}>{msg.answers?.[i] || answers[i]}</div>
+            <div style={{ fontSize:13, color:"#888" }}>{msg.answers?.[i] || answers[i] || "No preference"}</div>
           </div>
         ))}
       </div>
@@ -100,28 +108,31 @@ function QuestionMsg({ msg, onAnswer }: { msg: AgentMsg; onAnswer: (q: string, a
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:10, maxWidth:"92%" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:2 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
         <span style={{ fontSize:14 }}>🤔</span>
-        <span style={{ fontSize:13, color:"#ddd", fontWeight:600 }}>I need a few more details to build exactly what you want:</span>
+        <span style={{ fontSize:13, color:"#ddd", fontWeight:600 }}>Quick question before I start building:</span>
       </div>
       {qs.map((q, i) => (
-        <div key={i} style={{ background:"rgba(255,255,255,.04)", border:"1px solid rgba(245,197,66,.15)", borderRadius:12, padding:"12px 14px" }}>
-          <div style={{ fontSize:13, color:"#ddd", marginBottom:8, fontWeight:500 }}>{q}</div>
+        <div key={i} style={{ background:"rgba(255,255,255,.04)", border:"1px solid rgba(245,197,66,.2)", borderRadius:12, padding:"12px 14px" }}>
+          <div style={{ fontSize:13, color:"#F5D800", marginBottom:8, fontWeight:600 }}>{q}</div>
           <input
+            autoFocus={i === 0}
             value={answers[i] || ""}
             onChange={e => setAnswers(p => ({ ...p, [i]: e.target.value }))}
-            onKeyDown={e => { if (e.key === "Enter" && allAnswered) { setSubmitted(true); qs.forEach((q, i) => onAnswer(q, answers[i])); } }}
-            placeholder="Your answer..."
-            style={{ width:"100%", background:"rgba(255,255,255,.06)", border:"1px solid rgba(255,255,255,.1)", borderRadius:8, padding:"8px 12px", color:"#fff", fontSize:13, outline:"none" }}
+            onKeyDown={e => { if (e.key === "Enter") { if (i < qs.length - 1) { const inputs = document.querySelectorAll(".q-inp"); const next = inputs[i + 1] as HTMLInputElement; next?.focus(); } else handleSubmit(); } }}
+            className="q-inp"
+            placeholder="Type your answer... (optional)"
+            style={{ width:"100%", background:"rgba(255,255,255,.07)", border:"1px solid rgba(255,255,255,.12)", borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:13, outline:"none" }}
           />
         </div>
       ))}
-      {allAnswered && (
-        <button onClick={() => { setSubmitted(true); qs.forEach((q, i) => onAnswer(q, answers[i])); }}
-          style={{ padding:"10px 24px", background:"linear-gradient(135deg,#F5D800,#00CC44)", border:"none", borderRadius:10, color:"#080808", fontWeight:700, fontSize:13, cursor:"pointer", alignSelf:"flex-start" }}>
-          Continue Building →
+      <div style={{ display:"flex", gap:8, alignItems:"center", marginTop:2 }}>
+        <button onClick={handleSubmit}
+          style={{ padding:"11px 28px", background:"linear-gradient(135deg,#F5D800,#00CC44)", border:"none", borderRadius:10, color:"#080808", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+          {anyAnswered ? "Continue Building →" : "Skip & Build →"}
         </button>
-      )}
+        <span style={{ fontSize:11, color:"#333" }}>Enter to submit</span>
+      </div>
     </div>
   );
 }
@@ -346,9 +357,9 @@ function CreatePage() {
     chatEndRef.current?.scrollIntoView({ behavior:"smooth" });
     if (projectId && messages.length > 0) {
       clearTimeout(saveConvTimer.current);
-       saveConvTimer.current = setTimeout(() => {
+      saveConvTimer.current = setTimeout(() => {
         const toSave = messages.filter(m => !["thinking","progress"].includes(m.type)).map(m => ({ type:m.type, content:m.content||"" }));
-        void supabase.from("projects").update({ conversation_history:toSave }).eq("id", projectId);
+        supabase.from("projects").update({ conversation_history:toSave }).eq("id", projectId).catch(() => {});
       }, 10000);
     }
   }, [messages]);
@@ -651,14 +662,10 @@ EDIT REQUEST: "${editPrompt}"`;
     });
   };
 
-  const handleAnswer = (question: string, answer: string) => {
-    const idx = messages.find(m => m.type === "question")?.questions?.indexOf(question) ?? -1;
-    if (idx >= 0) {
-      pendingAnswers.current[idx] = answer;
-      if (pendingAnswers.current.every(a => a.trim()) && questionResolve.current) {
-        questionResolve.current([...pendingAnswers.current]);
-        questionResolve.current = null;
-      }
+  const handleAnswer = (allAnswers: string[]) => {
+    if (questionResolve.current) {
+      questionResolve.current(allAnswers);
+      questionResolve.current = null;
     }
   };
 
@@ -695,7 +702,7 @@ EDIT REQUEST: "${editPrompt}"`;
         <div style={{ padding:"10px 14px", borderBottom:"1px solid #181818", display:"flex", alignItems:"center", gap:8, background:"#0C0C0C", flexShrink:0, minHeight:52, zIndex:100 }}>
           <div ref={menuRef} style={{ position:"relative" }}>
             <button onClick={() => setShowMenu(v => !v)} style={{ background:"none", border:"none", cursor:"pointer", padding:0, display:"flex", alignItems:"center", gap:5 }}>
-              <img src="/logo.png" alt="Kr" style={{ height:34, objectFit:"contain" }}/>
+              <KryptonLogo size={34} showText={true} animated={false}/>
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
             </button>
             {showMenu && (
@@ -776,7 +783,7 @@ EDIT REQUEST: "${editPrompt}"`;
               {messages.length === 0 && (
                 <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, textAlign:"center", padding:24 }}>
                   <div style={{ width:52, height:52, borderRadius:16, background:"linear-gradient(135deg,rgba(245,197,66,.15),rgba(0,204,68,.1))", border:"1px solid rgba(245,197,66,.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    <img src="/logo.png" alt="Kr" style={{ width:30 }}/>
+                    <KryptonLogo size={30}/>
                   </div>
                   <div>
                     <div style={{ fontSize:16, fontWeight:700, marginBottom:6 }}>What do you want to build?</div>
@@ -799,7 +806,7 @@ EDIT REQUEST: "${editPrompt}"`;
                 <div key={msg.id} className="msg-in" style={{ display:"flex", flexDirection:"column", alignItems:msg.type==="user"?"flex-end":"flex-start", gap:4 }}>
                   {msg.type !== "user" && (
                     <div style={{ display:"flex", alignItems:"center", gap:6, paddingLeft:2, marginBottom:2 }}>
-                      <img src="/logo.png" alt="Kr" style={{ width:14, height:14 }}/>
+                      <KryptonLogo size={14}/>
                       <span style={{ fontSize:10, color:"#333" }}>Krypton AI</span>
                     </div>
                   )}
@@ -811,7 +818,7 @@ EDIT REQUEST: "${editPrompt}"`;
                   )}
 
                   {msg.type === "thinking" && <ThinkingMsg msg={msg}/>}
-                  {msg.type === "question" && <QuestionMsg msg={msg} onAnswer={handleAnswer}/>}
+                  {msg.type === "question" && <QuestionMsg msg={msg} onAnswer={(ans) => { handleAnswer(ans); updateMsg(msg.id, { answers: ans }); }}/>}
                   {msg.type === "plan" && <PlanMsg msg={msg}/>}
                   {msg.type === "validation" && <ValidationMsg msg={msg}/>}
                   {msg.type === "summary" && <SummaryMsg msg={msg}/>}
