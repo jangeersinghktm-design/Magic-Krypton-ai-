@@ -393,4 +393,4 @@ ${plan === "free" ? "" : "Use the absolute highest quality code possible."}`;
     console.error("Generate error:", err);
     return NextResponse.json({ error: err.message || "Generation failed" }, { status: 500 });
   }
-}
+ }
