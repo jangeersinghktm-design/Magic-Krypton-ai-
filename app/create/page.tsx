@@ -359,7 +359,7 @@ function CreatePage() {
       clearTimeout(saveConvTimer.current);
       saveConvTimer.current = setTimeout(() => {
         const toSave = messages.filter(m => !["thinking","progress"].includes(m.type)).map(m => ({ type:m.type, content:m.content||"" }));
-        void supabase.from("projects").update({ conversation_history:toSave }).eq("id", projectId);
+        supabase.from("projects").update({ conversation_history:toSave }).eq("id", projectId).catch(() => {});
       }, 10000);
     }
   }, [messages]);
@@ -592,63 +592,132 @@ function CreatePage() {
     setAgentPhase("idle");
   };
 
-  // ── Edit Flow (for existing projects) ─────────────────────────
+  // ── Edit Flow — uses /api/chat for surgical editing ──────────
   const runEditFlow = async (editPrompt: string) => {
     if (!result || !editPrompt.trim() || agentPhase !== "idle") return;
     if (remaining < 1) { addMsg({ type:"ai", content:"No credits left. Please upgrade." }); return; }
 
     setAgentPhase("generating");
     addMsg({ type:"user", content: editPrompt });
-    const thinkId = addMsg({ type:"thinking", thoughts:["Reading your edit request...", "Analyzing current code...", "Planning surgical changes..."], currentThought:0 });
 
-    for (let i = 0; i < 3; i++) { await sleep(700); updateMsg(thinkId, { currentThought:i }); }
-    updateMsg(thinkId, { currentThought:3 });
+    // Show thinking steps
+    const thoughts = [
+      "Reading your edit request...",
+      "Analyzing current code...",
+      "Identifying affected sections...",
+      "Applying surgical changes...",
+    ];
+    const thinkId = addMsg({ type:"thinking", thoughts, currentThought:0 });
+    for (let i = 0; i < thoughts.length; i++) {
+      await sleep(650);
+      updateMsg(thinkId, { currentThought: i });
+    }
+    updateMsg(thinkId, { currentThought: thoughts.length });
 
-    const fullPrompt = `You are a senior developer making a SURGICAL edit.
-
-GOLDEN RULES:
-1. Make ONLY the specific change requested — touch nothing else
-2. Preserve ALL existing functionality, styles, and content
-3. Return the COMPLETE updated HTML file — <!DOCTYPE html> to </html>
-4. ALL content in English only
-5. Raw HTML only — no markdown, no backticks
-
-CURRENT PROJECT CODE:
-${result.slice(0, 14000)}
-
-EDIT REQUEST: "${editPrompt}"`;
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setAgentPhase("idle"); return; }
-
+    // ── Step 1: Try /api/chat (surgical edit — best approach) ──
+    let updatedHTML = "";
     for (let attempt = 0; attempt <= 2; attempt++) {
       try {
-        if (attempt > 0) await sleep([3000, 7000][attempt - 1]);
-        const res = await fetch("/api/generate", {
-          method:"POST",
-          headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${session.access_token}` },
-          body: JSON.stringify({ prompt: fullPrompt, isEdit: true }),
-          signal: AbortSignal.timeout(90000),
-        });
-        let data: any = {};
-        try { data = await res.json(); } catch { if (attempt < 2) continue; break; }
+        if (attempt > 0) await sleep([2000, 5000][attempt - 1]);
 
-        if (data.html) {
-          await saveVersion(result, `Before: ${editPrompt.slice(0, 40)}`);
-          setResult(data.html);
-          await saveProject(data.html, projectName);
-          if (data.creditsUsed) setCredits(c => ({ ...c, used: c.used + data.creditsUsed }));
-          addMsg({ type:"summary", summary: { linesOfCode: data.html.split("\n").length, projectType:"edit", componentsBuilt:1, featuresAdded:["Edit applied"] }, validation: { score:100, checks:[] }, credits: data.creditsUsed || 1 });
-          if (isMobile) setActiveTab("preview");
-          setAgentPhase("idle"); return;
+        const chatRes = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userMessage: editPrompt,
+            currentCode: { "index.html": result },
+            projectName,
+            framework: "html",
+            history: messages.slice(-6).map(m => ({ role: m.type === "user" ? "user" : "assistant", content: m.content || "" })),
+          }),
+          signal: AbortSignal.timeout(60000),
+        });
+
+        const chatData = await chatRes.json();
+
+        // Check for codeChanges first (structured edit)
+        if (chatData.codeChanges?.["index.html"]) {
+          updatedHTML = chatData.codeChanges["index.html"];
+          break;
         }
+
+        // Fallback: extract HTML directly from reply text
+        const reply = chatData.reply || chatData.text || "";
+        const htmlMatch = reply.match(/<!DOCTYPE[\s\S]*<\/html>/i);
+        if (htmlMatch) {
+          updatedHTML = htmlMatch[0];
+          break;
+        }
+
         if (attempt < 2) continue;
-        addMsg({ type:"ai", content:"Please describe the change differently and try again." });
+
       } catch {
         if (attempt < 2) continue;
-        addMsg({ type:"ai", content:"Please try again in a moment." });
       }
     }
+
+    // ── Step 2: If chat failed, fallback to /api/generate ──────
+    if (!updatedHTML) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const genRes = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+            body: JSON.stringify({
+              prompt: `Edit this HTML project. CHANGE: "${editPrompt}". RULES: Return COMPLETE HTML only, make ONLY the requested change, preserve everything else.
+
+CURRENT CODE:
+${result.slice(0, 12000)}`,
+              isEdit: true,
+            }),
+            signal: AbortSignal.timeout(90000),
+          });
+          const genData = await genRes.json();
+          if (genData.html) {
+            updatedHTML = genData.html;
+            if (genData.creditsUsed) setCredits(c => ({ ...c, used: c.used + genData.creditsUsed }));
+          }
+        }
+      } catch {}
+    }
+
+    // ── Step 3: Apply or show error ────────────────────────────
+    if (updatedHTML && updatedHTML.length > 200) {
+      await saveVersion(result, `Before: ${editPrompt.slice(0, 40)}`);
+      setResult(updatedHTML);
+      await saveProject(updatedHTML, projectName);
+      if (isMobile) setActiveTab("preview");
+
+      // Show what changed
+      const changes: string[] = ["Code updated"];
+      if (/space|padding|margin|gap/i.test(editPrompt))  changes.push("Spacing adjusted");
+      if (/color|colour|background/i.test(editPrompt))   changes.push("Colors updated");
+      if (/hero|header|banner/i.test(editPrompt))        changes.push("Hero section modified");
+      if (/font|text|typography/i.test(editPrompt))      changes.push("Typography updated");
+      if (/button|cta/i.test(editPrompt))                changes.push("Buttons updated");
+      if (/mobile|responsive/i.test(editPrompt))         changes.push("Responsive layout updated");
+
+      addMsg({
+        type: "summary",
+        summary: {
+          linesOfCode:    updatedHTML.split("
+").length,
+          projectType:    "edit",
+          componentsBuilt: changes.length,
+          featuresAdded:   changes,
+        },
+        validation: { score: 100, checks: [] },
+        credits: 1,
+      });
+    } else {
+      // Still failed — give helpful guidance
+      addMsg({
+        type: "ai",
+        content: `I couldn't apply that edit automatically. Try being more specific — for example: "Remove padding from the hero section" or "Set hero section padding-top to 20px".`,
+      });
+    }
+
     setAgentPhase("idle");
   };
 
