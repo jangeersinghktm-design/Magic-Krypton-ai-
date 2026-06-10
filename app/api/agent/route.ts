@@ -112,8 +112,8 @@ Analyze this request and respond with ONLY a JSON object (no markdown, no explan
 
 Rules:
 - thinking: 3-5 REAL, specific thoughts about THIS request — not generic
-- needsQuestions: true ONLY if the request is genuinely ambiguous (missing critical info like industry, audience, key features for complex apps). For simple clear requests like "build a restaurant website" set to false.
-- questions: max 2 questions, only if needsQuestions is true. Make them short and specific.
+- needsQuestions: true ONLY if the prompt is extremely vague (less than 4 words with no clear intent, like "build something" or "make a website"). For ANY prompt with a clear subject or purpose (restaurant, affiliate marketing, game, dashboard, fitness, portfolio etc.) set needsQuestions to false and just build it. Default is false.
+- questions: max 1-2 questions, only if needsQuestions is truly true. Write questions in the SAME LANGUAGE as the user's prompt.
 - plan: 6-10 specific tasks based on THIS request. Be concrete.
 - All text in English only.
 - Return ONLY the JSON. Nothing else.`;
