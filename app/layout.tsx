@@ -19,13 +19,13 @@ export const metadata: Metadata = {
     title: "Krypton AI — Build with AI",
     description: "Build professional websites, apps & games with AI in seconds.",
     siteName: "Krypton AI",
-    images: [{ url: "/logo.png", width: 512, height: 512, alt: "Krypton AI" }],
+    images: [{ url: "/logo.svg", width: 512, height: 512, alt: "Krypton AI" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Krypton AI — Build with AI",
     description: "Build websites, apps & games with AI in seconds.",
-    images: ["/logo.png"],
+    images: ["/logo.svg"],
   },
   robots: {
     index: true,
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true },
   },
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: "/logo.svg",
+    apple: "/logo.svg",
   },
 };
 
@@ -49,6 +49,12 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#FFD700" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Krypton AI" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/logo.svg" />
       </head>
       <body style={{ margin: 0 }}>
         <ClientLayout>{children}</ClientLayout>
