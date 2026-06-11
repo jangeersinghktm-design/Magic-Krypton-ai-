@@ -254,7 +254,6 @@ function CreatePage() {
   const [isMobile, setIsMobile]     = useState(false);
   const [activeTab, setActiveTab]   = useState<"chat"|"preview">("chat");
   const [credits, setCredits]       = useState<Credits>({ total:5, used:0, plan:"free" });
-  const [previewUrl, setPreviewUrl] = useState<string>("");
   const [saving, setSaving]         = useState(false);
   const [saved, setSaved]           = useState(false);
   const [user, setUser]             = useState<any>(null);
@@ -339,24 +338,6 @@ function CreatePage() {
     init();
   }, []);
 
-  // ── Blob URL for preview (PERMANENT FIX — never fails) ──────────
-  useEffect(() => {
-    if (!result) { setPreviewUrl(""); return; }
-    // Revoke previous blob URL to avoid memory leaks
-    setPreviewUrl(prev => { if (prev) URL.revokeObjectURL(prev); return ""; });
-    try {
-      const blob = new Blob([result], { type: "text/html;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } catch {
-      // Fallback: use data URL if blob fails
-      try {
-        const dataUrl = "data:text/html;charset=utf-8," + encodeURIComponent(result);
-        setPreviewUrl(dataUrl);
-      } catch {}
-    }
-  }, [result]);
 
   // Auto-save every 45s
   useEffect(() => {
@@ -584,24 +565,25 @@ function CreatePage() {
       setAgentPhase("idle"); return;
     }
 
-    // Save result — backend already saved to DB, just update local state
+    // ✅ Set result IMMEDIATELY — before any async save operations
     setResult(html);
     const pName = (analysis.summary || finalPrompt).slice(0, 45);
     setProjectName(pName);
-    // Only save to DB if backend didn't return a projectId (fallback)
-    if (!projectId) {
-      await saveProject(html, pName);
-    } else {
-      // Backend saved it — just update local cache
-      try {
-        localStorage.setItem(`kp_${projectId}`, JSON.stringify({
-          id: projectId, name: pName, html, prompt: finalPrompt, ts: Date.now()
-        }));
-      } catch {}
-    }
-    if (creditsUsed) setCredits(c => ({ ...c, used: c.used + creditsUsed }));
     if (isMobile) setActiveTab("preview");
 
+    // Save in background — never block the preview
+    (async () => {
+      try {
+        if (!projectId) {
+          await saveProject(html, pName);
+        } else {
+          localStorage.setItem(`kp_${projectId}`, JSON.stringify({
+            id: projectId, name: pName, html, prompt: finalPrompt, ts: Date.now()
+          }));
+        }
+      } catch {}
+    })();
+    if (creditsUsed) setCredits(c => ({ ...c, used: c.used + creditsUsed }));
     // ── PHASE 5: Validate ─────────────────────────────────────
     setAgentPhase("validating");
     await sleep(400);
@@ -999,14 +981,14 @@ ${result.slice(0, 12000)}`,
                         {d.icon} {d.label}
                       </button>
                     ))}
-                    <button onClick={() => { const w = window.open("","_blank"); if (w){w.document.write(result);w.document.close();} }} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:6, border:"1px solid rgba(255,255,255,.07)", background:"none", color:"#555", fontSize:11, cursor:"pointer" }}>↗ New Tab</button>
+                    <button onClick={() => { if(!result)return; const b=new Blob([result],{type:"text/html;charset=utf-8"}); const u=URL.createObjectURL(b); window.open(u,"_blank"); setTimeout(()=>URL.revokeObjectURL(u),60000); }} style={{ marginLeft:"auto", padding:"4px 10px", borderRadius:6, border:"1px solid rgba(255,255,255,.07)", background:"none", color:"#555", fontSize:11, cursor:"pointer" }}>↗ New Tab</button>
                   </div>
                 )}
                 <div style={{ flex:1, display:"flex", alignItems:"flex-start", justifyContent:"center", overflow:"auto", background:result?(deviceMode!=="desktop"?"#222":"#fff"):"#0d0d0d" }}>
-                  {result && previewUrl ? (
+                  {result ? (
                     <iframe
-                      key={previewUrl}
-                      src={previewUrl}
+                      key={result.length + deviceMode}
+                      srcDoc={result}
                       style={{
                         border: "none",
                         width: deviceMode==="desktop" ? "100%" : deviceMode==="tablet" ? "768px" : "375px",
@@ -1017,15 +999,14 @@ ${result.slice(0, 12000)}`,
                         flexShrink: 0,
                         display: "block",
                         opacity: 1,
-                        background: "#fff",
+                        background: "#ffffff",
                       }}
-                      sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads"
                       title="Live Preview"
-                      allow="*"
                     />
                   ) : (
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12, color:"#333", width:"100%", height:"100%", textAlign:"center", padding:20 }}>
-                      {result && !previewUrl ? (
+                      {false ? (
                         <>
                           <div style={{ width:36, height:36, border:"3px solid rgba(245,197,66,.2)", borderTopColor:"#F5D800", borderRadius:"50%", animation:"spin .8s linear infinite" }}/>
                           <p style={{ fontSize:14, color:"#555" }}>Loading preview...</p>
@@ -1069,7 +1050,7 @@ ${result.slice(0, 12000)}`,
                 {[
                   { label:"Download HTML", desc:"Single file, ready to deploy", icon:"⬇️", action:handleDownload },
                   { label:copied?"Copied!":"Copy Code", desc:"Copy HTML to clipboard", icon:"📋", action:handleCopy },
-                  { label:"Open in New Tab", desc:"Preview in browser", icon:"↗️", action:() => { const w=window.open("","_blank"); if(w){w.document.write(result);w.document.close();} } },
+                  { label:"Open in New Tab", desc:"Preview in browser", icon:"↗️", action:() => { if(!result)return; const b=new Blob([result],{type:"text/html;charset=utf-8"}); const u=URL.createObjectURL(b); window.open(u,"_blank"); setTimeout(()=>URL.revokeObjectURL(u),60000); } },
                   { label:"Push to GitHub", desc:"Connect GitHub in Settings first", icon:"🐙", action:() => router.push("/settings?tab=github"), noDisable:true },
                 ].map(opt => (
                   <button key={opt.label} onClick={opt.action} disabled={!opt.noDisable && !result}
