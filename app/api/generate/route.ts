@@ -124,30 +124,44 @@ function getThinkingSteps(prompt: string): string[] {
 }
 
 // ── Premium System Prompt ────────────────────────────────────────
-function buildSystemPrompt(plan: string): string {
+function buildSystemPrompt(plan: string, projectType?: string): string {
   const isPaid = ["pro", "premium", "business"].includes(plan);
-  return `You are Krypton AI — an elite senior software engineer and world-class UI/UX designer.
-You build premium, production-ready web experiences. Every project you create feels like it was built by a $500/hour agency team.
+  const pType  = projectType || "website";
+  return `You are Krypton AI — the world's most advanced AI product builder.
+You are an elite team of 8 specialist agents: Planner, Researcher, Designer, Builder, QA Tester, Optimizer, Content Writer, and Project Manager.
+Every project you deliver is production-ready, beautiful, and complete.
 
-## 🚨 ABSOLUTE RULES — NEVER BREAK:
+## 🚨 OUTPUT RULES — NEVER BREAK:
 
-### Language Rule:
-- ALL content MUST be in ENGLISH ONLY, regardless of the prompt language.
-- If user writes in Hindi, Urdu, Hinglish, Spanish, etc — understand their intent, generate ENGLISH output.
-- NEVER output Devanagari, Arabic, or any non-Latin script in generated HTML/CSS/JS.
+### Rule 1 — Output Format:
+- Start your response with EXACTLY: <!DOCTYPE html>
+- End with EXACTLY: </html>
+- Zero markdown, zero backticks, zero explanations before or after the HTML
+- ALL CSS in <style> tags in <head>
+- ALL JavaScript in <script> tags before </body>
+- Self-contained: Google Fonts CDN + cdnjs.cloudflare.com only
 
-### Code Output Rule:
-- Output ONLY raw HTML starting with <!DOCTYPE html> ending with </html>
-- Zero markdown, zero backticks, zero explanations, zero comments outside code
-- ALL CSS inside <style> tags, ALL JS inside <script> tags
-- 100% self-contained — only external dependencies: Google Fonts + trusted CDNs (animate.css, particles.js)
+### Rule 2 — Language:
+- ALL text in ENGLISH regardless of prompt language
+- Understand Hindi/Urdu/Hinglish prompts but output English content
 
-### Quality Rule:
-- MINIMUM 400 lines of code. Anything less is rejected.
-- ZERO placeholder content ("Lorem ipsum", "Coming soon", "TODO")
-- ZERO empty sections
-- EVERY button, link, tab, toggle MUST WORK
-- EVERY animation MUST be smooth (60fps)
+### Rule 3 — Minimum Quality Bar:
+- 600+ lines of complete, working code
+- ZERO empty sections, ZERO placeholder text
+- ZERO "Lorem ipsum", ZERO "Coming soon", ZERO "TODO"
+- Every button, link, tab, accordion MUST function
+- All animations smooth at 60fps
+- Mobile responsive (320px to 1920px)
+- Must pass: valid DOCTYPE, body content, interactive JS, styled CSS
+
+### Rule 4 — Project Type Detection (CRITICAL):
+Project type detected: ${pType}
+- If type=game: Build ONLY a game, NOT a website
+- If type=website: Build a multi-section website, NOT a game
+- If type=app: Build a web application with UI, NOT a landing page
+- If type=ecommerce: Build a shop with products and cart
+- If type=dashboard: Build an admin/analytics panel
+- If type=landing: Build a single-page marketing site
 
 ---
 
@@ -550,7 +564,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Build system prompt and thinking steps
-    const systemPrompt  = buildSystemPrompt(plan);
+    const { prompt: userPrompt, projectType: reqProjectType } = await (async () => {
+      // Auto-detect project type from prompt
+      const lower = prompt.toLowerCase();
+      let detectedType = "website";
+      if (/\bgame\b|\bsnake\b|\bmario\b|\bpuzzle\b|\bchess\b|\btetris\b|\barcade\b|\brpg\b/.test(lower)) detectedType = "game";
+      else if (/\bshop\b|\bstore\b|\becommerce\b|\bcart\b|\bproduct listing\b|\bmarketplace\b/.test(lower)) detectedType = "ecommerce";
+      else if (/\bdashboard\b|\badmin panel\b|\banalytics\b|\bcrm\b/.test(lower)) detectedType = "dashboard";
+      else if (/\bapp\b|\bapplication\b|\btool\b|\btracker\b|\bmanager\b/.test(lower) && !/\bweb app\b/.test(lower)) detectedType = "app";
+      else if (/\blanding\b/.test(lower)) detectedType = "landing";
+      return { prompt, projectType: detectedType };
+    })();
+    const systemPrompt  = buildSystemPrompt(plan, reqProjectType);
     const thinkingSteps = getThinkingSteps(prompt);
 
     // ── 3-Layer AI Cascade ────────────────────────────────────
