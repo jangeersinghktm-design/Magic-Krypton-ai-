@@ -65,10 +65,11 @@ export default function HomePage() {
     setLoadingProjects(true);
     const { data } = await supabase
       .from("projects")
-      .select("id, title, name, prompt, created_at, updated_at")
+      .select("id, title, name, prompt, html_code, created_at, updated_at")
       .eq("user_id", uid)
+      .not("html_code", "is", null)
       .order("updated_at", { ascending: false })
-      .limit(8);
+      .limit(6);
     setProjects(data || []);
     setLoadingProjects(false);
   };
