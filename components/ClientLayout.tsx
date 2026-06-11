@@ -20,14 +20,15 @@ export default function ClientLayout({
           .main-content { margin-left: 0 !important; }
         }
       `}</style>
-      <div style={{ display: "flex" }}>
+      <div style={{ display: "flex", height: "100dvh", overflow: "hidden" }}>
         {showSidebar && <KryptonSidebar />}
         <main
           className="main-content"
           style={{
             marginLeft: showSidebar ? "240px" : "0",
             flex: 1,
-            minHeight: "100vh",
+            height: "100dvh",
+            overflow: "hidden",
             transition: "margin-left 0.25s ease",
           }}
         >
