@@ -364,7 +364,7 @@ Format: numbered list only. No preamble.`;
                 type:        "usage",
                 description: `Build ${projectType}: ${prompt.slice(0, 50)}`,
                 project_id:  savedProjectId,
-              }).then(() => {}).catch(() => {});
+              }).then(() => {});
             }
           } catch {}
         }
