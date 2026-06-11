@@ -319,7 +319,7 @@ function CreatePageInner() {
           language:   "html",
           is_entry:   true,
           size_bytes: html.length,
-        }).catch(() => {});
+        });
       }
     }
 
