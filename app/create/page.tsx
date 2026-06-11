@@ -488,7 +488,8 @@ function CreatePageInner() {
     }
 
     if (!html) {
-      updateMsg(thinkId, { type:"error", content:"Please try a more detailed description.", isActive:false });
+      updateMsg(thinkId, { type:"error", content:"Generation failed — please try again.", isActive:false });
+      addMsg({ role:"ai", type:"text", content:'💡 Tip: Be specific. Example: "Build an affiliate marketing website with hero, tips grid, dark theme"' });
       setLoading(false);
       return;
     }
@@ -997,7 +998,7 @@ function CreatePageInner() {
                   className="tab-btn"
                   onClick={() => setRightTab(t.id)}
                   style={{
-                     padding:"5px 14px", borderRadius:8,
+                    padding:"5px 14px", borderRadius:8,
                     border:rightTab===t.id?`1px solid rgba(255,215,0,.25)`:"1px solid transparent",
                     background:rightTab===t.id?"rgba(255,215,0,.08)":"transparent",
                     color:rightTab===t.id?C.gold:C.muted,
