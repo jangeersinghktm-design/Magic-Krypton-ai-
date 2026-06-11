@@ -32,7 +32,7 @@ const C = {
 // ── Types ─────────────────────────────────────────────────────────
 type MsgRole  = "user" | "ai" | "system";
 type MsgType  = "text" | "thinking" | "plan" | "summary" | "error";
-type RightTab = "preview" | "deploy" | "history";
+type RightTab = "preview" | "files" | "deploy" | "history";
 type Device   = "desktop" | "tablet" | "mobile";
 
 interface ChatMessage {
@@ -822,26 +822,11 @@ function CreatePageInner() {
         {/* ── MAIN 3-PANEL ─────────────────────────────────────── */}
         <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
 
-          {/* ── PANEL 1: FILE EXPLORER ── */}
-          {!isMobile && showFileExplorer && (
-            <div style={{ width:220, flexShrink:0, borderRight:`1px solid ${C.border}`, overflow:"hidden", display:"flex", flexDirection:"column" }}>
-              <FileExplorer
-                html={result}
-                projectName={projectName}
-                onDownload={() => {
-                  const a = document.createElement("a");
-                  a.href = URL.createObjectURL(new Blob([result], { type:"text/html" }));
-                  a.download = `${projectName.toLowerCase().replace(/\s+/g,"-")}.html`;
-                  a.click();
-                }}
-                onCopyCode={() => navigator.clipboard.writeText(result)}
-              />
-            </div>
-          )}
+          {/* FILE EXPLORER moved to right panel "Files" tab */}
 
           {/* ── PANEL 2: AGENT CHAT ── */}
           <div style={{
-            width: isMobile ? "100%" : showFileExplorer ? "calc(50% - 110px)" : "50%",
+            width: isMobile ? "100%" : "50%",
             display: isMobile ? (activePanel==="chat" ? "flex" : "none") : "flex",
             flexDirection:"column",
             borderRight: isMobile ? "none" : `1px solid ${C.border}`,
@@ -855,22 +840,7 @@ function CreatePageInner() {
               display:"flex", alignItems:"center", gap:8,
               flexShrink:0,
             }}>
-              {!isMobile && (
-                <button
-                  className="icon-btn"
-                  onClick={() => setShowFileExplorer(v=>!v)}
-                  style={{
-                    width:28, height:28, borderRadius:7,
-                    background:"rgba(255,255,255,.04)",
-                    border:`1px solid ${C.border}`,
-                    color:C.muted, fontSize:13, cursor:"pointer",
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                  }}
-                  title="Toggle file explorer"
-                >
-                  ☰
-                </button>
-              )}
+              {/* File explorer moved to right panel */}
               {loading && (
                 <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                   <div style={{ display:"flex", gap:3 }}>
@@ -1018,6 +988,7 @@ function CreatePageInner() {
             }}>
               {([
                 { id:"preview", label:"✨ Preview" },
+                { id:"files",   label:"📁 Files"   },
                 { id:"deploy",  label:"🚀 Deploy"  },
                 { id:"history", label:"⏱ History" },
               ] as const).map(t => (
@@ -1026,7 +997,7 @@ function CreatePageInner() {
                   className="tab-btn"
                   onClick={() => setRightTab(t.id)}
                   style={{
-                    padding:"5px 14px", borderRadius:8,
+                     padding:"5px 14px", borderRadius:8,
                     border:rightTab===t.id?`1px solid rgba(255,215,0,.25)`:"1px solid transparent",
                     background:rightTab===t.id?"rgba(255,215,0,.08)":"transparent",
                     color:rightTab===t.id?C.gold:C.muted,
@@ -1120,6 +1091,24 @@ function CreatePageInner() {
             )}
 
             {/* Deploy */}
+            {/* Files Tab */}
+            {rightTab==="files" && (
+              <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column" }}>
+                <FileExplorer
+                  html={result}
+                  projectName={projectName}
+                  onDownload={() => {
+                    if (!result) return;
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(new Blob([result], { type:"text/html" }));
+                    a.download = `${projectName.toLowerCase().replace(/\s+/g,"-")}.html`;
+                    a.click();
+                  }}
+                  onCopyCode={() => navigator.clipboard.writeText(result)}
+                />
+              </div>
+            )}
+
             {rightTab==="deploy" && (
               <div style={{ flex:1, overflowY:"auto" }}>
                 <DeployPanel html={result} projectName={projectName} projectId={projectId}/>
