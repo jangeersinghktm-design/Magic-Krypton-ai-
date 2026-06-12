@@ -356,7 +356,7 @@ export async function POST(req: NextRequest) {
                 type:        "usage",
                 description: `Build ${projectType}: ${prompt.slice(0, 50)}`,
                 project_id:  savedProjectId,
-              }).then(() => {}).catch(() => {});
+              }).then(() => {});
             }
           } catch {}
         }
