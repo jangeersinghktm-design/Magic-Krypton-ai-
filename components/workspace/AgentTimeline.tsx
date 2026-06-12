@@ -1,7 +1,7 @@
 "use client";
 // components/workspace/AgentTimeline.tsx
-// Krypton AI — Clean Claude-style Execution Timeline
-// No agent names. No AI branding. Pure Krypton workflow states.
+// Krypton AI — Execution Timeline
+// Clean linear progress — no AI vendor names, no agent labels
 
 import { useEffect, useRef } from "react";
 
@@ -20,17 +20,28 @@ interface AgentTimelineProps {
   currentAgent?: string;
 }
 
-// Map internal agent names → user-facing Krypton workflow states
-const WORKFLOW_STATES: Record<string, { label: string; icon: string }> = {
-  "Planner":          { label: "Reading Request",    icon: "○" },
-  "Researcher":       { label: "Understanding Goal",  icon: "○" },
-  "Designer":         { label: "Creating Plan",       icon: "○" },
-  "Builder":          { label: "Building Project",    icon: "○" },
-  "QA Tester":        { label: "Validating Output",   icon: "○" },
-  "Optimizer":        { label: "Optimizing Result",   icon: "○" },
-  "Project Manager":  { label: "Finalizing",          icon: "○" },
+// Internal keys from SSE → user-facing Krypton workflow labels
+// User NEVER sees "Planner", "Builder", "QA Tester" etc.
+const WORKFLOW_STATES: Record<string, string> = {
+  // Current keys (sent by orchestrate route)
+  "Reading":       "Reading Request",
+  "Understanding": "Understanding Goal",
+  "Planning":      "Creating Plan",
+  "Building":      "Building Project",
+  "Validating":    "Validating Output",
+  "Optimizing":    "Optimizing Result",
+  "Finalizing":    "Finalizing",
+  // Legacy compatibility keys
+  "Planner":       "Reading Request",
+  "Researcher":    "Understanding Goal",
+  "Designer":      "Creating Plan",
+  "Builder":       "Building Project",
+  "Validator":     "Validating Output",
+  "Optimizer":     "Optimizing Result",
+  "Project Manager":"Finalizing",
 };
 
+// Fixed ordered steps — always shown in same order
 const ALL_STATES = [
   "Reading Request",
   "Understanding Goal",
@@ -41,6 +52,14 @@ const ALL_STATES = [
   "Finalizing",
 ];
 
+const C = {
+  gold:   "#FFD700",
+  green:  "#00D084",
+  muted:  "#3D4A5C",
+  border: "rgba(255,255,255,0.05)",
+  text:   "#94A3B8",
+};
+
 export default function AgentTimeline({ phases, isActive }: AgentTimelineProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -48,16 +67,15 @@ export default function AgentTimeline({ phases, isActive }: AgentTimelineProps) 
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [phases]);
 
-  // Build state list from phases
-  const stateMap: Record<string, { done: boolean; active: boolean; pct: number; action: string }> = {};
+  // Build map: displayLabel → { done, active, pct }
+  const stateStatus: Record<string, { done: boolean; active: boolean; pct: number }> = {};
   phases.forEach(p => {
-    const mapped = WORKFLOW_STATES[p.agent];
-    if (mapped) {
-      stateMap[mapped.label] = {
+    const label = WORKFLOW_STATES[p.agent];
+    if (label) {
+      stateStatus[label] = {
         done:   !!p.done,
         active: !p.done && isActive,
         pct:    p.pct || 0,
-        action: p.action,
       };
     }
   });
@@ -75,111 +93,114 @@ export default function AgentTimeline({ phases, isActive }: AgentTimelineProps) 
     }}>
       {/* Header */}
       <div style={{
-        padding:      "10px 16px",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        display:      "flex",
-        alignItems:   "center",
-        gap:          10,
+        padding:        "9px 14px",
+        borderBottom:   "1px solid rgba(255,255,255,0.05)",
+        display:        "flex",
+        alignItems:     "center",
+        gap:            10,
+        background:     "rgba(255,215,0,0.02)",
       }}>
         {isDone ? (
-          <span style={{ color:"#00D084", fontSize:13 }}>✓</span>
+          <span style={{ color: C.green, fontSize: 13 }}>✓</span>
         ) : (
           <div style={{
-            width:8, height:8, borderRadius:"50%",
-            background:"#FFD700",
-            animation:"pulse 1.5s ease-in-out infinite",
-            flexShrink:0,
+            width: 7, height: 7, borderRadius: "50%",
+            background: C.gold,
+            animation: "pulse 1.5s ease-in-out infinite",
+            flexShrink: 0,
           }}/>
         )}
-        <span style={{ fontSize:12, fontWeight:600, color:isDone?"#00D084":"#FFD700" }}>
+        <span style={{
+          fontSize: 11.5, fontWeight: 600,
+          color: isDone ? C.green : C.gold,
+        }}>
           {isDone ? "Complete" : "Krypton Intelligence Engine"}
         </span>
-        {!isDone && isActive && (
+        {isActive && (
           <div style={{
-            marginLeft:"auto",
-            height:2, width:80,
-            background:"rgba(255,255,255,0.06)",
-            borderRadius:4, overflow:"hidden",
+            marginLeft: "auto",
+            height: 2, width: 72,
+            background: "rgba(255,255,255,0.06)",
+            borderRadius: 4, overflow: "hidden",
           }}>
             <div style={{
-              height:"100%",
-              width:`${Math.round((completedCount / ALL_STATES.length) * 100)}%`,
-              background:"linear-gradient(90deg,#FFD700,#FF7A00)",
-              borderRadius:4,
-              transition:"width .5s ease",
+              height: "100%",
+              width: `${Math.round((completedCount / ALL_STATES.length) * 100)}%`,
+              background: "linear-gradient(90deg,#FFD700,#FF7A00)",
+              borderRadius: 4,
+              transition: "width .5s ease",
             }}/>
           </div>
         )}
       </div>
 
-      {/* Clean linear steps */}
-      <div style={{ padding:"10px 0" }}>
-        {ALL_STATES.map((state, i) => {
-          const info    = stateMap[state];
-          const isDoneS = info?.done || false;
-          const isActiveS = info?.active || false;
+      {/* Steps */}
+      <div style={{ padding: "8px 0 10px" }}>
+        {ALL_STATES.map((label, i) => {
+          const info       = stateStatus[label];
+          const isDoneS    = info?.done   || false;
+          const isActiveS  = info?.active || false;
           const notReached = !info;
 
           return (
-            <div key={state} style={{
+            <div key={label} style={{
               display:    "flex",
               alignItems: "center",
-              gap:        14,
-              padding:    "7px 16px",
-              opacity:    notReached ? 0.3 : 1,
-              transition: "opacity 0.3s ease",
+              gap:        12,
+              padding:    "6px 14px",
+              opacity:    notReached ? 0.28 : 1,
+              transition: "opacity .3s ease",
             }}>
-              {/* Step indicator */}
+              {/* Indicator */}
               <div style={{
-                width:    18, height: 18,
-                borderRadius: "50%",
-                flexShrink:   0,
-                display:      "flex",
-                alignItems:   "center",
+                width:          18, height: 18,
+                borderRadius:   "50%",
+                flexShrink:     0,
+                display:        "flex",
+                alignItems:     "center",
                 justifyContent: "center",
-                background:   isDoneS
-                  ? "rgba(0,208,132,0.12)"
-                  : isActiveS
-                  ? "rgba(255,215,0,0.12)"
-                  : "rgba(255,255,255,0.04)",
+                background:     isDoneS  ? "rgba(0,208,132,0.1)"
+                              : isActiveS ? "rgba(255,215,0,0.1)"
+                              : "rgba(255,255,255,0.04)",
                 border: `1px solid ${
-                  isDoneS   ? "rgba(0,208,132,0.4)"
-                  : isActiveS ? "rgba(255,215,0,0.4)"
-                  : "rgba(255,255,255,0.08)"
+                  isDoneS   ? "rgba(0,208,132,0.35)"
+                : isActiveS ? "rgba(255,215,0,0.35)"
+                :             "rgba(255,255,255,0.07)"
                 }`,
+                transition: "all .3s ease",
               }}>
                 {isDoneS ? (
-                  <span style={{ color:"#00D084", fontSize:9, fontWeight:700 }}>✓</span>
+                  <span style={{ color: C.green, fontSize: 9, fontWeight: 800 }}>✓</span>
                 ) : isActiveS ? (
                   <div style={{
-                    width:6, height:6, borderRadius:"50%",
-                    border:"1.5px solid rgba(255,215,0,0.3)",
-                    borderTopColor:"#FFD700",
-                    animation:"spin .7s linear infinite",
+                    width: 6, height: 6, borderRadius: "50%",
+                    border: "1.5px solid rgba(255,215,0,0.3)",
+                    borderTopColor: C.gold,
+                    animation: "spin .7s linear infinite",
                   }}/>
                 ) : (
-                  <div style={{ width:4, height:4, borderRadius:"50%", background:"rgba(255,255,255,0.2)" }}/>
+                  <div style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(255,255,255,0.15)" }}/>
                 )}
               </div>
 
               {/* Label */}
               <span style={{
-                fontSize:   13,
-                color:      isDoneS ? "rgba(255,255,255,0.3)"
-                            : isActiveS ? "#FFD700"
-                            : "rgba(255,255,255,0.3)",
-                textDecoration: isDoneS ? "line-through" : "none",
-                textDecorationColor: "rgba(255,255,255,0.15)",
-                fontWeight: isActiveS ? 600 : 400,
-                flex:       1,
-                transition: "all .3s ease",
+                fontSize:           13,
+                color:              isDoneS  ? "rgba(255,255,255,0.2)"
+                                  : isActiveS ? C.gold
+                                  :             C.text,
+                textDecoration:     isDoneS ? "line-through" : "none",
+                textDecorationColor:"rgba(255,255,255,0.12)",
+                fontWeight:         isActiveS ? 600 : 400,
+                flex:               1,
+                transition:         "all .3s ease",
               }}>
-                {state}
+                {label}
               </span>
 
-              {/* Progress (active only) */}
+              {/* Progress % (active only) */}
               {isActiveS && info?.pct > 0 && (
-                <span style={{ fontSize:11, color:"rgba(255,215,0,0.5)", flexShrink:0 }}>
+                <span style={{ fontSize: 10.5, color: "rgba(255,215,0,0.45)", flexShrink: 0 }}>
                   {info.pct}%
                 </span>
               )}
