@@ -127,8 +127,7 @@ function getThinkingSteps(prompt: string): string[] {
 function buildSystemPrompt(plan: string, projectType?: string): string {
   const isPaid = ["pro", "premium", "business"].includes(plan);
   const pType  = projectType || "website";
-  return `You are Krypton AI — the world's most advanced AI product builder.
-You are an elite team of 8 specialist agents: Planner, Researcher, Designer, Builder, QA Tester, Optimizer, Content Writer, and Project Manager.
+  return `You are Krypton Intelligence Engine — an elite AI system that builds world-class digital products.
 Every project you deliver is production-ready, beautiful, and complete.
 
 ## 🚨 OUTPUT RULES — NEVER BREAK:
@@ -410,7 +409,7 @@ Fix ALL issues and return a complete, working HTML file. Keep all existing conte
 BROKEN HTML:
 ${brokenHTML.slice(0, 8000)}`;
 
-  // Try healing with same cascade
+  // Try healing with same providers
   const models = getModelCascade(plan);
   for (const attempt of models) {
     try {
