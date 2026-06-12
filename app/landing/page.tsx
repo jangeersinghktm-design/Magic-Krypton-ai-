@@ -37,7 +37,7 @@ const FEATURES = [
   { icon:"📊", title:"Dashboards",     desc:"Analytics panels, admin UIs, data visualisations that impress." },
   { icon:"🛒", title:"E-Commerce",     desc:"Full stores with product pages, carts and checkout flows." },
   { icon:"📱", title:"Mobile-First",   desc:"Every build is responsive — looks flawless on any device." },
-  { icon:"🤖", title:"AI-Powered",     desc:"Claude Sonnet generates production-ready code in seconds." },
+  { icon:"🤖", title:"AI-Powered",     desc:"Krypton Intelligence generates production-ready code in seconds." },
 ];
 
 const STATS = [
@@ -79,7 +79,7 @@ const FAQS = [
   { q:"How does Krypton AI work?",   a:"Describe what you want in plain English. Our AI transforms your idea into a complete, responsive project in seconds." },
   { q:"Can I download the code?",    a:"Yes. Every project downloads as a complete HTML file, ready to deploy anywhere — Vercel, Netlify, GitHub Pages." },
   { q:"Do I need coding skills?",    a:"No. Just describe what you want and Krypton AI generates it instantly. Zero technical knowledge required." },
-  { q:"What AI model powers this?",  a:"Krypton AI is powered by Claude Sonnet — one of the most capable and reliable models available today." },
+  { q:"What AI model powers this?",  a:"Krypton AI is powered by Krypton Intelligence Engine — one of the most capable and reliable models available today." },
   { q:"Is there a free plan?",       a:"Yes. You get 5 free generations every day with no credit card required. Upgrade anytime for more power." },
 ];
 
