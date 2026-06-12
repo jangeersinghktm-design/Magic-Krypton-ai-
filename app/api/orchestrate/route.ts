@@ -24,14 +24,14 @@ interface StreamController {
 }
 
 // ── AI Providers (same 3-layer cascade) ──────────────────────────
-async function callClaude(system: string, user: string, maxTokens = 12000): Promise<string> {
+async function callClaude(system: string, user: string, maxTokens = 8000): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY not set");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01" },
-    body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:maxTokens, system, messages:[{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(90000),
+    body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:maxTokens, system, messages:[{role:"user",content:user}] }),
+    signal: AbortSignal.timeout(55000),
   });
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const d = await res.json();
@@ -44,8 +44,8 @@ async function callOpenAI(system: string, user: string, maxTokens = 12000): Prom
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type":"application/json","Authorization":`Bearer ${key}` },
-    body: JSON.stringify({ model:"gpt-4o", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(90000),
+    body: JSON.stringify({ model:"gpt-4o-mini", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
+    signal: AbortSignal.timeout(55000),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
   const d = await res.json();
@@ -59,7 +59,7 @@ async function callGemini(system: string, user: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:12000} }),
-    signal: AbortSignal.timeout(90000),
+    signal: AbortSignal.timeout(55000),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}`);
   const d = await res.json();
@@ -270,37 +270,29 @@ export async function POST(req: NextRequest) {
         send("phase", { agent:"Planner", icon:"🔍", action:"Analyzing your request...", pct:8 });
         const projectType = detectProjectType(prompt);
 
-        // Quick plan via fast AI call
-        let executionPlan = "";
-        try {
-          const planPrompt = `User wants: "${prompt}" (type: ${projectType})
-Create a brief 5-point implementation plan for building this. Be specific, not generic.
-Format: numbered list only. No preamble.`;
-          const planResult = await callClaude(
-            "You are a senior software architect. Create brief, specific implementation plans.",
-            planPrompt, 500
-          );
-          executionPlan = planResult;
-        } catch {
-          executionPlan = `1. Set up ${projectType} structure\n2. Build core functionality\n3. Style with premium design system\n4. Add interactivity\n5. Optimize and finalize`;
-        }
+        // Use static plan (saves 5-10s — planning AI call removed for speed)
+        const executionPlan = `1. Set up ${projectType} structure with premium layout
+2. Build all required sections with real content
+3. Apply design system: Syne font, dark theme, gold accents
+4. Add all interactive elements and animations
+5. Optimize for mobile and finalize`;
 
         send("phase", { agent:"Planner", icon:"🔍", action:`Detected: ${projectType} project`, pct:15, done:true });
 
         // ── PHASE 2: Researcher ───────────────────────────────────
         send("phase", { agent:"Researcher", icon:"📚", action:"Analyzing requirements...", pct:22 });
-        await new Promise(r => setTimeout(r, 600));
+        
         send("phase", { agent:"Researcher", icon:"📚", action:"Design system selected", pct:28, done:true });
 
         // ── PHASE 3: Designer ─────────────────────────────────────
         send("phase", { agent:"Designer", icon:"🎨", action:"Planning visual architecture...", pct:35 });
-        await new Promise(r => setTimeout(r, 500));
+        
         send("phase", { agent:"Designer", icon:"🎨", action:"Component structure ready", pct:42, done:true });
 
         // ── PHASE 4: Builder ──────────────────────────────────────
         send("phase", { agent:"Builder", icon:"⚙️", action:"Writing production code...", pct:50 });
         const systemPrompt = buildPrompt(prompt, projectType, executionPlan);
-        const { text: rawHTML, provider } = await generateWithFallback(systemPrompt, prompt);
+        const { text: rawHTML, provider } = await generateWithFallback(systemPrompt, prompt); // haiku: 8000 tokens = ~600 lines HTML
         const html = cleanHTML(rawHTML);
         send("phase", { agent:"Builder", icon:"⚙️", action:`Code generated via ${provider}`, pct:72, done:true });
 
@@ -319,7 +311,7 @@ Format: numbered list only. No preamble.`;
 
         // ── PHASE 6: Optimizer ────────────────────────────────────
         send("phase", { agent:"Optimizer", icon:"⚡", action:"Optimizing performance...", pct:88 });
-        await new Promise(r => setTimeout(r, 400));
+        
         send("phase", { agent:"Optimizer", icon:"⚡", action:"Optimization complete", pct:92, done:true });
 
         // ── PHASE 7: Project Manager ──────────────────────────────
@@ -364,7 +356,7 @@ Format: numbered list only. No preamble.`;
                 type:        "usage",
                 description: `Build ${projectType}: ${prompt.slice(0, 50)}`,
                 project_id:  savedProjectId,
-              }).then(() => {});
+              }).then(() => {}).catch(() => {});
             }
           } catch {}
         }
