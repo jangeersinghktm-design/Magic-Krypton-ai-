@@ -37,8 +37,12 @@ You are the AI assistant inside a code editor. You have full context of the user
 - Wrap in <code_changes> block
 
 ## EDIT PRINCIPLES:
-- NEVER break existing functionality
-- ALWAYS preserve existing styles unless asked to change them
+- NEVER break existing functionality  
+- If KRYPTON PROJECT MEMORY is provided: treat it as absolute truth about the existing design
+- ALWAYS preserve: colors, fonts, CSS variables, layout structure, existing sections
+- ONLY change what the user explicitly requested — nothing more
+- New elements must match the existing design system perfectly
+- When in doubt, preserve existing design over introducing new patterns
 - Make the minimum change needed to achieve the goal
 - Improve code quality opportunistically (fix obvious issues)
 - Keep consistent naming conventions and code style
@@ -148,7 +152,8 @@ export async function POST(req: NextRequest) {
       userMessage,
       history = [],
       projectId,
-      message, // Fallback for simple chatbot usage
+      projectContext = "", // Krypton Project Memory
+      message,
     } = await req.json();
 
     const actualMessage = userMessage || message || "";
@@ -169,7 +174,12 @@ export async function POST(req: NextRequest) {
     }));
 
     const userContent = codeContext
-      ? `Project: ${projectName} (${framework})\n\nCurrent Code:\n${codeContext}\n\nRequest: ${actualMessage}`
+      ? `${projectContext ? projectContext + "\n\n" : ""}Project: ${projectName} (${framework})
+
+Current Code:
+${codeContext}
+
+Edit Request: ${actualMessage}`
       : actualMessage;
 
     const messages = [
