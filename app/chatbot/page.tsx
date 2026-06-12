@@ -305,7 +305,7 @@ export default function ChatbotPage(){
               style={{width:"100%",background:"none",border:"none",color:C.text,fontSize:14,resize:"none",outline:"none",lineHeight:1.6,maxHeight:120,overflowY:"auto"}}
             />
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6}}>
-              <span style={{fontSize:11,color:C.muted}}>Powered by Claude · GPT-4o · Gemini</span>
+              <span style={{fontSize:11,color:C.muted}}>Krypton Intelligence Engine</span>
               <div style={{display:"flex",gap:6}}>
                 {loading&&(
                   <button onClick={stop} style={{padding:"7px 14px",background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:8,color:"#EF4444",fontSize:12,fontWeight:600,cursor:"pointer"}}>⏹ Stop</button>
@@ -329,3 +329,4 @@ export default function ChatbotPage(){
   );
 }
 
+          
