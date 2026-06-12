@@ -30,7 +30,7 @@ export default function AboutPage() {
         {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginBottom: 40 }}>
           {[
-            { icon: "⚡", value: "Claude AI", label: "Powered by Anthropic" },
+            { icon: "⚡", value: "Krypton Intelligence", label: "World-class AI Infrastructure" },
             { icon: "🌍", value: "Global", label: "Users worldwide" },
             { icon: "🚀", value: "Seconds", label: "To generate any app" },
             { icon: "💰", value: "Free", label: "To get started" },
@@ -66,7 +66,7 @@ export default function AboutPage() {
         <div style={{ background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: 20, padding: "32px", marginBottom: 32 }}>
           <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 20 }}>Built With</h2>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {["Next.js 14", "TypeScript", "Supabase", "Claude AI", "Vercel", "Razorpay", "Resend"].map(tech => (
+            {["Next.js 14", "TypeScript", "Supabase", "Krypton Intelligence", "Vercel", "Razorpay", "Resend"].map(tech => (
               <span key={tech} style={{ padding: "8px 16px", background: "rgba(245,197,66,0.08)", border: `1px solid ${T.border}`, borderRadius: 20, fontSize: 13, color: T.gold }}>
                 {tech}
               </span>
@@ -86,4 +86,3 @@ export default function AboutPage() {
     </div>
   );
 }
-
