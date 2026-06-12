@@ -7,8 +7,8 @@ export const metadata: Metadata = {
     default: "Krypton AI — Build Websites, Apps & Games with AI",
     template: "%s | Krypton AI",
   },
-  description: "Build professional websites, web apps, and browser games with AI in seconds. No coding needed. Powered by Claude AI.",
-  keywords: ["AI website builder", "AI app generator", "AI game builder", "no code", "Claude AI", "Krypton AI"],
+  description: "Build professional websites, web apps, and browser games with AI in seconds. No coding needed. Powered by Krypton Intelligence Engine.",
+  keywords: ["AI website builder", "AI app generator", "AI game builder", "no code", "Krypton AI", "Krypton AI"],
   authors: [{ name: "Krypton AI" }],
   creator: "Krypton AI",
   metadataBase: new URL("https://magic-krypton-ai.vercel.app"),
@@ -50,7 +50,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0D0821" />
+        <meta name="theme-color" content="#FFD700" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Krypton AI" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
