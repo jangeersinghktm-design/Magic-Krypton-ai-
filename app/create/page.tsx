@@ -693,87 +693,134 @@ function CreatePageInner() {
     const thinkId = addMsg({
       role:"ai", type:"thinking", content:"", isActive:true,
       phases:[
-        { agent:"Planner",  icon:"○", action:"Reading edit request...",  pct:20, status:"running" },
-        { agent:"Builder",  icon:"○",  action:"Analyzing current code...", pct:0,  status:"running" },
-        { agent:"Validator",icon:"○", action:"Validating changes...",    pct:0,  status:"running" },
+        { agent:"Reading",    icon:"○", action:"Reading your request",    pct:20,  status:"running" },
+        { agent:"Building",   icon:"○", action:"Analyzing project",       pct:0,   status:"running" },
+        { agent:"Validating", icon:"○", action:"Applying changes",        pct:0,   status:"running" },
       ],
     });
 
-    await sleep(600);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setLoading(false); return; }
+
+    const codeLines    = result.split("\n").length;
+    const isLargeFile  = codeLines > 600;   // Games, complex apps
+    const memCtx       = formatMemoryForAI(projectMemory);
+
     updateMsg(thinkId, { phases:[
-      { agent:"Planner",  icon:"○", action:"Request analyzed",         pct:100, done:true, status:"done" },
-      { agent:"Builder",  icon:"○",  action:"Applying surgical edit...", pct:55,  status:"running" },
-      { agent:"Validator",icon:"○", action:"Waiting...",               pct:0,   status:"running" },
+      { agent:"Reading",    icon:"○", action:"Request understood",   pct:100, done:true, status:"done" },
+      { agent:"Building",   icon:"○", action:"Applying changes...",  pct:55,  status:"running" },
+      { agent:"Validating", icon:"○", action:"Waiting",              pct:0,   status:"running" },
     ]});
 
+    let newHtml = "";
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setLoading(false); return; }
-
-      // Use chat API for surgical edits
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify({
-          userMessage:     editPrompt,
-          currentCode:     { "index.html": result },
-          projectName,
-          framework:       "html",
-          projectContext:  formatMemoryForAI(projectMemory),
-        }),
-        signal: AbortSignal.timeout(60000),
-      });
-
-      const data = await res.json();
-      let newHtml = data.codeChanges?.["index.html"] || "";
-
-      // Fallback: extract HTML from text response
-      if (!newHtml) {
-        const match = (data.reply || data.text || "").match(/<!DOCTYPE[\s\S]*<\/html>/i);
-        if (match) newHtml = match[0];
+      if (!isLargeFile) {
+        // ── Small files: surgical chat API edit ──────────────────
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({
+            userMessage:    editPrompt,
+            currentCode:    { "index.html": result },
+            projectName,
+            framework:      "html",
+            projectContext: memCtx,
+          }),
+          signal: AbortSignal.timeout(55000),
+        });
+        const data = await res.json();
+        newHtml = data.codeChanges?.["index.html"] || "";
+        if (!newHtml) {
+          const match = (data.reply || "").match(/<!DOCTYPE[\s\S]*<\/html>/i);
+          if (match) newHtml = match[0];
+        }
       }
 
-      // If chat didn't return HTML, try generate with edit context
+      // ── Large files OR chat failed: smart generate with context ─
       if (!newHtml) {
+        // Build intelligent edit prompt with design memory
+        const designCtx = memCtx ? `\n\nEXISTING DESIGN MEMORY:\n${memCtx.slice(0, 800)}` : "";
+        const codeCtx   = isLargeFile
+          ? result.slice(0, 6000) + "\n\n[... middle of file ...]\n\n" + result.slice(-3000)
+          : result.slice(0, 10000);
+
+        const editInstr = `You are editing an existing project. Apply ONLY this change: "${editPrompt}"
+
+RULES:
+- Return the COMPLETE updated HTML — not a partial
+- Preserve ALL existing functionality, design, colors, fonts
+- Only modify what was requested — nothing else
+- If this is a game, keep all game mechanics intact${designCtx}
+
+CURRENT CODE (${codeLines} lines):
+${codeCtx}`;
+
         const genRes = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type":"application/json", "Authorization":`Bearer ${session.access_token}` },
-          body: JSON.stringify({
-            prompt: `Edit this project. Change: "${editPrompt}". Return COMPLETE updated HTML only.\n\nCURRENT:\n${result.slice(0, 12000)}`,
-            isEdit: true,
-          }),
-          signal: AbortSignal.timeout(90000),
+          body: JSON.stringify({ prompt: editInstr, isEdit: true }),
+          signal: AbortSignal.timeout(55000),
         });
         const gd = await genRes.json();
         if (gd.html) newHtml = gd.html;
       }
 
-      if (newHtml && newHtml.length > 200) {
+      if (newHtml && newHtml.length > 500) {
         await saveVersion(result, `Before: ${editPrompt.slice(0,40)}`);
         setResult(newHtml);
         setProjectMemory(prev => buildProjectMemory(newHtml, projectName, prev?.originalPrompt||editPrompt, messages, prev));
         setCredits(c => ({ ...c, used: c.used + 1 }));
-
-        (async () => {
-          try { await saveProject(newHtml, projectName); } catch {}
-        })();
+        (async () => { try { await saveProject(newHtml, projectName); } catch {} })();
 
         updateMsg(thinkId, {
           isActive: false,
           phases: [
-            { agent:"Planner",  icon:"○", action:"Request analyzed",  pct:100, done:true, status:"done" },
-            { agent:"Builder",  icon:"○",  action:"Edit applied",       pct:100, done:true, status:"done" },
-            { agent:"Validator",icon:"○", action:"Changes validated",  pct:100, done:true, status:"done" },
+            { agent:"Reading",    icon:"○", action:"Request understood", pct:100, done:true, status:"done" },
+            { agent:"Building",   icon:"○", action:"Changes applied",    pct:100, done:true, status:"done" },
+            { agent:"Validating", icon:"○", action:"Validated",          pct:100, done:true, status:"done" },
           ],
         });
-
-        addMsg({ role:"ai", type:"summary", content:"Edit applied successfully.", credits:1 });
+        addMsg({ role:"ai", type:"summary", content:"Changes applied.", credits:1 });
         if (isMobile) setActivePanel("preview");
       } else {
-        updateMsg(thinkId, { type:"error", content:"Please describe the change more specifically.", isActive:false });
+        updateMsg(thinkId, {
+          type:"error",
+          content:"Could not apply that change. Try describing it differently — e.g. \'Make the jump button bigger\'",
+          isActive:false,
+        });
       }
     } catch {
-      updateMsg(thinkId, { type:"error", content:"Edit failed. Try again.", isActive:false });
+      // Final fallback: regenerate with full context
+      try {
+        const rebuild = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type":"application/json", "Authorization":`Bearer ${session.access_token}` },
+          body: JSON.stringify({
+            prompt: `Rebuild this ${projectName} with this improvement: "${editPrompt}". Make it complete and fully working.`,
+            isEdit: false,
+          }),
+          signal: AbortSignal.timeout(55000),
+        });
+        const rd = await rebuild.json();
+        if (rd.html && rd.html.length > 500) {
+          setResult(rd.html);
+          setCredits(c => ({ ...c, used: c.used + 1 }));
+          updateMsg(thinkId, { isActive:false, phases:[
+            { agent:"Reading",    icon:"○", action:"Rebuilt with improvement", pct:100, done:true, status:"done" },
+            { agent:"Building",   icon:"○", action:"Complete",                 pct:100, done:true, status:"done" },
+            { agent:"Validating", icon:"○", action:"Done",                     pct:100, done:true, status:"done" },
+          ]});
+          addMsg({ role:"ai", type:"summary", content:"Rebuilt with your changes.", credits:1 });
+          if (isMobile) setActivePanel("preview");
+          setLoading(false); return;
+        }
+      } catch {}
+      updateMsg(thinkId, {
+        type:"error",
+        content:"Change could not be applied. Try: \'Add a jump sound\' or \'Make enemies faster\'",
+        isActive:false,
+      });
     }
 
     setLoading(false);
