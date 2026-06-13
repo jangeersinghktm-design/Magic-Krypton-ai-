@@ -692,14 +692,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Fix 4: Atomic credit deduction — prevents race condition
-    // Uses RPC to atomically increment used_credits only if credits available
-    await supabase.rpc("increment_used_credits", {
-      user_id_param: user.id,
-      amount: creditCost,
-    }).then(() => {}).catch(() =>
-      // Fallback to regular update if RPC not available
-      supabase.from("profiles").update(creditUpdates).eq("id", user.id)
-    );
+    try {
+      const { error: rpcError } = await supabase.rpc("increment_used_credits", {
+        user_id_param: user.id,
+        amount: creditCost,
+      });
+      if (rpcError) {
+        // Fallback to regular update if RPC not deployed yet
+        await supabase.from("profiles").update(creditUpdates).eq("id", user.id);
+      }
+    } catch {
+      await supabase.from("profiles").update(creditUpdates).eq("id", user.id);
+    }
 
     try {
       await supabase.from("credit_transactions").insert({
