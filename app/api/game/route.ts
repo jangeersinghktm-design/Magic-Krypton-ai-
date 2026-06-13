@@ -109,15 +109,17 @@ const stream = new ReadableStream({
       };
       const finish = () => { try { controller.close(); } catch {} };
 
+      let authedUserId = "";  // declared outside try so finally can access it
+
       try {
         const { prompt, userId, accessToken, gameMemory: prevMemory } = await req.json();
         if (!prompt?.trim()) { send("error", { message: "No prompt provided" }); finish(); return; }
 
         // ── Auth ────────────────────────────────────────────────────
-        let authedUserId = userId;
+        authedUserId = userId || "";
         if (accessToken) {
           const { data: { user } } = await supabase.auth.getUser(accessToken);
-          authedUserId = user?.id || userId;
+          authedUserId = user?.id || userId || "";
         }
 
         // Fix 6: Per-user generation lock (after auth so authedUserId is set)
