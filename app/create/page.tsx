@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import KryptonLogo from "@/components/branding/KryptonLogo";
 import AgentTimeline, { AgentPhaseEvent } from "@/components/workspace/AgentTimeline";
+import { detectGameType, buildGameMemory, formatGameMemoryForAI, type GameProjectMemory } from "@/lib/game-builder";
 
 // ── Design Tokens ─────────────────────────────────────────────────
 const C = {
@@ -263,6 +264,8 @@ function CreatePageInner() {
   const [saved, setSaved]       = useState(false);
   const [versions, setVersions] = useState<Version[]>([]);
   const [projectMemory, setProjectMemory] = useState<ProjectMemory|null>(null);
+  const [gameMemory, setGameMemory]       = useState<GameProjectMemory|null>(null);
+  const [isGameProject, setIsGameProject] = useState(false);
   const [listening, setListening] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -351,6 +354,7 @@ function CreatePageInner() {
     if (!userPrompt.trim()||loading) return;
     if (remaining<1) {
       addMsg({role:"ai",type:"error",content:"⚡ No credits remaining. Free plan resets daily at midnight. Tap ⚡ to upgrade for unlimited access."});
+      router.push("/billing");
       return;
     }
     setLoading(true); setPrompt(""); promptRef.current=userPrompt;
@@ -360,11 +364,20 @@ function CreatePageInner() {
     const {data:{session}} = await supabase.auth.getSession();
     if (!session) { setLoading(false); return; }
 
+    // ── Route to Game Builder if game detected ──────────────────
+    const detected = detectGameType(userPrompt);
+    if (detected.isGame) {
+      setIsGameProject(true);
+    }
+
     let html=""; let credUsed=1; let savedPid="";
     const livePhases:AgentPhaseEvent[]=[];
 
+    // Use game API for games, orchestrate for everything else  
+    const apiEndpoint = detected.isGame ? "/api/game" : "/api/orchestrate";
+
     try {
-      const res = await fetch("/api/orchestrate",{
+      const res = await fetch(apiEndpoint,{
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({prompt:userPrompt,userId:session.user.id,accessToken:session.access_token}),
         signal:AbortSignal.timeout(150000),
@@ -423,6 +436,11 @@ function CreatePageInner() {
     const pName=userPrompt.slice(0,50);
     setProjectName(pName);
     setProjectMemory(buildProjectMemory(html,pName,userPrompt,messages));
+    // Update game memory if this is a game
+    if (detected.isGame) {
+      const gMem = buildGameMemory(html, userPrompt, detected, gameMemory);
+      setGameMemory(gMem);
+    }
     updateMsg(thinkId,{isActive:false});
     addMsg({role:"ai",type:"summary",content:`Built — ${html.split("\n").length} lines of code.`,files:["index.html","styles.css","app.js"],credits:credUsed});
 
@@ -472,7 +490,7 @@ function CreatePageInner() {
 
     try {
       if(!isLarge){
-        const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userMessage:editPrompt,currentCode:{"index.html":result},projectName,framework:"html",projectContext:memCtx}),signal:AbortSignal.timeout(55000)});
+        const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userMessage:editPrompt,currentCode:{"index.html":result},projectName,framework:isGameProject?"game":"html",projectContext:isGameProject&&gameMemory?formatGameMemoryForAI(gameMemory):memCtx,gameMemory:gameMemory||undefined}),signal:AbortSignal.timeout(55000)});
         const d=await res.json();
         newHtml=d.codeChanges?.["index.html"]||"";
         if(!newHtml){const m=(d.reply||"").match(/<!DOCTYPE[\s\S]*<\/html>/i);if(m)newHtml=m[0];}
@@ -498,7 +516,7 @@ function CreatePageInner() {
         addMsg({role:"ai",type:"summary",content:"Changes applied.",credits:1});
         if(isMobile)setMobilePanel("preview");
       } else {
-        updateMsg(thinkId,{type:"error",content:"Could not apply. Be specific — e.g. 'Add pause button top-right' or 'Change snake color to red'",isActive:false});
+        updateMsg(thinkId,{type:"error",content:"Could not apply. Be specific — e.g. "Add pause button top-right" or "Change snake color to red"",isActive:false});
       }
     } catch {
       updateMsg(thinkId,{type:"error",content:"Edit timed out. Try a smaller change or regenerate the project.",isActive:false});
@@ -553,10 +571,11 @@ function CreatePageInner() {
           {editingName
             ? <input autoFocus value={projectName} onChange={e=>setProjectName(e.target.value)} onBlur={()=>setEditingName(false)} onKeyDown={e=>e.key==="Enter"&&setEditingName(false)}
                 style={{flex:1,maxWidth:260,background:"rgba(139,92,246,0.08)",border:`1px solid ${C.purple}`,borderRadius:7,color:C.text,padding:"3px 10px",fontSize:13,fontWeight:600,outline:"none"}}/>
-            : <button onClick={()=>setEditingName(true)} style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",padding:"2px 8px",flex:1,textAlign:"left",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:260}}>
+            : <button onClick={()=>setEditingName(true)} style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",padding:"2px 8px",flex:1,textAlign:"left",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:240}}>
                 {projectName} <span style={{opacity:.4}}>✏</span>
               </button>
           }
+          {isGameProject && <span style={{padding:"2px 8px",borderRadius:10,background:"rgba(255,215,0,0.08)",border:"1px solid rgba(255,215,0,0.2)",fontSize:10,fontWeight:700,color:C.gold,flexShrink:0}}>🎮 GAME</span>}
 
           {isMobile&&(
             <div style={{display:"flex",gap:4,marginLeft:"auto"}}>
@@ -595,7 +614,7 @@ function CreatePageInner() {
                     <div style={{fontSize:13,color:C.muted,lineHeight:1.65}}>Describe your idea — Krypton AI will build it.</div>
                   </div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:7,justifyContent:"center",maxWidth:430}}>
-                    {["Build a restaurant website","Create an analytics dashboard","Make a Snake game","Design a portfolio","Build a SaaS landing page","Create a Tetris game"].map(s=>(
+                    {["Build a restaurant website","Make a Snake game","Create a Space Shooter","Build a SaaS landing page","Create a Racing game","Make a Zombie Survival game","Design a portfolio","Create Tetris game","Build a Platformer"].map(s=>(
                       <button key={s} className="quick-btn" onClick={()=>setPrompt(s)} style={{padding:"6px 14px",background:"rgba(139,92,246,0.06)",border:`1px solid rgba(139,92,246,0.15)`,borderRadius:20,color:C.muted,fontSize:12,cursor:"pointer",transition:"all .15s"}}>{s}</button>
                     ))}
                   </div>
@@ -671,7 +690,7 @@ function CreatePageInner() {
             {/* Icon tab bar */}
             <div style={{display:"flex",alignItems:"center",padding:"0 8px",borderBottom:`1px solid ${C.border}`,background:C.surface,flexShrink:0,height:44}}>
               {RIGHT_TABS.map(t=>(
-                <button key={t.id} className="tab-icon" onClick={()=>setRightTab(t.id)} title={t.label} style={{width:36,height:36,borderRadius:9,border:"none",background:rightTab===t.id?"rgba(139,92,246,0.15)":"transparent",color:rightTab===t.id?C.purple:C.muted,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s",marginRight:2}}>
+                <button key={t.id} className="tab-icon" onClick={()=>setRightTab(t.id)} title={t.label} style={{width:36,height:36,borderRadius:9,border:"none",background:rightTab===t.id?"rgba(139,92,246,0.15)":"transparent",color:rightTab===t.id?C.purple:C.muted,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s",marginRight:2}} >
                   {t.icon}
                 </button>
               ))}
