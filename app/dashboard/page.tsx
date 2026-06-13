@@ -214,16 +214,35 @@ export default function DashboardPage() {
   };
 
   const fetchActivities = async (uid: string) => {
-    const { data } = await supabase.from("credit_transactions")
-      .select("*").eq("user_id", uid)
-      .order("created_at", { ascending: false }).limit(8);
-    setActivities((data || []).map((tx: any) => ({
-      id: tx.id,
+    // Fetch from both credit_transactions AND projects for richer activity
+    const [{ data: txData }, { data: projData }] = await Promise.all([
+      supabase.from("credit_transactions").select("*")
+        .eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
+      supabase.from("projects").select("id, title, name, created_at, updated_at")
+        .eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
+    ]);
+
+    const txItems = (txData || []).map((tx: any) => ({
+      id: tx.id, projectId: tx.project_id,
       text: tx.description || "Credit transaction",
       time: timeAgo(tx.created_at),
       icon: tx.amount < 0 ? "⚡" : "💳",
       type: tx.type,
-    })));
+    }));
+
+    const projItems = (projData || []).map((p: any) => ({
+      id: `proj-${p.id}`, projectId: p.id,
+      text: `Built: ${p.title || p.name || "Untitled"}`,
+      time: timeAgo(p.created_at),
+      icon: "🔨", type: "build",
+    }));
+
+    // Merge and sort by time
+    const merged = [...txItems, ...projItems]
+      .sort((a, b) => 0) // maintain insert order
+      .slice(0, 10);
+
+    setActivities(merged);
   };
 
   const fetchNotifications = async (session: any) => {
@@ -758,12 +777,24 @@ export default function DashboardPage() {
                 <p style={{ color: "#444", fontSize: 12, textAlign: "center", padding: "12px 0" }}>No activity yet</p>
               ) : (
                 activities.map(a => (
-                  <div key={a.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "7px 0", borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
+                  <div key={a.id}
+                    onClick={() => a.projectId && router.push(`/create?id=${a.projectId}`)}
+                    style={{
+                      display: "flex", alignItems: "flex-start", gap: 8,
+                      padding: "7px 8px", borderRadius: 8,
+                      borderBottom: `1px solid rgba(255,255,255,0.04)`,
+                      cursor: a.projectId ? "pointer" : "default",
+                      transition: "background .15s",
+                    }}
+                    onMouseEnter={e => { if (a.projectId) e.currentTarget.style.background = "#161616"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
+                  >
                     <span style={{ fontSize: 14, flexShrink: 0 }}>{a.icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 11.5, color: T.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.text}</p>
-                      <p style={{ fontSize: 10, color: "#444", margin: "2px 0 0" }}>{a.time}</p>
+                      <p style={{ fontSize: 11.5, color: a.projectId ? T.text : "#666", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.text}</p>
+                      <p style={{ fontSize: 10, color: "#444", margin: "2px 0 0" }}>{a.time}{a.projectId ? " · tap to open" : ""}</p>
                     </div>
+                    {a.projectId && <span style={{ fontSize: 10, color: "#333", flexShrink: 0, marginTop: 2 }}>↗</span>}
                   </div>
                 ))
               )}
