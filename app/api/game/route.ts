@@ -113,19 +113,21 @@ const stream = new ReadableStream({
         const { prompt, userId, accessToken, gameMemory: prevMemory } = await req.json();
         if (!prompt?.trim()) { send("error", { message: "No prompt provided" }); finish(); return; }
 
-        // Fix 6: Per-user generation lock
+        // ── Auth ────────────────────────────────────────────────────
+        let authedUserId = userId;
+        if (accessToken) {
+          const { data: { user } } = await supabase.auth.getUser(accessToken);
+          authedUserId = user?.id || userId;
+        }
+
+        // Fix 6: Per-user generation lock (after auth so authedUserId is set)
         if (authedUserId && activeGenerations.has(authedUserId)) {
           send("error", { message: "A generation is already running. Please wait.", code: "DUPLICATE_GEN" });
           finish(); return;
         }
         if (authedUserId) activeGenerations.add(authedUserId);
 
-        // ── Auth & Credits ──────────────────────────────────────────
-        let authedUserId = userId;
-        if (accessToken) {
-          const { data: { user } } = await supabase.auth.getUser(accessToken);
-          authedUserId = user?.id || userId;
-        }
+        // ── Credits ─────────────────────────────────────────────────
 
         if (authedUserId) {
           const { data: pc } = await supabase
@@ -263,5 +265,3 @@ const stream = new ReadableStream({
     },
   });
 }
-
-          
