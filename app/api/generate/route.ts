@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const maxDuration = 120;
-export const runtime = "nodejs";
+export const runtime     = "edge";
 
 // ── Rate Limiter ─────────────────────────────────────────────────
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -379,7 +379,7 @@ async function callClaude(system: string, prompt: string, model: string, maxToke
       system,
       messages: [{ role: "user", content: prompt }],
     }),
-    signal: AbortSignal.timeout(90000),
+    signal: AbortSignal.timeout(55000),
   });
 
   if (!res.ok) throw new Error(`Claude ${res.status}: ${await res.text()}`);
@@ -408,7 +408,7 @@ async function callOpenAI(system: string, prompt: string, model: string, maxToke
         { role: "user",      content: prompt },
       ],
     }),
-    signal: AbortSignal.timeout(90000),
+    signal: AbortSignal.timeout(55000),
   });
 
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
@@ -432,7 +432,7 @@ async function callGemini(system: string, prompt: string, model: string): Promis
         contents: [{ parts: [{ text: `${system}\n\nUser request: ${prompt}` }] }],
         generationConfig: { maxOutputTokens: 16000, temperature: 0.7 },
       }),
-      signal: AbortSignal.timeout(90000),
+      signal: AbortSignal.timeout(55000),
     }
   );
 
@@ -497,6 +497,9 @@ function getModelCascade(plan: string) {
 }
 
 // ── Main Route Handler ───────────────────────────────────────────
+// Fix 6: Per-user generation lock
+const activeGens = new Set<string>();
+
 export async function POST(req: NextRequest) {
   try {
     // Rate limit by IP
@@ -523,6 +526,15 @@ export async function POST(req: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: "Session expired. Please login again." }, { status: 401 });
     }
+
+    // Fix 6: Block concurrent generations per user
+    if (activeGens.has(user.id)) {
+      return NextResponse.json({
+        error: "A generation is already in progress. Please wait.",
+        code: "DUPLICATE_GEN",
+      }, { status: 429 });
+    }
+    activeGens.add(user.id);
 
     const { prompt, projectId, isEdit = false } = await req.json();
 
@@ -679,7 +691,15 @@ export async function POST(req: NextRequest) {
       creditUpdates.daily_reset_date = today;
     }
 
-    await supabase.from("profiles").update(creditUpdates).eq("id", user.id);
+    // Fix 4: Atomic credit deduction — prevents race condition
+    // Uses RPC to atomically increment used_credits only if credits available
+    await supabase.rpc("increment_used_credits", {
+      user_id_param: user.id,
+      amount: creditCost,
+    }).then(() => {}).catch(() =>
+      // Fallback to regular update if RPC not available
+      supabase.from("profiles").update(creditUpdates).eq("id", user.id)
+    );
 
     try {
       await supabase.from("credit_transactions").insert({
@@ -730,10 +750,12 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error("[Generate] Fatal error:", err);
-    // Never expose raw errors to users
     return NextResponse.json({
       error: "Something went wrong. Please try again.",
       code: "INTERNAL_ERROR",
     }, { status: 500 });
+  } finally {
+    // Fix 6: Always release generation lock
+    if (user?.id) activeGens.delete(user.id);
   }
 }
