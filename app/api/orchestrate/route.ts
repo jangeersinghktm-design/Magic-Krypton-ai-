@@ -266,6 +266,31 @@ export async function POST(req: NextRequest) {
       };
 
       try {
+        // ── CREDIT + DAILY RESET CHECK (before generation) ──────────
+        if (authedUserId) {
+          try {
+            const { data: pc } = await supabase
+              .from("profiles")
+              .select("total_credits, used_credits, plan, daily_reset_date")
+              .eq("id", authedUserId).single();
+            if (pc) {
+              const today = new Date().toISOString().split("T")[0];
+              // Daily reset for free plan
+              if (pc.plan === "free" && pc.daily_reset_date !== today) {
+                await supabase.from("profiles").update({
+                  used_credits: 0, daily_reset_date: today,
+                }).eq("id", authedUserId);
+                pc.used_credits = 0;
+              }
+              const rem = (pc.total_credits || 5) - (pc.used_credits || 0);
+              if (rem < 1) {
+                send("error", { message:"No credits remaining. Free plan resets daily. Upgrade for unlimited access.", code:"NO_CREDITS" });
+                finish(); return;
+              }
+            }
+          } catch {}
+        }
+
         // ── PHASE 1: Reading ──────────────────────────────────────
         send("phase", { agent:"Reading", icon:"🔍", action:"Analyzing your request...", pct:8 });
         const projectType = detectProjectType(prompt);
@@ -343,12 +368,14 @@ Format: numbered list only. No preamble.`;
 
               // Save project
               const { data: proj } = await supabase.from("projects").insert({
-                user_id:   authedUserId,
-                title:     prompt.slice(0, 60),
-                name:      prompt.slice(0, 60),
+                user_id:    authedUserId,
+                title:      prompt.slice(0, 60),
+                name:       prompt.slice(0, 60),
                 prompt,
-                html_code: html,
-                status:    "completed",
+                html_code:  html,
+                status:     "completed",
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
               }).select().single();
               savedProjectId = proj?.id || null;
 
@@ -399,4 +426,3 @@ Format: numbered list only. No preamble.`;
     },
   });
 }
-        
