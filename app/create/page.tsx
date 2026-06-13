@@ -628,42 +628,42 @@ function CreatePageInner() {
     setProjectMemory(buildProjectMemory(html, pName, userPrompt, messages, null));
 
     // Save to Supabase in background — use savedPid directly (not stale closure)
+    // Save — orchestrate already inserted, just update + save version
     const pidToUse = savedPid || projectId;
     (async () => {
       try {
         const { data: { session: sess } } = await supabase.auth.getSession();
         if (!sess) return;
-        if (pidToUse) {
-          // Project already saved by backend — just update with full data
-          await supabase.from("projects").update({
-            name:     pName,
-            html_code: html,
-            conversation_history: [],
-            updated_at: new Date().toISOString(),
-          }).eq("id", pidToUse);
-          // Save version
-          const { data: ver } = await supabase.from("project_versions").insert({
-            project_id:    pidToUse,
-            code_snapshot: { "index.html": html },
-            message:       `Generated: ${pName.slice(0,30)}`,
-            type:          "auto",
-            version_number: 1,
-            size_bytes:    html.length,
-          }).select().single();
-          if (ver) setVersions([ver as Version]);
+        let finalPid = pidToUse;
+
+        if (finalPid) {
+          // Update name only — html already saved by orchestrate
+          await supabase.from("projects")
+            .update({ name: pName, title: pName, updated_at: new Date().toISOString() })
+            .eq("id", finalPid);
         } else {
-          // No backend projectId — insert fresh
+          // Fallback: orchestrate save failed, insert now
           const { data: proj } = await supabase.from("projects").insert({
-            user_id:   sess.user.id,
-            name:      pName, title: pName,
-            html_code: html,
-            prompt:    promptRef.current,
-            status:    "completed",
-          }).select().single();
-          if (proj) {
+            user_id: sess.user.id, name: pName, title: pName,
+            html_code: html, prompt: promptRef.current,
+            status: "completed", updated_at: new Date().toISOString(),
+          }).select("id").single();
+          if (proj?.id) {
+            finalPid = proj.id;
             setProjectId(proj.id);
             window.history.replaceState({}, "", `/create?id=${proj.id}`);
           }
+        }
+
+        // Save version
+        if (finalPid) {
+          const { data: ver } = await supabase.from("project_versions").insert({
+            project_id: finalPid,
+            code_snapshot: { "index.html": html },
+            message: `Generated: ${pName.slice(0, 30)}`,
+            type: "auto", version_number: 1, size_bytes: html.length,
+          }).select().single();
+          if (ver) setVersions([ver as Version]);
         }
       } catch {}
     })();
