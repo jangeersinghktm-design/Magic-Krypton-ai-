@@ -501,6 +501,7 @@ function getModelCascade(plan: string) {
 const activeGens = new Set<string>();
 
 export async function POST(req: NextRequest) {
+  let lockedUserId = ""; // Fix 6: track for finally block
   try {
     // Rate limit by IP
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
@@ -535,6 +536,7 @@ export async function POST(req: NextRequest) {
       }, { status: 429 });
     }
     activeGens.add(user.id);
+    lockedUserId = user.id; // Fix 6: store for finally block
 
     const { prompt, projectId, isEdit = false } = await req.json();
 
@@ -759,7 +761,7 @@ export async function POST(req: NextRequest) {
       code: "INTERNAL_ERROR",
     }, { status: 500 });
   } finally {
-    // Fix 6: Always release generation lock
-    if (user?.id) activeGens.delete(user.id);
+    // Fix 6: Always release generation lock (use userId string — accessible in scope)
+    if (lockedUserId) activeGens.delete(lockedUserId);
   }
 }
