@@ -20,7 +20,7 @@ type Project = {
 };
 
 type Credits = { total: number; used: number; plan: string; resetDate: string };
-type Activity = { id: string; text: string; time: string; icon: string; type: string };
+type Activity = { id: string; projectId?: string; text: string; time: string; icon: string; type: string };
 
 function Skeleton({ w = "100%", h = 16, r = 8 }: { w?: string | number; h?: number; r?: number }) {
   return (
