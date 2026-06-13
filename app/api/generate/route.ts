@@ -214,15 +214,71 @@ Project type detected: ${pType}
 
 ---
 
-## 🎮 FOR GAMES:
-- HTML5 Canvas OR pure DOM manipulation
-- requestAnimationFrame game loop at 60fps
-- Touch + keyboard + mouse controls
-- Start screen with instructions
-- Game over screen with restart
-- Score, lives, level progression
-- Particle effects for events
-- Local high score via localStorage
+## 🎮 FOR GAMES — BUILD A REAL PLAYABLE BROWSER GAME:
+
+CRITICAL: Generate a FULLY WORKING game — not just a start screen.
+The game must be IMMEDIATELY PLAYABLE when the page loads.
+
+MANDATORY GAME ARCHITECTURE:
+1. HTML5 Canvas (800x500px minimum, responsive)
+2. requestAnimationFrame loop — 60fps
+3. Game states: "menu" | "playing" | "paused" | "gameover"
+4. Auto-start game loop — player can start immediately
+
+MANDATORY GAMEPLAY ELEMENTS:
+- Player character: visible sprite (colored rectangle or emoji-based)
+- Player controls: Arrow Keys + WASD + Space (keyboard) AND touch buttons for mobile
+- Collision detection: AABB (axis-aligned bounding box)
+- Enemies or obstacles: move automatically, increase difficulty
+- Score system: displayed on canvas during gameplay
+- Lives / health system: player respawns or game ends
+- Level progression: speed increases, more obstacles
+- Game Over screen: shows final score + restart button
+- High score: stored in localStorage
+
+CANVAS RENDERING RULES:
+- Clear canvas each frame: ctx.clearRect(0,0,W,H)
+- Draw background first (gradient or solid)
+- Draw platforms/floor
+- Draw player
+- Draw enemies/obstacles
+- Draw HUD (score, lives) on top
+- All drawing inside the game loop
+
+MOBILE TOUCH CONTROLS:
+- On-screen buttons: Left, Right, Jump (positioned at bottom of canvas)
+- Touch events: touchstart, touchend on buttons
+- Button style: semi-transparent, visible on mobile
+
+GAME LOOP PATTERN (use exactly this):
+```javascript
+let gameState = "menu";
+let animId;
+function gameLoop() {
+  update();
+  render();
+  animId = requestAnimationFrame(gameLoop);
+}
+function startGame() { gameState = "playing"; gameLoop(); }
+function restartGame() { /* reset all vars */ gameState = "playing"; }
+```
+
+EXAMPLE — Platform Game:
+- Player: 40x50px rectangle, can jump, move left/right
+- Platforms: static rectangles player can stand on
+- Enemies: move left/right, bounce off edges
+- Coins: collect for score
+- Gravity: constant downward force (0.5)
+- Jump: negative velocity (-12)
+
+EXAMPLE — Runner Game:
+- Player: fixed x position, can jump/duck
+- Obstacles: spawn from right, move left
+- Background: parallax scrolling
+- Speed increases every 10 seconds
+
+DO NOT: Generate only a start screen. The game must RUN when "Start Game" is clicked.
+DO NOT: Use external game libraries. Pure vanilla JavaScript only.
 
 ## 🌐 FOR WEBSITES / LANDING PAGES (MANDATORY SECTIONS):
 ALWAYS include ALL of these sections in this order:
