@@ -447,7 +447,8 @@ function CreatePageInner() {
   // ── Edit Flow ──────────────────────────────────────────────────
   const runEdit = async (editPrompt:string) => {
     if (!result||!editPrompt.trim()||loading) return;
-    if (remaining<1){addMsg({role:"ai",type:"error",content:"⚡ No credits remaining."});return;}
+    if (remaining<1){addMsg({role:"ai",type:"error",content:"⚡ 0 credits — upgrade for unlimited access"});return;}
+      router.push("/billing");
     setLoading(true);
     addMsg({role:"user",type:"text",content:editPrompt});
     const thinkId=addMsg({role:"ai",type:"thinking",content:"",isActive:true,phases:[
@@ -497,10 +498,10 @@ function CreatePageInner() {
         addMsg({role:"ai",type:"summary",content:"Changes applied.",credits:1});
         if(isMobile)setMobilePanel("preview");
       } else {
-        updateMsg(thinkId,{type:"error",content:"Could not apply that change. Try describing it more specifically.",isActive:false});
+        updateMsg(thinkId,{type:"error",content:"Could not apply. Be specific — e.g. "Add pause button top-right" or "Change snake color to red"",isActive:false});
       }
     } catch {
-      updateMsg(thinkId,{type:"error",content:"Edit failed. Try a different description.",isActive:false});
+      updateMsg(thinkId,{type:"error",content:"Edit timed out. Try a smaller change or regenerate the project.",isActive:false});
     }
     setLoading(false);
   };
@@ -670,7 +671,7 @@ function CreatePageInner() {
             {/* Icon tab bar */}
             <div style={{display:"flex",alignItems:"center",padding:"0 8px",borderBottom:`1px solid ${C.border}`,background:C.surface,flexShrink:0,height:44}}>
               {RIGHT_TABS.map(t=>(
-                <button key={t.id} className="tab-icon" onClick={()=>setRightTab(t.id)} title={t.label} style={{width:36,height:36,borderRadius:9,border:"none",background:rightTab===t.id?"rgba(139,92,246,0.15)":"transparent",color:rightTab===t.id?C.purple:C.muted,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s",marginRight:2}}>
+                <button key={t.id} className="tab-icon" onClick={()=>setRightTab(t.id)} title={t.label} style={{width:36,height:36,borderRadius:9,border:"none",background:rightTab===t.id?"rgba(139,92,246,0.15)":"transparent",color:rightTab===t.id?C.purple:C.muted,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s",marginRight:2}} title={t.label}>
                   {t.icon}
                 </button>
               ))}
