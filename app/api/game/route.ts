@@ -97,7 +97,10 @@ async function generateGame(system: string, prompt: string): Promise<{ html: str
 export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
 
-  const stream = new ReadableStream({
+  // Fix 6: Per-user generation lock
+const activeGenerations = new Set<string>();
+
+const stream = new ReadableStream({
     async start(controller) {
       const send = (event: string, data: object) => {
         try {
@@ -109,6 +112,13 @@ export async function POST(req: NextRequest) {
       try {
         const { prompt, userId, accessToken, gameMemory: prevMemory } = await req.json();
         if (!prompt?.trim()) { send("error", { message: "No prompt provided" }); finish(); return; }
+
+        // Fix 6: Per-user generation lock
+        if (authedUserId && activeGenerations.has(authedUserId)) {
+          send("error", { message: "A generation is already running. Please wait.", code: "DUPLICATE_GEN" });
+          finish(); return;
+        }
+        if (authedUserId) activeGenerations.add(authedUserId);
 
         // ── Auth & Credits ──────────────────────────────────────────
         let authedUserId = userId;
@@ -236,6 +246,9 @@ export async function POST(req: NextRequest) {
         });
       } catch (err: any) {
         send("error", { message: err.message || "Game generation failed. Try again.", code: "GENERATION_ERROR" });
+      } finally {
+        // Fix 6: Always release lock
+        if (authedUserId) activeGenerations.delete(authedUserId);
       }
       finish();
     },
@@ -250,3 +263,5 @@ export async function POST(req: NextRequest) {
     },
   });
 }
+
+          
