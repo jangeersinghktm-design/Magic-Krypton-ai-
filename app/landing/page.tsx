@@ -15,7 +15,7 @@ const THEMES = [
   { a:"#10B981",b:"#14B8A6" },
 ];
 
-const BG="#050505", CARD="#0D0D0D", WHITE="#FFFFFF", SUB="#A0A0A0", MUTED="#6B7280";
+const BG="#07091A", CARD="#0D1230", WHITE="#F0F4FF", SUB="#8892A4", MUTED="#4A5568";
 
 const PROMPTS = [
   "Build a restaurant website with online menu...",
@@ -37,7 +37,7 @@ const FEATURES = [
   { icon:"📊", title:"Dashboards",     desc:"Analytics panels, admin UIs, data visualisations that impress." },
   { icon:"🛒", title:"E-Commerce",     desc:"Full stores with product pages, carts and checkout flows." },
   { icon:"📱", title:"Mobile-First",   desc:"Every build is responsive — looks flawless on any device." },
-  { icon:"🤖", title:"AI-Powered",     desc:"Krypton Intelligence generates production-ready code in seconds." },
+  { icon:"🤖", title:"AI-Powered",     desc:"Krypton Intelligence Engine generates production-ready code in seconds." },
 ];
 
 const STATS = [
@@ -79,7 +79,7 @@ const FAQS = [
   { q:"How does Krypton AI work?",   a:"Describe what you want in plain English. Our AI transforms your idea into a complete, responsive project in seconds." },
   { q:"Can I download the code?",    a:"Yes. Every project downloads as a complete HTML file, ready to deploy anywhere — Vercel, Netlify, GitHub Pages." },
   { q:"Do I need coding skills?",    a:"No. Just describe what you want and Krypton AI generates it instantly. Zero technical knowledge required." },
-  { q:"What AI model powers this?",  a:"Krypton AI is powered by Krypton Intelligence Engine — one of the most capable and reliable models available today." },
+  { q:"What AI model powers this?",  a:"Krypton AI is powered by Claude Sonnet — one of the most capable and reliable models available today." },
   { q:"Is there a free plan?",       a:"Yes. You get 5 free generations every day with no credit card required. Upgrade anytime for more power." },
 ];
 
@@ -107,7 +107,7 @@ function Counter({value,suffix,label}:{value:number;suffix:string;label:string})
     obs.observe(el);return()=>obs.disconnect();
   },[value]);
   return(
-    <div ref={ref} style={{textAlign:"center",padding:"36px 16px",background:CARD,position:"relative",overflow:"hidden"}}>
+    <div ref={ref} style={{textAlign:"center",padding:"36px 16px",background:"rgba(13,18,48,0.8)",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 50% 0%,rgba(var(--ga-rgb),.04) 0%,transparent 70%)",pointerEvents:"none"}}/>
       <div style={{fontSize:"clamp(36px,4vw,56px)",fontWeight:800,fontFamily:"'Syne',sans-serif",lineHeight:1,background:"linear-gradient(135deg,var(--ga),var(--gb))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:8}}>
         {n}{suffix}
@@ -178,7 +178,7 @@ export default function LandingPage(){
       };aref.current=requestAnimationFrame(step);
     };
     set(h2r(THEMES[0].a),h2r(THEMES[0].b));
-    const iv=setInterval(()=>{const n=(cur+1)%THEMES.length;go(cur,n);cur=n;},3000);
+    const iv=setInterval(()=>{const n=(cur+1)%THEMES.length;go(cur,n);cur=n;},8000);
     return()=>{clearInterval(iv);if(aref.current)cancelAnimationFrame(aref.current);};
   },[]);
 
@@ -224,8 +224,8 @@ export default function LandingPage(){
   return(
     <div ref={containerRef} style={{
       position:"fixed",inset:0,zIndex:9999,
-      background:BG,color:WHITE,
-      fontFamily:"'Inter',system-ui,-apple-system,sans-serif",
+      background:`linear-gradient(135deg, #07091A 0%, #0A0F2E 50%, #07091A 100%)`,color:WHITE,
+      fontFamily:"'DM Sans',system-ui,-apple-system,sans-serif",
       overflowY:"auto",overflowX:"hidden",
     }}>
 
@@ -398,25 +398,21 @@ export default function LandingPage(){
           {/* H1 — premium typography */}
           <h1 style={{
             fontFamily:"'Syne',system-ui,sans-serif",
-            fontSize:"clamp(42px,7vw,88px)",
+            fontSize:"clamp(28px,5vw,72px)",
             fontWeight:800,
-            lineHeight:1.04,
+            lineHeight:1.1,
             letterSpacing:"-0.03em",
             marginBottom:24,
             color:WHITE,
             animation:"fadeUp .6s .1s ease both",
             maxWidth:780,
           }}>
-            Build Websites,{" "}
-            <span style={{display:"block"}}>
-              <span style={gtext}>Apps &amp; Games</span>
-            </span>
-            <span style={{display:"block"}}>with AI.</span>
+            Build{" "}<span style={gtext}>Websites, Apps &amp; Games</span>{" "}with AI.
           </h1>
 
           <p style={{
             color:SUB,
-            fontSize:"clamp(16px,2vw,20px)",
+            fontSize:"clamp(15px,1.8vw,18px)",
             lineHeight:1.7,
             maxWidth:520,
             marginBottom:40,
@@ -557,7 +553,7 @@ export default function LandingPage(){
       <section style={{...sec,background:"rgba(255,255,255,.018)",borderTop:"1px solid rgba(255,255,255,.05)",borderBottom:"1px solid rgba(255,255,255,.05)"}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>How It Works</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(28px,4vw,52px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
             From Idea to <span style={gtext}>Live App</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",maxWidth:480,margin:"0 auto 56px",lineHeight:1.6}}>
@@ -599,7 +595,7 @@ export default function LandingPage(){
       <section id="features" style={{...sec,scrollMarginTop:80}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>What You Can Build</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(28px,4vw,52px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
             One AI. <span style={gtext}>Infinite Possibilities.</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",maxWidth:480,margin:"0 auto 52px",lineHeight:1.6}}>
@@ -634,7 +630,7 @@ export default function LandingPage(){
       <section id="examples" style={{...sec,scrollMarginTop:80,background:"rgba(255,255,255,.018)",borderTop:"1px solid rgba(255,255,255,.05)"}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>Examples</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(28px,4vw,52px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
             See What&apos;s <span style={gtext}>Possible</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",maxWidth:480,margin:"0 auto 52px",lineHeight:1.6}}>
@@ -674,7 +670,7 @@ export default function LandingPage(){
       <section style={{...sec,scrollMarginTop:80}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>Testimonials</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(28px,4vw,52px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
             Loved by <span style={gtext}>Builders</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",maxWidth:480,margin:"0 auto 52px",lineHeight:1.6}}>
@@ -706,7 +702,7 @@ export default function LandingPage(){
       <section id="pricing" style={{...sec,scrollMarginTop:80,background:"rgba(255,255,255,.018)",borderTop:"1px solid rgba(255,255,255,.05)"}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>Pricing</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(28px,4vw,52px)",fontWeight:800,textAlign:"center",marginBottom:12,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:12,color:WHITE,letterSpacing:"-0.02em"}}>
             Simple, <span style={gtext}>Transparent Pricing</span>
           </h2>
           <p style={{color:SUB,textAlign:"center",fontSize:17,marginBottom:36,lineHeight:1.6}}>Start free. Upgrade when you&apos;re ready.</p>
@@ -748,7 +744,7 @@ export default function LandingPage(){
       <section id="faq" style={{...sec,scrollMarginTop:80}}>
         <div style={{width:"100%",maxWidth:700,margin:"0 auto",padding:"0 clamp(20px,4vw,64px)"}}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>FAQ</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(28px,4vw,52px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
             <span style={gtext}>Common Questions</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",marginBottom:48,lineHeight:1.6}}>Everything you need to know.</p>
