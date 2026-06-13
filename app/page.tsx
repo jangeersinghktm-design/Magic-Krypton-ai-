@@ -63,14 +63,15 @@ export default function HomePage() {
 
   const fetchProjects = async (uid: string) => {
     setLoadingProjects(true);
+    // Try updated_at sort first, fallback to created_at
     const { data } = await supabase
       .from("projects")
       .select("id, title, name, prompt, html_code, created_at, updated_at")
       .eq("user_id", uid)
-      .not("html_code", "is", null)
-      .order("updated_at", { ascending: false })
-      .limit(6);
-    setProjects(data || []);
+      .order("created_at", { ascending: false })
+      .limit(8);
+    // Filter client-side to show only projects with content
+    setProjects((data || []).filter((p: any) => p.html_code || p.title || p.name));
     setLoadingProjects(false);
   };
 
