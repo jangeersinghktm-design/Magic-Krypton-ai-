@@ -214,69 +214,58 @@ Project type detected: ${pType}
 
 ---
 
-## 🎮 FOR GAMES — BUILD A REAL PLAYABLE BROWSER GAME:
+## 🎮 FOR GAMES — BUILD A PREMIUM BROWSER GAME (Not a demo, not a prototype):
 
-CRITICAL: Generate a FULLY WORKING game — not just a start screen.
-The game must be IMMEDIATELY PLAYABLE when the page loads.
+CRITICAL RULE: The ENTIRE game must be playable in the preview iframe. Full screen canvas. No start screen only.
 
-MANDATORY GAME ARCHITECTURE:
-1. HTML5 Canvas (800x500px minimum, responsive)
-2. requestAnimationFrame loop — 60fps
-3. Game states: "menu" | "playing" | "paused" | "gameover"
-4. Auto-start game loop — player can start immediately
+MANDATORY ARCHITECTURE:
+- HTML5 Canvas, full viewport size: canvas.width = window.innerWidth, canvas.height = window.innerHeight
+- 60fps requestAnimationFrame loop running immediately on page load
+- Game starts in "menu" state but pressing SPACE or tapping START begins instantly
 
-MANDATORY GAMEPLAY ELEMENTS:
-- Player character: visible sprite (colored rectangle or emoji-based)
-- Player controls: Arrow Keys + WASD + Space (keyboard) AND touch buttons for mobile
-- Collision detection: AABB (axis-aligned bounding box)
-- Enemies or obstacles: move automatically, increase difficulty
-- Score system: displayed on canvas during gameplay
-- Lives / health system: player respawns or game ends
-- Level progression: speed increases, more obstacles
-- Game Over screen: shows final score + restart button
-- High score: stored in localStorage
+CORE SYSTEMS (ALL REQUIRED):
+1. GAMEPLAY: Smooth player movement, collision detection, enemy AI, projectiles
+2. PROGRESSION: Levels 1-∞, speed/difficulty increases each level, XP system
+3. SCORING: Live score on canvas, high score in localStorage, combo multiplier
+4. LIVES: 3 lives system with respawn animation, health bar displayed
+5. POWERUPS: Randomly spawning powerups (speed boost, shield, score multiplier)
+6. SOUND: Web Audio API — beeps for collect, crunch for death, level-up fanfare
+7. PARTICLES: Particle effects on coin collect, enemy kill, death, level-up
+8. ACHIEVEMENTS: 5+ achievements with localStorage persistence
 
-CANVAS RENDERING RULES:
-- Clear canvas each frame: ctx.clearRect(0,0,W,H)
-- Draw background first (gradient or solid)
-- Draw platforms/floor
-- Draw player
-- Draw enemies/obstacles
-- Draw HUD (score, lives) on top
-- All drawing inside the game loop
+PREMIUM UI DESIGN:
+- Background: Dark gradient or starfield/parallax scrolling background
+- HUD: Score (top-left), Lives (hearts, top-right), Level badge (top-center)
+- All UI: glassmorphism style (rgba backgrounds, backdrop-filter: blur)
+- Colors: Neon accent colors (#00FFFF, #FF00FF, #FFD700) on dark bg
+- Fonts: Load from Google Fonts OR use Canvas fillText with premium look
+- Animations: Smooth tweening, scale/fade effects
 
-MOBILE TOUCH CONTROLS:
-- On-screen buttons: Left, Right, Jump (positioned at bottom of canvas)
-- Touch events: touchstart, touchend on buttons
-- Button style: semi-transparent, visible on mobile
+MOBILE FIRST:
+- Canvas auto-resizes to any screen (mobile, tablet, desktop)
+- On-screen D-pad (left/right arrows) positioned bottom-left
+- Action buttons (jump/shoot) positioned bottom-right
+- All buttons: 60px minimum touch target, semi-transparent
 
-GAME LOOP PATTERN (use exactly this):
-let gameState = "menu";
-let animId;
-function gameLoop() {
-  update();
-  render();
-  animId = requestAnimationFrame(gameLoop);
-}
-function startGame() { gameState = "playing"; gameLoop(); }
-function restartGame() { /* reset all vars */ gameState = "playing"; }
+SPECIFIC GAME RULES BY TYPE:
+SNAKE: Grid-based, neon snake on dark bg, fruits spawn randomly, walls kill, snake grows
+TETRIS: Classic Tetris with hold piece, next piece preview, ghost piece, T-spin detection
+MARIO-STYLE: Platformer with gravity, platforms, coins, enemies that walk + fall off edges
+SPACE/SHOOTER: Vertical scroller, player shoots, enemies move in patterns, boss every 5 levels
+PUZZLE: Interactive objects, drag-and-drop or click mechanics, hint system
 
-EXAMPLE — Platform Game:
-- Player: 40x50px rectangle, can jump, move left/right
-- Platforms: static rectangles player can stand on
-- Enemies: move left/right, bounce off edges
-- Coins: collect for score
-- Gravity: constant downward force (0.5)
-- Jump: negative velocity (-12)
+GAME LOOP PATTERN (required):
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+let state = "menu", score = 0, level = 1, lives = 3;
+function update() { /* game logic */ }
+function render() { ctx.clearRect(0,0,canvas.width,canvas.height); /* draw everything */ }
+function loop() { update(); render(); requestAnimationFrame(loop); }
+window.onload = () => loop();
 
-EXAMPLE — Runner Game:
-- Player: fixed x position, can jump/duck
-- Obstacles: spawn from right, move left
-- Background: parallax scrolling
-- Speed increases every 10 seconds
-
-DO NOT: Generate only a start screen. The game must RUN when "Start Game" is clicked.
-DO NOT: Use external game libraries. Pure vanilla JavaScript only.
+OUTPUT: A complete, polished, immediately playable game. Minimum 600 lines of code.
 
 ## 🌐 FOR WEBSITES / LANDING PAGES (MANDATORY SECTIONS):
 ALWAYS include ALL of these sections in this order:
