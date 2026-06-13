@@ -251,7 +251,6 @@ MOBILE TOUCH CONTROLS:
 - Button style: semi-transparent, visible on mobile
 
 GAME LOOP PATTERN (use exactly this):
-```javascript
 let gameState = "menu";
 let animId;
 function gameLoop() {
@@ -261,7 +260,6 @@ function gameLoop() {
 }
 function startGame() { gameState = "playing"; gameLoop(); }
 function restartGame() { /* reset all vars */ gameState = "playing"; }
-```
 
 EXAMPLE — Platform Game:
 - Player: 40x50px rectangle, can jump, move left/right
@@ -363,9 +361,9 @@ function validateHTML(html: string): { valid: boolean; issues: string[] } {
 // ── Clean HTML Output ────────────────────────────────────────────
 function cleanHTML(raw: string): string {
   let html = raw
-    .replace(/^```html\s*/im, "")
-    .replace(/^```\s*/im, "")
-    .replace(/\s*```$/im, "")
+    .replace(/^html\s*/im, "")
+    .replace(/^\s*/im, "")
+    .replace(/\s*$/im, "")
     .trim();
 
   const idx = html.indexOf("<!DOCTYPE");
