@@ -380,7 +380,7 @@ function CreatePageInner() {
       const res = await fetch(apiEndpoint,{
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({prompt:userPrompt,userId:session.user.id,accessToken:session.access_token}),
-        signal:AbortSignal.timeout(150000),
+        signal:AbortSignal.timeout(55000),
       });
       if (!res.ok||!res.body) throw new Error("stream_failed");
 
@@ -418,7 +418,7 @@ function CreatePageInner() {
       }
     } catch {
       try {
-        const fr=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:userPrompt}),signal:AbortSignal.timeout(90000)});
+        const fr=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:userPrompt}),signal:AbortSignal.timeout(55000)});
         const fd=await fr.json();
         if(fd.html){html=fd.html;credUsed=fd.creditsUsed||1;savedPid=fd.projectId||"";}
         if(fd.code==="NO_CREDITS"){updateMsg(thinkId,{type:"error",content:"⚡ No credits remaining. Upgrade to continue.",isActive:false});setLoading(false);return;}
@@ -465,8 +465,11 @@ function CreatePageInner() {
   // ── Edit Flow ──────────────────────────────────────────────────
   const runEdit = async (editPrompt:string) => {
     if (!result||!editPrompt.trim()||loading) return;
-    if (remaining<1){addMsg({role:"ai",type:"error",content:"⚡ 0 credits — upgrade for unlimited access"});return;}
+    if (remaining<1){
+      addMsg({role:"ai",type:"error",content:"⚡ No credits remaining. Free plan resets daily at midnight."});
       router.push("/billing");
+      return;
+    }
     setLoading(true);
     addMsg({role:"user",type:"text",content:editPrompt});
     const thinkId=addMsg({role:"ai",type:"thinking",content:"",isActive:true,phases:[
@@ -474,57 +477,85 @@ function CreatePageInner() {
       {agent:"Building",icon:"○",action:"Applying changes",pct:0,status:"running"},
       {agent:"Validating",icon:"○",action:"Validating",pct:0,status:"running"},
     ]});
-
     const {data:{session}}=await supabase.auth.getSession();
     if(!session){setLoading(false);return;}
-
     updateMsg(thinkId,{phases:[
       {agent:"Reading",icon:"○",action:"Request understood",pct:100,done:true,status:"done"},
       {agent:"Building",icon:"○",action:"Applying changes...",pct:55,status:"running"},
       {agent:"Validating",icon:"○",action:"Waiting",pct:0,status:"running"},
     ]});
-
     let newHtml="";
-    const isLarge=result.split("\n").length>600;
-    const memCtx=formatMemoryForAI(projectMemory);
-
+    const codeLines=result.split("\n").length;
+    const isLarge=codeLines>600;
+    const gCtx=isGameProject&&gameMemory?formatGameMemoryForAI(gameMemory):formatMemoryForAI(projectMemory);
     try {
-      if(!isLarge){
-        const res=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userMessage:editPrompt,currentCode:{"index.html":result},projectName,framework:isGameProject?"game":"html",projectContext:isGameProject&&gameMemory?formatGameMemoryForAI(gameMemory):memCtx,gameMemory:gameMemory||undefined}),signal:AbortSignal.timeout(55000)});
-        const d=await res.json();
-        newHtml=d.codeChanges?.["index.html"]||"";
-        if(!newHtml){const m=(d.reply||"").match(/<!DOCTYPE[\s\S]*<\/html>/i);if(m)newHtml=m[0];}
+      // Strategy 1: Chat API (game-aware surgical edit)
+      const codeForChat=isLarge&&isGameProject
+        ?result.slice(0,5000)+"\n\n/* ... MIDDLE SECTION PRESERVED ... */\n\n"+result.slice(-3000)
+        :result;
+      const r1=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userMessage:editPrompt,currentCode:{"index.html":codeForChat},projectName,framework:isGameProject?"game":"html",projectContext:gCtx,gameMemory:gameMemory||undefined}),signal:AbortSignal.timeout(55000)});
+      const d1=await r1.json();
+      newHtml=d1.codeChanges?.["index.html"]||"";
+      if(!newHtml){const m=(d1.reply||"").match(/<!DOCTYPE[\s\S]*<\/html>/i);if(m)newHtml=m[0];}
+
+      // Strategy 2: Game API regenerate with memory (games only)
+      if(!newHtml&&isGameProject){
+        const r2=await fetch("/api/game",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:editPrompt+" (EDIT: preserve all existing mechanics)",userId:session.user.id,accessToken:session.access_token,gameMemory}),signal:AbortSignal.timeout(55000)});
+        if(r2.ok&&r2.body){
+          const reader=r2.body.getReader();const dec=new TextDecoder();let buf="";
+          while(true){
+            const{done,value}=await reader.read();if(done)break;
+            buf+=dec.decode(value,{stream:true});
+            for(const chunk of buf.split("\n\n")){
+              const dm=chunk.match(/data:\s*([\s\S]+)/);const em=chunk.match(/event:\s*(\S+)/);
+              if(dm&&em){try{const d=JSON.parse(dm[1].trim());if(em[1]==="complete"&&d.html)newHtml=d.html;}catch{}}
+            }
+            buf=buf.split("\n\n").pop()||"";
+          }
+        }
       }
-      if(!newHtml){
-        const designCtx=memCtx?`\n\nDESIGN MEMORY:\n${memCtx.slice(0,600)}`:"";
-        const codeCtx=isLarge?result.slice(0,6000)+"\n\n[... middle ...]\n\n"+result.slice(-3000):result.slice(0,10000);
-        const fr=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:`Apply ONLY this change: "${editPrompt}"\nPreserve ALL existing design.${designCtx}\n\nCURRENT CODE (${result.split("\n").length} lines):\n${codeCtx}`,isEdit:true}),signal:AbortSignal.timeout(55000)});
-        const fd=await fr.json();
-        if(fd.html)newHtml=fd.html;
+
+      // Strategy 3: Generate API (websites only)
+      if(!newHtml&&!isGameProject){
+        const ctx=isLarge?result.slice(0,6000)+"\n\n[...]\n\n"+result.slice(-3000):result.slice(0,10000);
+        const r3=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:`Apply ONLY: "${editPrompt}"\nPreserve design.\nCODE:\n${ctx}`,isEdit:true}),signal:AbortSignal.timeout(55000)});
+        const d3=await r3.json();if(d3.html)newHtml=d3.html;
       }
+
       if(newHtml&&newHtml.length>500){
         await saveVersion(result,`Before: ${editPrompt.slice(0,40)}`);
         setResult(newHtml);
-        setProjectMemory(prev=>buildProjectMemory(newHtml,projectName,prev?.originalPrompt||editPrompt,messages,prev));
-        setCredits(c=>({...c,used:c.used+1}));
+        if(isGameProject&&gameMemory){
+          const det={isGame:true,gameType:gameMemory.gameType,theme:gameMemory.theme,genre:gameMemory.genre,techStack:gameMemory.techStack};
+          setGameMemory(buildGameMemory(newHtml,editPrompt,det,gameMemory));
+        } else {
+          setProjectMemory(prev=>buildProjectMemory(newHtml,projectName,prev?.originalPrompt||editPrompt,messages,prev));
+        }
+        setCredits(cv=>({...cv,used:cv.used+1}));
         (async()=>{try{await saveProject(newHtml,projectName);}catch{}})();
         updateMsg(thinkId,{isActive:false,phases:[
           {agent:"Reading",icon:"○",action:"Understood",pct:100,done:true,status:"done"},
           {agent:"Building",icon:"○",action:"Applied",pct:100,done:true,status:"done"},
           {agent:"Validating",icon:"○",action:"Done",pct:100,done:true,status:"done"},
         ]});
-        addMsg({role:"ai",type:"summary",content:"Changes applied.",credits:1});
+        addMsg({role:"ai",type:"summary",content:`Changes applied.`,credits:1});
         if(isMobile)setMobilePanel("preview");
       } else {
-        updateMsg(thinkId,{type:"error",content:"Could not apply. Be specific — e.g. "Add pause button top-right" or "Change snake color to red"",isActive:false});
+        updateMsg(thinkId,{type:"error",content:isGameProject?"Be specific: 'Add pause button top-right' or 'Change snake color to neon blue'":"Be specific: 'Change header to dark blue' or 'Add contact form'",isActive:false});
       }
     } catch {
-      updateMsg(thinkId,{type:"error",content:"Edit timed out. Try a smaller change or regenerate the project.",isActive:false});
+      updateMsg(thinkId,{type:"error",content:"Edit timed out. Try a smaller change.",isActive:false});
     }
     setLoading(false);
   };
 
-  const handleSend=()=>{ const p=prompt.trim(); if(!p||loading)return; setPrompt(""); promptRef.current=""; if(!result)runFlow(p); else runEdit(p); };
+  const handleSend=()=>{
+    const p=prompt.trim();
+    if(!p||loading) return;
+    if(loading){ addMsg({role:"ai",type:"text",content:"⏳ Please wait — generation in progress."}); return; }
+    setPrompt(""); promptRef.current="";
+    if(!result) runFlow(p); else runEdit(p);
+  };
   const handleVoice=()=>{ const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition; if(!SR)return; if(listening){setListening(false);return;} const r=new SR(); r.continuous=false;r.interimResults=false;r.lang="en-US"; r.onstart=()=>setListening(true); r.onresult=(e:any)=>{const t=e.results[0]?.[0]?.transcript||"";if(t.trim())setPrompt(prev=>prev?prev+" "+t:t);}; r.onerror=()=>setListening(false); r.onend=()=>setListening(false); r.start(); };
   const restoreVersion=async(v:Version)=>{ const code=v.code_snapshot?.["index.html"];if(!code)return;await saveVersion(result,`Before restore`);setResult(code);(async()=>{try{await saveProject(code,projectName);}catch{}})();addMsg({role:"ai",type:"text",content:`✓ Restored to v${v.version_number}`}); };
 
