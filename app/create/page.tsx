@@ -498,7 +498,7 @@ function CreatePageInner() {
         addMsg({role:"ai",type:"summary",content:"Changes applied.",credits:1});
         if(isMobile)setMobilePanel("preview");
       } else {
-        updateMsg(thinkId,{type:"error",content:"Could not apply. Be specific — e.g. "Add pause button top-right" or "Change snake color to red"",isActive:false});
+        updateMsg(thinkId,{type:"error",content:"Could not apply. Be specific — e.g. 'Add pause button top-right' or 'Change snake color to red'",isActive:false});
       }
     } catch {
       updateMsg(thinkId,{type:"error",content:"Edit timed out. Try a smaller change or regenerate the project.",isActive:false});
