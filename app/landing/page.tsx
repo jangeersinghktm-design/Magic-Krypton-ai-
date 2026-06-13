@@ -252,19 +252,41 @@ export default function LandingPage(){
         .card-hover{transition:all 0.3s ease;}
         .card-hover:hover{transform:translateY(-6px);border-color:rgba(var(--ga-rgb),.3)!important;box-shadow:0 24px 56px rgba(0,0,0,.5);}
         .ptcl{position:absolute;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(var(--ga-rgb),.4) 0%,transparent 70%);animation:pfloat var(--d,12s) ease-in-out infinite var(--dl,0s);}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @media(max-width:640px){
+          h1{font-size:clamp(20px,6.5vw,32px)!important;line-height:1.12!important;}
+          h2{font-size:clamp(18px,5vw,28px)!important;}
+          .hero-sub{font-size:14px!important;}
+        }
+        @media(min-width:641px)and(max-width:1024px){
+          h1{font-size:clamp(28px,4vw,48px)!important;}
+        }
         @keyframes shineL{0%{left:-60%;opacity:0}10%{opacity:1}40%{left:130%;opacity:1}41%{opacity:0}100%{left:130%;opacity:0}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes gm1{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(3%,-3%)scale(1.05)}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes gm2{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(-4%,4%)scale(1.07)}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes gm3{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(4%,-2%)scale(1.04)}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes gl{0%,100%{opacity:.45}50%{opacity:.85}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes pfloat{0%,100%{transform:translate(0,0)scale(1);opacity:0}10%{opacity:.7}50%{transform:translate(var(--tx,30px),var(--ty,-60px))scale(1.3);opacity:.4}90%{opacity:.15}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes fl1{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes fl2{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes gridFade{0%,100%{opacity:.15}50%{opacity:.35}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes stepGlow{0%,100%{box-shadow:0 0 0 0 rgba(var(--ga-rgb),0)}50%{box-shadow:0 0 0 8px rgba(var(--ga-rgb),.1)}}
         .prompt-box:focus-within{border-color:rgba(var(--ga-rgb),.5)!important;box-shadow:0 0 0 3px rgba(var(--ga-rgb),.08),0 20px 60px rgba(0,0,0,.4)!important;}
         .prompt-box:focus-within .prompt-glow{opacity:1!important;}
@@ -398,21 +420,22 @@ export default function LandingPage(){
           {/* H1 — premium typography */}
           <h1 style={{
             fontFamily:"'Syne',system-ui,sans-serif",
-            fontSize:"clamp(28px,5vw,72px)",
+            fontSize:"clamp(22px,4.5vw,64px)",
             fontWeight:800,
-            lineHeight:1.1,
+            lineHeight:1.08,
             letterSpacing:"-0.03em",
             marginBottom:24,
             color:WHITE,
             animation:"fadeUp .6s .1s ease both",
-            maxWidth:780,
+            maxWidth:800,
+            whiteSpace:"normal",
           }}>
-            Build{" "}<span style={gtext}>Websites, Apps &amp; Games</span>{" "}with AI.
+            Build <span style={gtext}>Websites, Apps & Games</span> with AI.
           </h1>
 
-          <p style={{
+          <p className="hero-sub" style={{
             color:SUB,
-            fontSize:"clamp(15px,1.8vw,18px)",
+            fontSize:"clamp(14px,1.6vw,17px)",
             lineHeight:1.7,
             maxWidth:520,
             marginBottom:40,
