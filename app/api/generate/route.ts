@@ -713,11 +713,14 @@ export async function POST(req: NextRequest) {
       }).eq("id", projectId).eq("user_id", user.id);
     } else {
       const { data: newProject } = await supabase.from("projects").insert({
-        user_id: user.id,
-        title: prompt.slice(0, 60),
+        user_id:    user.id,
+        title:      prompt.slice(0, 60),
+        name:       prompt.slice(0, 60),
         prompt,
-        html_code: html,
-        status: "completed",
+        html_code:  html,
+        status:     "completed",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }).select().single();
       savedProjectId = newProject?.id;
     }
