@@ -142,6 +142,20 @@ async function callGemini(messages: any[], system: string): Promise<string> {
   return text;
 }
 
+// ── Game Edit System Prompt ──────────────────────────────────────
+const GAME_EDIT_SYSTEM = `You are Krypton Game Engineer — expert browser game developer making a SURGICAL edit.
+
+ABSOLUTE RULES:
+1. Return the COMPLETE updated HTML — every single line, no truncation
+2. Preserve ALL existing: game loop, physics, controls, collision, scoring, sound, particles
+3. Change ONLY what was explicitly requested — nothing else
+4. Keep full-screen canvas: canvas.width = window.innerWidth
+5. Keep all: lives, levels, powerups, mobile touch controls, high score localStorage
+6. Wrap in: <code_changes>{"index.html": "complete html content"}</code_changes>
+
+Even for large files (800-1200 lines) — return the COMPLETE file, never truncate.
+The game must remain fully playable after your edit.`;
+
 // ── Main Route ───────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -153,8 +167,12 @@ export async function POST(req: NextRequest) {
       history = [],
       projectId,
       projectContext = "", // Krypton Project Memory
+      gameMemory = null,  // GameProjectMemory object for game edits
       message,
     } = await req.json();
+
+    // Choose system prompt: game edits get specialized game engineer prompt
+    const isGameEdit = framework === "game" || !!gameMemory;
 
     const actualMessage = userMessage || message || "";
     if (!actualMessage?.trim()) {
@@ -173,13 +191,20 @@ export async function POST(req: NextRequest) {
       content: String(m.content).slice(0, 1000),
     }));
 
-    const userContent = codeContext
-      ? `${projectContext ? projectContext + "\n\n" : ""}Project: ${projectName} (${framework})
+    // Build game memory context if this is a game edit
+    const gameCtx = gameMemory
+      ? `GAME MEMORY:\nType: ${gameMemory.gameType} | Theme: ${gameMemory.theme} | Genre: ${gameMemory.genre}\nFeatures: ${(gameMemory.features||[]).join(", ")}\nControls: ${gameMemory.controls}\nPRESERVE ALL ABOVE EXACTLY\n\n`
+      : "";
 
-Current Code:
+    const memCtx = gameCtx || (projectContext ? projectContext + "\n\n" : "");
+
+    const userContent = codeContext
+      ? `${memCtx}Project: ${projectName} (${isGameEdit ? "browser game" : framework})
+
+${isGameEdit ? "GAME CODE (preserve all mechanics):" : "Current Code:"}
 ${codeContext}
 
-Edit Request: ${actualMessage}`
+${isGameEdit ? "GAME EDIT REQUEST" : "Edit Request"}: ${actualMessage}`
       : actualMessage;
 
     const messages = [
@@ -188,10 +213,12 @@ Edit Request: ${actualMessage}`
     ];
 
     // ── 3-Layer AI Cascade ────────────────────────────────────
+    // Game edits use specialized system prompt with strict preservation rules
+    const SYSTEM = isGameEdit ? GAME_EDIT_SYSTEM : CHAT_SYSTEM;
     const providers = [
-      { name: "claude", fn: () => callClaude(messages, CHAT_SYSTEM) },
-      { name: "openai", fn: () => callOpenAI(messages, CHAT_SYSTEM) },
-      { name: "gemini", fn: () => callGemini(messages, CHAT_SYSTEM) },
+      { name: "claude", fn: () => callClaude(messages, SYSTEM) },
+      { name: "openai", fn: () => callOpenAI(messages, SYSTEM) },
+      { name: "gemini", fn: () => callGemini(messages, SYSTEM) },
     ];
 
     let responseText = "";
