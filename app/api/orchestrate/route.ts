@@ -6,7 +6,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime  = "nodejs";
+export const runtime     = "edge";
 export const maxDuration = 120;
 
 // ── Types ────────────────────────────────────────────────────────
@@ -24,28 +24,28 @@ interface StreamController {
 }
 
 // ── Krypton Intelligence Engine — Multi-provider system ───────────
-async function callClaude(system: string, user: string, maxTokens = 12000): Promise<string> {
+async function callClaude(system: string, user: string, maxTokens = 8000): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY not set");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01" },
     body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:maxTokens, system, messages:[{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(90000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const d = await res.json();
   return d.content?.[0]?.text || "";
 }
 
-async function callOpenAI(system: string, user: string, maxTokens = 12000): Promise<string> {
+async function callOpenAI(system: string, user: string, maxTokens = 8000): Promise<string> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY not set");
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type":"application/json","Authorization":`Bearer ${key}` },
     body: JSON.stringify({ model:"gpt-4o-mini", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(90000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
   const d = await res.json();
@@ -59,7 +59,7 @@ async function callGemini(system: string, user: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:12000} }),
-    signal: AbortSignal.timeout(90000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}`);
   const d = await res.json();
@@ -210,7 +210,7 @@ BUILD A PREMIUM PORTFOLIO WEBSITE:
 
 // ── Clean HTML from AI response ──────────────────────────────────
 function cleanHTML(raw: string): string {
-  let html = raw.replace(/^```html\s*/im,"").replace(/^```\s*/im,"").replace(/\s*```$/im,"").trim();
+  let html = raw.replace(/^html\s*/im,"").replace(/^\s*/im,"").replace(/\s*$/im,"").trim();
   const idx = html.indexOf("<!DOCTYPE");
   if (idx > 0) html = html.substring(idx);
   return html;
@@ -250,6 +250,10 @@ export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
   let closed = false;
 
+// Fix 6: In-memory generation lock (per-deployment, edge-safe)
+// Prevents same user from running 2 generations simultaneously
+const activeGenerations = new Set<string>();
+
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: string, data: object) => {
@@ -266,6 +270,13 @@ export async function POST(req: NextRequest) {
       };
 
       try {
+        // Fix 6: Block duplicate concurrent generations per user
+        if (authedUserId && activeGenerations.has(authedUserId)) {
+          send("error", { message: "A generation is already in progress. Please wait.", code: "DUPLICATE_GEN" });
+          finish(); return;
+        }
+        if (authedUserId) activeGenerations.add(authedUserId);
+
         // ── CREDIT + DAILY RESET CHECK (before generation) ──────────
         if (authedUserId) {
           try {
@@ -325,6 +336,10 @@ Format: numbered list only. No preamble.`;
         // ── PHASE 4: Builder ──────────────────────────────────────
         send("phase", { agent:"Building", icon:"⚙️", action:"Writing production code...", pct:50 });
         const systemPrompt = buildPrompt(prompt, projectType, executionPlan);
+        // Fix 5: Abort if client disconnected
+        if ((req as any).signal?.aborted) {
+          finish(); return;
+        }
         const { text: rawHTML, provider } = await kryptonGenerate(systemPrompt, prompt);
         const html = cleanHTML(rawHTML);
         send("phase", { agent:"Building", icon:"⚙️", action:`Code generated via ${provider}`, pct:72, done:true });
@@ -412,6 +427,8 @@ Format: numbered list only. No preamble.`;
       } catch (err: any) {
         send("error", { message: "Generation failed. Please try again." });
       } finally {
+        // Fix 6: Release generation lock
+        if (authedUserId) activeGenerations.delete(authedUserId);
         finish();
       }
     },
