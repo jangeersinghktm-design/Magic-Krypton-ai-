@@ -4,8 +4,8 @@
   "description": "AI Operating System — Build websites, apps and games with AI",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0D0821",
-  "theme_color": "#0D0821",
+  "background_color": "#050505",
+  "theme_color": "#07091A",
   "orientation": "portrait",
   "icons": [
     {
