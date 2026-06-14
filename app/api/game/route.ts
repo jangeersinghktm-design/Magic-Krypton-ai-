@@ -11,7 +11,9 @@ import {
   getGameSystemPrompt,
   formatGameMemoryForAI,
   GAME_WORKFLOW_PHASES,
+  auditGameHTML,
   type GameProjectMemory,
+  type AuditResult,
 } from "@/lib/game-builder";
 
 export const runtime    = "edge";
@@ -160,6 +162,48 @@ async function generateGame(system: string, prompt: string): Promise<{ html: str
   );
 }
 
+// ── Self-Healing Pass (Product Completion Engine) ─────────────────
+// Takes a valid-but-incomplete game and asks the AI to add ONLY the
+// missing features, without breaking what already works.
+// Budget-aware: caller passes remaining ms; if too little time is
+// left, this is skipped entirely and the original result is kept.
+async function healGame(
+  html: string,
+  missing: { label: string }[],
+  systemPrompt: string,
+  remainingMs: number
+): Promise<{ html: string; provider: string } | null> {
+  // Need at least 20s of budget to attempt a heal pass safely
+  if (remainingMs < 20000 || missing.length === 0) return null;
+
+  const missingList = missing.map(m => `- ${m.label}`).join("\n");
+  const fixPrompt = `The game below is MISSING these required features:
+${missingList}
+
+Add ALL of the missing features above to the existing game code WITHOUT
+removing or breaking any feature that already works. Keep the same game
+type, controls, and visual style. Return the COMPLETE updated HTML file
+(starting with <!DOCTYPE html> and ending with </html>).
+
+EXISTING GAME CODE:
+${html}`;
+
+  // Try Claude first only (bounded to one provider to respect time budget)
+  try {
+    const raw = await callClaude(systemPrompt, fixPrompt);
+    if (raw?.trim()) {
+      let cleaned = stripMarkdownFences(raw);
+      if (!cleaned.startsWith("<!DOCTYPE")) {
+        const m = cleaned.match(/<!DOCTYPE[\s\S]*?<\/html>/i);
+        if (m) cleaned = stripMarkdownFences(m[0]);
+      }
+      if (isValidGameHTML(cleaned)) return { html: cleaned, provider: "claude (self-heal)" };
+    }
+  } catch { /* fall through */ }
+
+  return null;
+}
+
 // ── Route Handler ────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
@@ -169,6 +213,7 @@ const activeGenerations = new Set<string>();
 
 const stream = new ReadableStream({
     async start(controller) {
+      const startTime = Date.now(); // Product Completion Engine: time budget for self-heal
       const send = (event: string, data: object) => {
         try {
           controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
@@ -273,6 +318,47 @@ const stream = new ReadableStream({
         }
 
         send("phase", { ...GAME_WORKFLOW_PHASES[4], action: "Validation passed", done: true });
+
+        // ── Product Completion Engine: Quality Audit ─────────────────
+        send("phase", { ...GAME_WORKFLOW_PHASES[4], agent: "Validating", icon: "🧪", action: "Running quality audit...", pct: 80 });
+
+        let audit: AuditResult = auditGameHTML(html, detected.gameType);
+        let healAttempted = false;
+
+        if (audit.score < 90) {
+          send("phase", {
+            agent: "Validating", icon: "🧪",
+            action: `Quality score ${audit.score}/100 — adding missing features (${audit.failed.slice(0, 3).map(f => f.label).join(", ")}${audit.failed.length > 3 ? "…" : ""})`,
+            pct: 83,
+          });
+
+          const elapsed = Date.now() - startTime;
+          const remainingMs = 115000 - elapsed; // edge maxDuration=120s, leave 5s buffer
+
+          healAttempted = true;
+          const healed = await healGame(html, audit.failed, systemPrompt, remainingMs);
+
+          if (healed) {
+            const healedAudit = auditGameHTML(healed.html, detected.gameType);
+            if (healedAudit.score > audit.score) {
+              html = healed.html;
+              audit = healedAudit;
+              provider = `${provider} → ${healed.provider}`;
+              // Re-apply full-screen canvas fix in case heal pass changed canvas setup
+              if (!html.includes("innerWidth") || !html.includes("innerHeight")) {
+                html = html.replace(/canvas\.width\s*=\s*\d+/g, "canvas.width = window.innerWidth")
+                           .replace(/canvas\.height\s*=\s*\d+/g, "canvas.height = window.innerHeight");
+              }
+            }
+          }
+        }
+
+        send("phase", {
+          agent: "Validating", icon: "🧪",
+          action: `Quality score: ${audit.score}/100${audit.score >= 90 ? " ✅" : healAttempted ? " (after self-heal)" : ""}`,
+          pct: 86, done: true,
+        });
+
         send("phase", { ...GAME_WORKFLOW_PHASES[5], action: "Optimizing game performance..." });
 
         // ── Save to DB ──────────────────────────────────────────────
@@ -324,6 +410,12 @@ const stream = new ReadableStream({
           theme:      detected.theme,
           techStack:  detected.techStack,
           gameMemory,
+          // Product Completion Engine
+          completenessScore:   audit.score,
+          auditPassed:         audit.passed.map(p => p.label),
+          auditFailed:         audit.failed.map(f => f.label),
+          belowQualityThreshold: audit.score < 90,
+          healAttempted,
         });
       } catch (err: any) {
         send("error", { message: err.message || "Game generation failed. Try again.", code: "GENERATION_ERROR" });
@@ -343,4 +435,4 @@ const stream = new ReadableStream({
       "X-Accel-Buffering": "no",
     },
   });
-          }
+}
