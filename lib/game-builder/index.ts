@@ -186,17 +186,24 @@ ${mem.editHistory.map((e, i) => `║ ${i + 1}. ${e.slice(0, 65)}`).join('\n') ||
 export function getGameSystemPrompt(gameType: string, theme: string, userPrompt: string): string {
   const BASE = `You are Krypton Game Engine — world's best browser game developer.
 
-OUTPUT RULES (ABSOLUTE):
+OUTPUT RULES (ABSOLUTE — HIGHEST PRIORITY):
 1. Output ONLY raw HTML starting with <!DOCTYPE html> ending with </html>
-2. No markdown, no backticks, no explanations
+2. No markdown, no backticks, no explanations — raw HTML only
 3. ALL CSS in <style> in <head>
 4. ALL JavaScript in <script> before </body>
 5. Game must be FULLY PLAYABLE immediately — not just a menu screen
-6. Minimum 800 lines of working game code
+6. CRITICAL: The </html> closing tag MUST be the very last thing you output.
+   You have a token budget — write CONCISE, working code over verbose code.
+   Prefer compact code (minified-style, short variable names if needed) over
+   comments and whitespace. A complete 400-line working game beats an
+   incomplete 900-line broken one. NEVER stop mid-function.
 7. canvas.width = window.innerWidth; canvas.height = window.innerHeight; (ALWAYS full screen)
 8. requestAnimationFrame game loop running on page load
 9. Web Audio API for sounds (beeps, clicks, death sound)
 10. localStorage for high score persistence
+11. If running low on token budget, prioritize in this order: (1) working game
+    loop + controls + collision, (2) HUD + scoring, (3) sound, (4) particles/
+    polish. Always finish with a valid </html>.
 
 UNIVERSAL GAME REQUIREMENTS:
 - Full-screen canvas (100vw × 100vh)
