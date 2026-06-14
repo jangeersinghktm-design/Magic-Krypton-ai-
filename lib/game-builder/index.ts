@@ -4,6 +4,16 @@
  * Does NOT modify website builder pipeline
  */
 
+// ── Product Completion Engine (quality audit + auto-expansion) ────
+export {
+  auditGameHTML,
+  getRequiredFeatures,
+  buildFeatureChecklistPrompt,
+  type FeatureCheck,
+  type AuditResult,
+} from "./quality-audit";
+import { buildFeatureChecklistPrompt } from "./quality-audit";
+
 // ── Game Memory System ─────────────────────────────────────────────
 export interface GameProjectMemory {
   gameType:      string;   // "racing" | "platformer" | "shooter" etc
@@ -444,10 +454,72 @@ FIGHTING GAME REQUIREMENTS:
 - Combo counter displayed when multi-hit
 - Character select screen (2+ characters)
 - Screen shake on heavy hit`,
+
+    pacman: `
+PACMAN-STYLE GAME REQUIREMENTS:
+- Maze grid (tile-based, walls block movement)
+- Player moves with arrows/WASD — smooth grid-aligned movement
+- Dots scattered through maze — collect all to win
+- 3-4 ghosts with simple chase AI (move toward player with some randomness)
+- Power pellets: eating one lets player eat ghosts for ~8 seconds (ghosts flee/blue)
+- Lives: 3, lose one when caught by ghost (not powered up)
+- Score: dots = 10pts, power pellet = 50pts, ghost eaten = 200pts
+- Win condition: all dots collected — show victory screen, then next maze
+- Tunnel wrap-around on maze edges (optional but classic)`,
+
+    shooter: `
+SHOOTER GAME REQUIREMENTS (top-down or side-view):
+- Player character with shoot mechanic (Space/click = fire bullet)
+- Bullets travel in straight line, despawn off-screen
+- Enemy waves: enemies spawn from top/sides, move toward/past player
+- Bullet-enemy collision: destroy enemy + particle effect + score
+- Enemy-player collision: lose health/life, brief invincibility flash
+- Health or lives system (3 lives or 100 HP bar)
+- Power-ups: rapid fire, spread shot, shield — fall from destroyed enemies
+- Wave counter — difficulty increases each wave (more enemies, faster)
+- Game over when health/lives reach 0 — show final score + restart`,
+
+    runner: `
+ENDLESS RUNNER REQUIREMENTS:
+- Player auto-runs forward (or world scrolls toward player) at constant then increasing speed
+- Jump (Space/Up/tap) and duck/slide (Down/swipe-down) mechanics with proper physics
+- Obstacles spawn at randomized intervals — variety of types (low, high, wide)
+- Collision with obstacle = game over (or lose a life if lives system used)
+- Score increases continuously based on distance traveled
+- Speed increases gradually over time/distance — visible difficulty ramp
+- Collectibles (coins/gems) along the path add to score
+- High score saved to localStorage, game over screen with restart`,
+
+    strategy: `
+STRATEGY GAME REQUIREMENTS:
+- Grid or zone-based map for placing units/buildings
+- Resource system (e.g. gold/wood) that accumulates over time or from actions
+- Build/place units or structures by spending resources (click grid cell)
+- Enemy AI: opposing units/base that attacks or expands over time
+- Combat resolution when units meet (simple HP-based combat)
+- Win condition: destroy enemy base / survive N turns / accumulate target resources
+- Lose condition: own base destroyed or resources depleted
+- UI: resource counters, unit selection, simple turn or real-time indicator`,
+
+    arcade: `
+ARCADE GAME REQUIREMENTS (general):
+- Clear core loop: player acts, world reacts, score updates
+- Enemies or obstacles that move and can be avoided/destroyed/collected
+- Collision detection between player and all interactive objects
+- Score system visible on HUD, increments on player actions
+- Level/wave progression — difficulty visibly increases over time
+- Power-ups that temporarily change player abilities
+- Lives or health, game over screen with final score + restart button
+- Clear win or "survive as long as possible" framing communicated to player`,
   };
 
-  const specific = GAME_SPECIFICS[gameType] || GAME_SPECIFICS['snake'];
-  return `${BASE}\n${specific}`;
+  const specific = GAME_SPECIFICS[gameType] || GAME_SPECIFICS['arcade'];
+
+  // Auto-expand simple prompts into a full professional spec via the
+  // weighted feature checklist (Product Completion Engine).
+  const checklist = buildFeatureChecklistPrompt(gameType);
+
+  return `${BASE}\n${specific}\n\n${checklist}`;
 }
 
 // ── Game Workflow Phases ───────────────────────────────────────────
