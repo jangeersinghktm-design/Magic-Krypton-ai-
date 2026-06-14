@@ -33,14 +33,19 @@ async function callClaude(system: string, prompt: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 8000,
+      max_tokens: 8192,
       system,
       messages: [{ role: "user", content: prompt }],
     }),
     signal: AbortSignal.timeout(50000),
   });
   const d = await res.json();
-  return d.content?.[0]?.text || "";
+  const text = d.content?.[0]?.text || "";
+  // Fix: detect truncation — Claude returns stop_reason "max_tokens" if cut off
+  if (d.stop_reason === "max_tokens") {
+    return text + "\n<!--TRUNCATED-->";
+  }
+  return text;
 }
 
 async function callOpenAI(system: string, prompt: string): Promise<string> {
@@ -52,13 +57,18 @@ async function callOpenAI(system: string, prompt: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "gpt-4o-mini",
-      max_tokens: 8000,
+      max_tokens: 16000,
       messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
     }),
     signal: AbortSignal.timeout(50000),
   });
   const d = await res.json();
-  return d.choices?.[0]?.message?.content || "";
+  const text = d.choices?.[0]?.message?.content || "";
+  // Fix: detect truncation
+  if (d.choices?.[0]?.finish_reason === "length") {
+    return text + "\n<!--TRUNCATED-->";
+  }
+  return text;
 }
 
 async function callGemini(system: string, prompt: string): Promise<string> {
@@ -69,28 +79,85 @@ async function callGemini(system: string, prompt: string): Promise<string> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: `${system}\n\n${prompt}` }] }],
-        generationConfig: { maxOutputTokens: 8000 },
+        generationConfig: { maxOutputTokens: 8192 },
       }),
       signal: AbortSignal.timeout(50000),
     }
   );
   const d = await res.json();
-  return d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const text = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  // Fix: detect truncation
+  if (d.candidates?.[0]?.finishReason === "MAX_TOKENS") {
+    return text + "\n<!--TRUNCATED-->";
+  }
+  return text;
+}
+
+// Fix 2: Strip markdown code fences (handles ```html, ```, leading/trailing)
+function stripMarkdownFences(text: string): string {
+  let t = text.trim();
+  // Remove leading ```html or ``` 
+  t = t.replace(/^```(?:html|HTML)?\s*\n?/, "");
+  // Remove trailing ```
+  t = t.replace(/\n?```\s*$/, "");
+  return t.trim();
+}
+
+// Fix 2: Validate that HTML is complete and playable — not truncated/broken
+function isValidGameHTML(html: string): boolean {
+  if (!html || html.length < 500) return false;
+  if (html.includes("<!--TRUNCATED-->")) return false;          // explicit truncation flag
+  if (!html.trim().startsWith("<!DOCTYPE")) return false;        // must start correctly
+  if (!/<\/html>\s*$/i.test(html.trim())) return false;          // must end with </html>
+  if (!html.includes("<canvas")) return false;                   // must have canvas
+  if (!html.includes("</script>")) return false;                 // script must be closed
+  // Check for nested/duplicate doctype (sign of double-wrapping)
+  const doctypeCount = (html.match(/<!DOCTYPE/gi) || []).length;
+  if (doctypeCount > 1) return false;
+  // Check for stray markdown fences anywhere in content
+  if (html.includes("```")) return false;
+  return true;
 }
 
 async function generateGame(system: string, prompt: string): Promise<{ html: string; provider: string }> {
+  const attempts: { provider: string; reason: string }[] = [];
+
   for (const [fn, name] of [[callClaude, "claude"], [callOpenAI, "openai"], [callGemini, "gemini"]] as const) {
     try {
-      const text = await (fn as Function)(system, prompt);
-      if (text?.trim()) {
-        const html = text.trim().startsWith("<!DOCTYPE")
-          ? text.trim()
-          : text.match(/<!DOCTYPE[\s\S]*<\/html>/i)?.[0] || text;
-        if (html.length > 500) return { html, provider: name };
+      const rawText = await (fn as Function)(system, prompt);
+      if (!rawText?.trim()) {
+        attempts.push({ provider: name, reason: "empty response" });
+        continue;
       }
-    } catch { continue; }
+
+      // Strip markdown fences first
+      let cleaned = stripMarkdownFences(rawText);
+
+      // Extract HTML document if not already clean
+      if (!cleaned.startsWith("<!DOCTYPE")) {
+        const match = cleaned.match(/<!DOCTYPE[\s\S]*?<\/html>/i);
+        if (match) cleaned = stripMarkdownFences(match[0]);
+      }
+
+      // Reject truncated/incomplete output — try next provider instead of returning broken HTML
+      if (!isValidGameHTML(cleaned)) {
+        attempts.push({
+          provider: name,
+          reason: cleaned.includes("<!--TRUNCATED-->") ? "truncated (hit token limit)" : "incomplete/invalid HTML",
+        });
+        continue;
+      }
+
+      return { html: cleaned, provider: name };
+    } catch (err: any) {
+      attempts.push({ provider: name, reason: err?.message || "request failed" });
+      continue;
+    }
   }
-  throw new Error("All AI providers failed");
+
+  throw new Error(
+    `All AI providers failed to generate a complete game. (${attempts.map(a => `${a.provider}: ${a.reason}`).join("; ")})`
+  );
 }
 
 // ── Route Handler ────────────────────────────────────────────────────
@@ -171,20 +238,30 @@ const stream = new ReadableStream({
         send("phase", { ...GAME_WORKFLOW_PHASES[2], done: true });
         send("phase", { ...GAME_WORKFLOW_PHASES[3], action: `Building ${detected.gameType} game engine...` });
 
-        // ── Generate Game ───────────────────────────────────────────
-        const { html: rawHtml, provider } = await generateGame(systemPrompt, fullPrompt);
+        // ── Generate Game ────────────────────────────────────────────
+        // generateGame() now validates output internally and rejects
+        // truncated/broken HTML, trying the next provider automatically.
+        let html: string;
+        let provider: string;
+        try {
+          const result = await generateGame(systemPrompt, fullPrompt);
+          html = result.html;
+          provider = result.provider;
+        } catch (genErr: any) {
+          // All 3 providers failed validation — release lock and report clearly
+          if (authedUserId) activeGenerations.delete(authedUserId);
+          send("error", {
+            message: "Game generation failed — the AI response was incomplete. Please try again, or try a simpler game description.",
+            code: "GENERATION_INCOMPLETE",
+            detail: genErr?.message,
+          });
+          finish(); return;
+        }
 
         send("phase", { ...GAME_WORKFLOW_PHASES[3], action: `Game built via ${provider}`, done: true });
         send("phase", { ...GAME_WORKFLOW_PHASES[4], action: "Validating gameplay..." });
 
-        // Validate & fix HTML
-        let html = rawHtml;
-        if (!html.trim().startsWith("<!DOCTYPE")) {
-          const match = html.match(/<!DOCTYPE[\s\S]*<\/html>/i);
-          html = match ? match[0] : `<!DOCTYPE html><html><head><title>Game</title></head><body>${html}</body></html>`;
-        }
-
-        // Ensure full-screen canvas
+        // Ensure full-screen canvas (html already validated as complete)
         if (!html.includes("innerWidth") || !html.includes("innerHeight")) {
           html = html.replace(
             /canvas\.width\s*=\s*\d+/g,
@@ -266,4 +343,4 @@ const stream = new ReadableStream({
       "X-Accel-Buffering": "no",
     },
   });
-}
+          }
