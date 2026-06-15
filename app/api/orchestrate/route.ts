@@ -465,46 +465,76 @@ ${html}`;
         let creditCost = 2;
 
         if (authedUserId) {
+          // Profile lookup — for credit accounting only. A failure here
+          // (missing profiles row, bad column name, etc.) must NOT block
+          // project persistence below — that's the "Total Projects = 0"
+          // bug. Logging the error surfaces the EXACT cause in server
+          // logs on the next generation.
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("total_credits, used_credits, plan")
+            .eq("id", authedUserId)
+            .single();
+
+          if (profileError) {
+            console.error(`[orchestrate/route] profiles lookup failed for user ${authedUserId}:`, profileError.message || profileError);
+          }
+
+          if (profile) {
+            const remaining = (profile.total_credits || 5) - (profile.used_credits || 0);
+            creditCost = Math.min(remaining, 3);
+          }
+
+          // Project persistence — ALWAYS attempted, independent of the
+          // profile lookup above and its result. Own try/catch so a
+          // thrown error here doesn't get conflated with the credit
+          // deduction block below.
           try {
-            // Deduct credits
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("total_credits, used_credits, plan")
-              .eq("id", authedUserId)
-              .single();
+            const { data: proj, error: projError } = await supabase.from("projects").insert({
+              user_id:    authedUserId,
+              title:      prompt.slice(0, 60),
+              name:       prompt.slice(0, 60),
+              prompt,
+              html_code:  html,
+              status:     "completed",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }).select().single();
 
-            if (profile) {
-              const remaining = (profile.total_credits || 5) - (profile.used_credits || 0);
-              creditCost = Math.min(remaining, 3);
+            if (projError) {
+              console.error(`[orchestrate/route] projects insert FAILED for user ${authedUserId}:`, projError.message || projError);
+            }
+            savedProjectId = proj?.id || null;
+          } catch (e: any) {
+            console.error(`[orchestrate/route] projects insert threw for user ${authedUserId}:`, e?.message || e);
+          }
 
-              // Save project
-              const { data: proj } = await supabase.from("projects").insert({
-                user_id:    authedUserId,
-                title:      prompt.slice(0, 60),
-                name:       prompt.slice(0, 60),
-                prompt,
-                html_code:  html,
-                status:     "completed",
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              }).select().single();
-              savedProjectId = proj?.id || null;
-
-              // Deduct credits
-              await supabase.from("profiles").update({
+          // Credit deduction + transaction log — separate concern, only
+          // when profile lookup succeeded. Own try/catch so a failure
+          // here doesn't affect the project already saved above.
+          if (profile) {
+            try {
+              const { error: updateError } = await supabase.from("profiles").update({
                 used_credits: (profile.used_credits || 0) + creditCost,
               }).eq("id", authedUserId);
+              if (updateError) {
+                console.error(`[orchestrate/route] profiles credit update failed for user ${authedUserId}:`, updateError.message || updateError);
+              }
 
-              // Log transaction
-              await supabase.from("credit_transactions").insert({
+              const { error: txError } = await supabase.from("credit_transactions").insert({
                 user_id:     authedUserId,
                 amount:      -creditCost,
                 type:        "usage",
                 description: `Build ${projectType}: ${prompt.slice(0, 50)}`,
                 project_id:  savedProjectId,
-              }).then(() => {});
+              });
+              if (txError) {
+                console.error(`[orchestrate/route] credit_transactions insert failed for user ${authedUserId}:`, txError.message || txError);
+              }
+            } catch (e: any) {
+              console.error(`[orchestrate/route] credit deduction block threw for user ${authedUserId}:`, e?.message || e);
             }
-          } catch {}
+          }
         }
 
         send("phase", { agent:"Finalizing", icon:"📋", action:"Project saved successfully", pct:100, done:true });
