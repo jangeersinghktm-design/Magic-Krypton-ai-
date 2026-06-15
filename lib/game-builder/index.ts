@@ -13,6 +13,8 @@ export {
   type AuditResult,
 } from "./quality-audit";
 import { buildFeatureChecklistPrompt } from "./quality-audit";
+import { getGameTemplate, hasGameTemplate } from "@/lib/completion-engine/templates";
+import type { ProjectBlueprint } from "@/lib/completion-engine/blueprint";
 
 // ── Game Memory System ─────────────────────────────────────────────
 export interface GameProjectMemory {
@@ -36,6 +38,9 @@ export interface GameProjectMemory {
   editHistory:   string[];
   lastPrompt:    string;
   features:      string[];
+  // Phase 7 — Memory Engine: store the project blueprint so edits
+  // modify against it instead of re-deriving context each time.
+  blueprint?:    ProjectBlueprint;
 }
 
 // ── Game Type Detection ────────────────────────────────────────────
@@ -129,7 +134,8 @@ export function buildGameMemory(
   html: string,
   prompt: string,
   detected: ReturnType<typeof detectGameType>,
-  prev?: GameProjectMemory | null
+  prev?: GameProjectMemory | null,
+  blueprint?: ProjectBlueprint
 ): GameProjectMemory {
   const editHistory = prev?.editHistory || [];
   if (prompt && !editHistory.includes(prompt)) editHistory.push(prompt);
@@ -155,6 +161,8 @@ export function buildGameMemory(
     editHistory:   editHistory.slice(-10),
     lastPrompt:    prompt,
     features:      extractGameFeatures(html),
+    // Preserve existing blueprint on edits unless a new one is provided
+    blueprint:     blueprint || prev?.blueprint,
   };
 }
 
@@ -174,6 +182,9 @@ function extractGameFeatures(html: string): string[] {
 
 // ── Format Game Memory for AI ──────────────────────────────────────
 export function formatGameMemoryForAI(mem: GameProjectMemory): string {
+  const blueprintLine = mem.blueprint
+    ? `║ Pages/States: ${mem.blueprint.pages.join(', ')}\n║ Components:   ${mem.blueprint.components.join(', ')}\n`
+    : '';
   return `╔═ KRYPTON GAME MEMORY ═══════════════════════╗
 ║ Game Type:    ${mem.gameType}
 ║ Genre:        ${mem.genre}
@@ -184,7 +195,7 @@ export function formatGameMemoryForAI(mem: GameProjectMemory): string {
 ║ Controls:     ${mem.controls}
 ║ Features:     ${mem.features.join(', ')}
 ║ Audio:        ${mem.audioEnabled ? 'enabled' : 'disabled'}
-╠═ PRESERVE THESE EXACTLY ════════════════════╣
+${blueprintLine}╠═ PRESERVE THESE EXACTLY ════════════════════╣
 ║ Game type, controls, scoring, lives system
 ║ Only add/change what user requested
 ╠═ EDIT HISTORY ══════════════════════════════╣
@@ -193,7 +204,7 @@ ${mem.editHistory.map((e, i) => `║ ${i + 1}. ${e.slice(0, 65)}`).join('\n') ||
 }
 
 // ── Get Game System Prompt by Type ────────────────────────────────
-export function getGameSystemPrompt(gameType: string, theme: string, userPrompt: string): string {
+export function getGameSystemPrompt(gameType: string, theme: string, userPrompt: string, isEdit: boolean = false): string {
   const BASE = `You are Krypton Game Engine — world's best browser game developer.
 
 OUTPUT RULES (ABSOLUTE — HIGHEST PRIORITY):
@@ -519,7 +530,27 @@ ARCADE GAME REQUIREMENTS (general):
   // weighted feature checklist (Product Completion Engine).
   const checklist = buildFeatureChecklistPrompt(gameType);
 
-  return `${BASE}\n${specific}\n\n${checklist}`;
+  // Template Engine: for covered game types, give the AI a structural
+  // skeleton to EXTEND rather than generating the whole document from
+  // scratch. This guarantees HUD/overlays/mobile controls/audio init
+  // are always present (they satisfy several checklist items by default).
+  //
+  // Edit-mode protection: skip this on edits. An edit's prompt already
+  // includes the EXISTING (customized) game via GameProjectMemory —
+  // injecting the generic skeleton on top of that conflicts with "here's
+  // the current game, make this specific change" and can pull the AI
+  // back toward generic skeleton structure, overwriting customizations.
+  let templateBlock = "";
+  if (!isEdit && hasGameTemplate(gameType)) {
+    templateBlock = `
+
+BASE STRUCTURE TO EXTEND (do not remove existing IDs/elements — add your
+game logic inside the marked section and flesh out update()/render()):
+
+${getGameTemplate(gameType)}`;
+  }
+
+  return `${BASE}\n${specific}\n\n${checklist}${templateBlock}`;
 }
 
 // ── Game Workflow Phases ───────────────────────────────────────────
