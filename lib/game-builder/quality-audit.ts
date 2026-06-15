@@ -259,6 +259,5 @@ Every item below must be implemented and detectable in your code. Aim for a scor
 ${lines.join("\n")}
 
 If you are running low on token budget, prioritize the highest-numbered-weight items above and the
-core game loop — but the file MUST still end with a valid </html>.`; 
+core game loop — but the file MUST still end with a valid </html>.`;
 }
-
