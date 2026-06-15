@@ -411,31 +411,54 @@ const stream = new ReadableStream({
         let creditCost = 2;
 
         if (authedUserId) {
-          const { data: profile } = await supabase.from("profiles")
+          // Profile lookup — for credit accounting only. A failure here
+          // (missing profiles row, bad column name, etc.) must NOT block
+          // project persistence below — that's the "Total Projects = 0"
+          // bug. Logging the error surfaces the EXACT cause (e.g. a
+          // missing column name) in server logs on the next generation.
+          const { data: profile, error: profileError } = await supabase.from("profiles")
             .select("total_credits, used_credits, plan, daily_reset_date")
             .eq("id", authedUserId).single();
 
+          if (profileError) {
+            console.error(`[game/route] profiles lookup failed for user ${authedUserId}:`, profileError.message || profileError);
+          }
+
           if (profile) {
-            const today = new Date().toISOString().split("T")[0];
             const remaining = (profile.total_credits || 5) - (profile.used_credits || 0);
             creditCost = Math.min(remaining, 2);
+          }
 
-            const { data: proj } = await supabase.from("projects").insert({
-              user_id:    authedUserId,
-              title:      prompt.slice(0, 60),
-              name:       prompt.slice(0, 60),
-              prompt,
-              html_code:  html,
-              status:     "completed",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }).select().single();
-            savedProjectId = proj?.id || null;
+          // Project persistence — ALWAYS attempted, independent of the
+          // profile lookup above and its result.
+          const { data: proj, error: projError } = await supabase.from("projects").insert({
+            user_id:    authedUserId,
+            title:      prompt.slice(0, 60),
+            name:       prompt.slice(0, 60),
+            prompt,
+            html_code:  html,
+            status:     "completed",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }).select().single();
 
-            await supabase.from("profiles").update({
+          if (projError) {
+            console.error(`[game/route] projects insert FAILED for user ${authedUserId}:`, projError.message || projError);
+          }
+          savedProjectId = proj?.id || null;
+
+          // Credit deduction — separate concern, only when profile lookup
+          // succeeded. Its own failure is logged but doesn't affect the
+          // project that was already saved above.
+          if (profile) {
+            const today = new Date().toISOString().split("T")[0];
+            const { error: updateError } = await supabase.from("profiles").update({
               used_credits: (profile.used_credits || 0) + creditCost,
               daily_reset_date: today,
             }).eq("id", authedUserId);
+            if (updateError) {
+              console.error(`[game/route] profiles credit update failed for user ${authedUserId}:`, updateError.message || updateError);
+            }
           }
         }
 
