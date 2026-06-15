@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import KryptonLogo from "@/components/branding/KryptonLogo";
 import AgentTimeline, { AgentPhaseEvent } from "@/components/workspace/AgentTimeline";
 import { detectGameType, buildGameMemory, formatGameMemoryForAI, type GameProjectMemory } from "@/lib/game-builder";
+import { runProductionGate } from "@/lib/completion-engine";
 
 // ── Design Tokens ─────────────────────────────────────────────────
 const C = {
@@ -48,6 +49,7 @@ interface ChatMessage {
   isActive?:boolean;
   credits?: number;
   files?:   string[];
+  gate?:    { dimensions:{dimension:string;score:number}[]; buildPass:boolean; validationPass:boolean; runtimePass:boolean; mobilePass:boolean; overallPass:boolean; repairAttempts:number };
 }
 
 interface Version {
@@ -61,10 +63,12 @@ interface ProjectMemory {
   colorSystem: string; fonts: string; sections: string;
   navigation: string; editHistory: string[]; codeLines: number;
   isDarkTheme: boolean; hasNavbar: boolean; hasFooter: boolean;
+  // Phase 7 — Memory Engine: project blueprint from generation
+  blueprint?: any;
 }
 
-function buildProjectMemory(html:string, name:string, prompt:string, msgs:ChatMessage[], prev?:ProjectMemory|null): ProjectMemory {
-  if (!html) return prev || { projectName:name, originalPrompt:prompt, colorSystem:"", fonts:"", sections:"", navigation:"", editHistory:[], codeLines:0, isDarkTheme:true, hasNavbar:false, hasFooter:false };
+function buildProjectMemory(html:string, name:string, prompt:string, msgs:ChatMessage[], prev?:ProjectMemory|null, blueprint?:any): ProjectMemory {
+  if (!html) return prev || { projectName:name, originalPrompt:prompt, colorSystem:"", fonts:"", sections:"", navigation:"", editHistory:[], codeLines:0, isDarkTheme:true, hasNavbar:false, hasFooter:false, blueprint };
   const cssVars = (html.match(/--[\w-]+\s*:\s*[^;}{]+/g)||[]).slice(0,20).join("; ").slice(0,500);
   const fontMatches = html.match(/family=([^&"'\s)]+)/g)||[];
   const fonts = [...new Set(fontMatches.map(f=>f.replace("family=","").split(":")[0].replace(/\+/g," ")))].join(", ")||"System";
@@ -72,18 +76,21 @@ function buildProjectMemory(html:string, name:string, prompt:string, msgs:ChatMe
   const h1s = (html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)||[]).map(h=>h.replace(/<[^>]+>/g,"")).slice(0,2);
   const navLinks = (html.match(/<a[^>]*>([^<]{2,25})<\/a>/gi)||[]).map(a=>a.replace(/<[^>]+>/g,"").trim()).filter(t=>t.length>2).slice(0,8);
   const edits = msgs.filter(m=>m.role==="user"&&m.type==="text").map(m=>m.content).slice(-8);
-  return { projectName:name, originalPrompt:prompt, colorSystem:cssVars, fonts, sections:[...h1s,...h2s].join("|").slice(0,200), navigation:navLinks.join(", ").slice(0,150), editHistory:edits, codeLines:html.split("\n").length, isDarkTheme:/#0[0-2]/.test(html.slice(0,3000)), hasNavbar:/<nav/.test(html), hasFooter:/<footer/.test(html) };
+  return { projectName:name, originalPrompt:prompt, colorSystem:cssVars, fonts, sections:[...h1s,...h2s].join("|").slice(0,200), navigation:navLinks.join(", ").slice(0,150), editHistory:edits, codeLines:html.split("\n").length, isDarkTheme:/#0[0-2]/.test(html.slice(0,3000)), hasNavbar:/<nav/.test(html), hasFooter:/<footer/.test(html), blueprint: blueprint||prev?.blueprint };
 }
 
 function formatMemoryForAI(mem:ProjectMemory|null): string {
   if (!mem||!mem.colorSystem) return "";
+  const blueprintLine = mem.blueprint
+    ? `║ Pages/Sections: ${(mem.blueprint.pages||[]).join(", ").slice(0,150)}\n║ Components: ${(mem.blueprint.components||[]).join(", ").slice(0,150)}\n`
+    : "";
   return `╔═ KRYPTON PROJECT MEMORY ════════════════╗
 ║ Project: ${mem.projectName}
 ║ Theme: ${mem.isDarkTheme?"Dark":"Light"} | ${mem.codeLines} lines
 ║ Fonts: ${mem.fonts}
 ║ CSS Variables: ${mem.colorSystem.slice(0,250)}
 ║ Sections: ${mem.sections.slice(0,150)}
-╠═ PRESERVE EXACTLY ══════════════════════╣
+${blueprintLine}╠═ PRESERVE EXACTLY ══════════════════════╣
 ║ Colors, fonts, layout, existing sections
 ║ Only change what user requested
 ╠═ EDIT HISTORY ══════════════════════════╣
@@ -265,6 +272,9 @@ function CreatePageInner() {
   const [versions, setVersions] = useState<Version[]>([]);
   const [projectMemory, setProjectMemory] = useState<ProjectMemory|null>(null);
   const [gameMemory, setGameMemory]       = useState<GameProjectMemory|null>(null);
+  // Production Gate score — state (not just a runFlow-local) so runEdit's
+  // post-edit gate re-check (A3) can read/update it across calls.
+  const [completenessScore, setCompletenessScore] = useState<number|null>(null);
   const [isGameProject, setIsGameProject] = useState(false);
   const [listening, setListening] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -319,12 +329,65 @@ function CreatePageInner() {
     const {data:proj} = await supabase.from("projects").select("*").eq("id",id).eq("user_id",uid).single();
     if (!proj) return;
     setProjectId(proj.id); setProjectName(proj.name||"Project");
-    setResult(proj.html_code||""); promptRef.current=proj.prompt||"";
+    const html = proj.html_code||"";
+    setResult(html); promptRef.current=proj.prompt||"";
+
+    // ── Priority 1: Project Memory V2 — restore on reopen ──────────
+    const detected = detectGameType(proj.prompt||"");
+    const storedGameMemory: GameProjectMemory|null = proj.game_memory||null;
+    const storedProjectMemory: ProjectMemory|null   = proj.project_memory||null;
+    const isGame = !!storedGameMemory || detected.isGame;
+    if (isGame) setIsGameProject(true);
+
+    // Fallback-derive for rows saved before this column existed (memory-on-reopen fix)
+    let restoredGameMemory = storedGameMemory;
+    let restoredProjectMemory = storedProjectMemory;
+    if (html) {
+      if (isGame && !restoredGameMemory) {
+        restoredGameMemory = buildGameMemory(html, proj.prompt||"", detected, null);
+      }
+      if (!restoredProjectMemory) {
+        restoredProjectMemory = buildProjectMemory(html, proj.name||"Project", proj.prompt||"", [], null);
+      }
+    }
+    if (restoredGameMemory)    setGameMemory(restoredGameMemory);
+    if (restoredProjectMemory) setProjectMemory(restoredProjectMemory);
+
+    // Restore Production Gate score so the next edit's quality-delta (A3)
+    // compares against the real current score, not null.
+    if (html) {
+      try {
+        const gateKind = isGame ? "game" : "website";
+        const gateSubtype = isGame
+          ? (restoredGameMemory?.gameType || detected.gameType || "arcade")
+          : (restoredProjectMemory?.blueprint?.projectType || "website");
+        setCompletenessScore(runProductionGate(html, gateKind, gateSubtype).score);
+      } catch {}
+    }
+
     const hist:any[]=proj.conversation_history||[];
     hist.length>0 ? hist.forEach((m:any)=>addMsg({role:m.role||"ai",type:m.type||"text",content:m.content||""}))
                   : addMsg({role:"ai",type:"text",content:"Project loaded. Describe changes below."});
     const {data:vers} = await supabase.from("project_versions").select("*").eq("project_id",id).order("version_number",{ascending:false}).limit(20);
     if (vers) setVersions(vers as Version[]);
+
+    // Backfill DB for old rows that had no stored memory at all
+    if (!storedGameMemory && !storedProjectMemory && (restoredGameMemory || restoredProjectMemory)) {
+      persistMemory(id, restoredProjectMemory, restoredGameMemory);
+    }
+  };
+
+  // Priority 1 — Project Memory V2: fire-and-forget persistence.
+  // Wrapped so a missing migration / transient error never affects
+  // generation or editing (memory just won't persist that round).
+  const persistMemory = (pid:string|null|undefined, projMem?:ProjectMemory|null, gMem?:GameProjectMemory|null) => {
+    if (!pid || (!projMem && !gMem)) return;
+    const payload:Record<string,any> = {};
+    if (projMem) payload.project_memory = projMem;
+    if (gMem)    payload.game_memory    = gMem;
+    try {
+      supabase.from("projects").update(payload).eq("id",pid).then(()=>{},()=>{});
+    } catch {}
   };
 
   const saveProject = async (html:string, name:string, pid?:string) => {
@@ -371,6 +434,9 @@ function CreatePageInner() {
     }
 
     let html=""; let credUsed=1; let savedPid="";
+    let completenessScore:number|null=null; let auditFailed:string[]=[];
+    let receivedBlueprint:any=null;
+    let gateResult:any=null;
     const livePhases:AgentPhaseEvent[]=[];
 
     // Use game API for games, orchestrate for everything else  
@@ -397,6 +463,17 @@ function CreatePageInner() {
         }
         if (em[1]==="complete"){
           html=data.html||""; credUsed=data.creditCost||1; savedPid=data.projectId||"";
+          completenessScore = typeof data.completenessScore === "number" ? data.completenessScore : null;
+          auditFailed = Array.isArray(data.auditFailed) ? data.auditFailed : [];
+          receivedBlueprint = data.blueprint || null;
+          if (Array.isArray(data.dimensions)) {
+            gateResult = {
+              dimensions: data.dimensions,
+              buildPass: !!data.buildPass, validationPass: !!data.validationPass,
+              runtimePass: !!data.runtimePass, mobilePass: !!data.mobilePass,
+              overallPass: !!data.overallPass, repairAttempts: data.repairAttempts||0,
+            };
+          }
           if (savedPid){setProjectId(savedPid);window.history.replaceState({},"",`/create?id=${savedPid}`);}
           livePhases.forEach(p=>{p.done=true;p.status="done";});
           updateMsg(thinkId,{phases:[...livePhases],isActive:false});
@@ -435,14 +512,24 @@ function CreatePageInner() {
     setCredits(c=>({...c,used:c.used+credUsed}));
     const pName=userPrompt.slice(0,50);
     setProjectName(pName);
-    setProjectMemory(buildProjectMemory(html,pName,userPrompt,messages));
+    const newProjMem = buildProjectMemory(html,pName,userPrompt,messages,projectMemory,receivedBlueprint);
+    setProjectMemory(newProjMem);
     // Update game memory if this is a game
+    let newGameMem: GameProjectMemory|undefined;
     if (detected.isGame) {
-      const gMem = buildGameMemory(html, userPrompt, detected, gameMemory);
-      setGameMemory(gMem);
+      newGameMem = buildGameMemory(html, userPrompt, detected, gameMemory, receivedBlueprint);
+      setGameMemory(newGameMem);
     }
+    // Priority 1 — persist ProjectMemory + GameMemory for this project
+    persistMemory(savedPid||projectId, newProjMem, newGameMem||null);
     updateMsg(thinkId,{isActive:false});
-    addMsg({role:"ai",type:"summary",content:`Built — ${html.split("\n").length} lines of code.`,files:["index.html","styles.css","app.js"],credits:credUsed});
+    const qualityBadge = completenessScore!==null
+      ? ` • Quality: ${completenessScore}/100${completenessScore>=90?" ✅":""}`
+      : "";
+    addMsg({role:"ai",type:"summary",content:`Built — ${html.split("\n").length} lines of code.${qualityBadge}`,files:["index.html","styles.css","app.js"],credits:credUsed,gate:gateResult||undefined});
+    if (completenessScore!==null && completenessScore<90 && auditFailed.length>0){
+      addMsg({role:"ai",type:"text",content:`⚠️ A few features may need polish: ${auditFailed.slice(0,4).join(", ")}${auditFailed.length>4?", …":""}. Describe what's not working and I'll fix it.`});
+    }
 
     const pidToUse=savedPid||projectId;
     (async()=>{
@@ -525,12 +612,18 @@ function CreatePageInner() {
       if(newHtml&&newHtml.length>500){
         await saveVersion(result,`Before: ${editPrompt.slice(0,40)}`);
         setResult(newHtml);
+        let editedGameMem: GameProjectMemory|undefined;
+        let editedProjMem: ProjectMemory|undefined;
         if(isGameProject&&gameMemory){
           const det={isGame:true,gameType:gameMemory.gameType,theme:gameMemory.theme,genre:gameMemory.genre,techStack:gameMemory.techStack};
-          setGameMemory(buildGameMemory(newHtml,editPrompt,det,gameMemory));
+          editedGameMem = buildGameMemory(newHtml,editPrompt,det,gameMemory);
+          setGameMemory(editedGameMem);
         } else {
-          setProjectMemory(prev=>buildProjectMemory(newHtml,projectName,prev?.originalPrompt||editPrompt,messages,prev));
+          editedProjMem = buildProjectMemory(newHtml,projectName,projectMemory?.originalPrompt||editPrompt,messages,projectMemory);
+          setProjectMemory(editedProjMem);
         }
+        // Priority 1 — persist updated memory so edit context survives reopen
+        persistMemory(projectId, editedProjMem||null, editedGameMem||null);
         setCredits(cv=>({...cv,used:cv.used+1}));
         (async()=>{try{await saveProject(newHtml,projectName);}catch{}})();
         updateMsg(thinkId,{isActive:false,phases:[
@@ -538,7 +631,29 @@ function CreatePageInner() {
           {agent:"Building",icon:"○",action:"Applied",pct:100,done:true,status:"done"},
           {agent:"Validating",icon:"○",action:"Done",pct:100,done:true,status:"done"},
         ]});
-        addMsg({role:"ai",type:"summary",content:`Changes applied.`,credits:1});
+
+        // A3 — Post-edit Production Gate re-check (client-side, pure-function)
+        let editGate:any=undefined; let qualityDelta="";
+        try{
+          const gateKind = isGameProject ? "game" : "website";
+          const gateSubtype = isGameProject ? (gameMemory?.gameType||"arcade") : (projectMemory?.blueprint?.projectType||"website");
+          const g = runProductionGate(newHtml, gateKind, gateSubtype);
+          editGate = { dimensions:g.dimensions, buildPass:g.buildPass, validationPass:g.validationPass, runtimePass:g.runtimePass, mobilePass:g.mobilePass, overallPass:g.overallPass, repairAttempts:0 };
+          if(completenessScore!==null){
+            const before = completenessScore;
+            if(g.score < before - 5) qualityDelta = ` • Quality: ${before}→${g.score} ⚠️ (dropped — review the change)`;
+            else if(g.score > before) qualityDelta = ` • Quality: ${before}→${g.score} ✅`;
+            else qualityDelta = ` • Quality: ${g.score}/100${g.score>=90?" ✅":""}`;
+          } else {
+            qualityDelta = ` • Quality: ${g.score}/100${g.score>=90?" ✅":""}`;
+          }
+          setCompletenessScore(g.score);
+          if(!g.overallPass && g.failedFeatures.length>0 && (completenessScore===null || g.score < completenessScore)){
+            addMsg({role:"ai",type:"text",content:`⚠️ After this edit, some items still need attention: ${g.failedFeatures.slice(0,3).map((f:any)=>f.label).join(", ")}${g.failedFeatures.length>3?", …":""}.`});
+          }
+        }catch{}
+
+        addMsg({role:"ai",type:"summary",content:`Changes applied.${qualityDelta}`,credits:1,gate:editGate});
         if(isMobile)setMobilePanel("preview");
       } else {
         updateMsg(thinkId,{type:"error",content:isGameProject?"Be specific: 'Add pause button top-right' or 'Change snake color to neon blue'":"Be specific: 'Change header to dark blue' or 'Add contact form'",isActive:false});
@@ -674,6 +789,29 @@ function CreatePageInner() {
                           <div style={{color:C.green,fontWeight:700,fontSize:13,marginBottom:7}}>✓ Project Complete</div>
                           <div style={{color:C.sub,fontSize:13,lineHeight:1.65,marginBottom:9}}>{msg.content}</div>
                           {msg.files&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>{msg.files.map(f=><span key={f} style={{fontSize:11,padding:"2px 9px",background:"rgba(0,208,132,0.07)",border:"1px solid rgba(0,208,132,0.15)",borderRadius:20,color:C.green}}>{f}</span>)}</div>}
+                          {msg.gate&&(
+                            <div style={{marginBottom:8}}>
+                              <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:6}}>
+                                {([["Build",msg.gate.buildPass],["Validation",msg.gate.validationPass],["Runtime",msg.gate.runtimePass],["Mobile",msg.gate.mobilePass]] as [string,boolean][]).map(([label,pass])=>(
+                                  <span key={label} style={{fontSize:10,padding:"2px 8px",borderRadius:10,fontWeight:600,background:pass?"rgba(0,208,132,0.10)":"rgba(255,69,69,0.10)",border:`1px solid ${pass?"rgba(0,208,132,0.25)":"rgba(255,69,69,0.25)"}`,color:pass?C.green:C.red}}>
+                                    {pass?"✓":"✗"} {label}
+                                  </span>
+                                ))}
+                                {msg.gate.repairAttempts>0&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(139,92,246,0.10)",border:"1px solid rgba(139,92,246,0.25)",color:"#a78bfa"}}>↻ {msg.gate.repairAttempts} repair{msg.gate.repairAttempts>1?"es":""}</span>}
+                              </div>
+                              <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:4}}>
+                                {msg.gate.dimensions.map(d=>(
+                                  <div key={d.dimension} style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:C.muted}}>
+                                    <span style={{width:62,flexShrink:0}}>{d.dimension}</span>
+                                    <div style={{flex:1,height:4,background:"rgba(255,255,255,0.06)",borderRadius:2,overflow:"hidden"}}>
+                                      <div style={{width:`${d.score}%`,height:"100%",background:d.score>=90?C.green:d.score>=70?"#f5a623":C.red,borderRadius:2}}/>
+                                    </div>
+                                    <span style={{width:28,textAlign:"right",flexShrink:0}}>{d.score}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           {msg.credits&&<div style={{fontSize:11,color:C.muted}}>⚡ {msg.credits} credit used</div>}
                         </div>
                       ) : msg.type==="error" ? (
