@@ -5,6 +5,17 @@
 
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  runProductionGate,
+  buildRepairInstructions,
+  getWebsiteTemplate,
+  hasWebsiteTemplate,
+  buildWebsiteChecklistPrompt,
+  generateWebsiteBlueprint,
+  buildBlueprintPrompt,
+  type ProductionGateResult,
+  type ProjectBlueprint,
+} from "@/lib/completion-engine";
 
 export const runtime     = "edge";
 export const maxDuration = 120;
@@ -80,6 +91,7 @@ async function kryptonGenerate(system: string, prompt: string): Promise<{text:st
 function detectProjectType(prompt: string): string {
   const p = prompt.toLowerCase();
   if (/\bgame\b|\bsnake\b|\btetris\b|\bpuzzle\b|\barcade\b|\bplatform\b|\bshooter\b/.test(p)) return "game";
+  if (/\bsaas\b|\bsubscription\b|\bsoftware as a service\b|\bb2b\b.*\bplatform\b|\bpricing tiers?\b/.test(p)) return "saas";
   if (/\bshop\b|\bstore\b|\becommerce\b|\bcart\b|\bproduct\b|\bmarketplace\b/.test(p)) return "ecommerce";
   if (/\bdashboard\b|\badmin\b|\banalytics\b|\bcrm\b|\bpanel\b/.test(p)) return "dashboard";
   if (/\bapp\b|\btool\b|\btracker\b|\bcalculator\b|\bmanager\b/.test(p)) return "app";
@@ -194,6 +206,18 @@ BUILD A PREMIUM LANDING PAGE:
 - Final CTA: strong call to action
 - Footer: minimal`,
 
+    saas: `
+BUILD A COMPLETE SAAS PRODUCT WEBSITE:
+- Navbar: logo, links (Features/Pricing/FAQ), Log in + Sign up (CTA) buttons
+- Hero: product headline + description + primary CTA + product/dashboard preview mock
+- Features section: 4-6 feature cards with icons
+- Product preview section: screenshot/mock of the actual product UI
+- Testimonials: 3+ customer quotes with avatar/name/role
+- Pricing: 3 tiers (e.g. Starter/Pro/Enterprise) with monthly price + feature list + CTA
+- FAQ: accordion, 5+ questions
+- Trust/integrations row: logos of integrations or "trusted by" companies
+- Footer: product links, company links, legal links`,
+
     portfolio: `
 BUILD A PREMIUM PORTFOLIO WEBSITE:
 - Hero: name, title, tagline, avatar placeholder, CTA buttons
@@ -205,7 +229,30 @@ BUILD A PREMIUM PORTFOLIO WEBSITE:
 - Smooth scroll, animations throughout`,
   };
 
-  return BASE + (SPECIFIC[type] || SPECIFIC.website);
+  return BASE + (SPECIFIC[type] || SPECIFIC.website) + buildWebsiteExtras(type);
+}
+
+// ── Product Completion Engine: Intent + Template injection ────────
+// Adds the auto-expanded feature checklist (Intent Engine) and, for
+// covered categories, a structural skeleton (Template Engine) the AI
+// should extend. "game" is excluded — games are routed to /api/game
+// which has its own (more detailed) game-specific engine.
+function buildWebsiteExtras(type: string): string {
+  if (type === "game") return "";
+
+  const checklist = buildWebsiteChecklistPrompt(type);
+
+  let templateBlock = "";
+  if (hasWebsiteTemplate(type)) {
+    templateBlock = `
+
+BASE STRUCTURE TO EXTEND (do not remove existing sections/IDs — fill in
+the content/logic inside them and add more sections as needed):
+
+${getWebsiteTemplate(type)}`;
+  }
+
+  return `\n\n${checklist}${templateBlock}`;
 }
 
 // ── Clean HTML from AI response ──────────────────────────────────
@@ -217,14 +264,8 @@ function cleanHTML(raw: string): string {
 }
 
 // ── Validate HTML ────────────────────────────────────────────────
-function validateHTML(html: string): { valid: boolean; issues: string[] } {
-  const issues: string[] = [];
-  if (!html.toLowerCase().includes("<!doctype")) issues.push("Missing DOCTYPE");
-  if (!html.includes("</html>"))                 issues.push("Unclosed html tag");
-  if (html.length < 1000)                        issues.push("Content too short");
-  if (!html.includes("<body"))                   issues.push("Missing body");
-  return { valid: issues.length === 0, issues };
-}
+// validateHTML removed — superseded by runProductionGate() from
+// lib/completion-engine (Production Gate: build/validation/runtime/mobile)
 
 // ── Main SSE Handler ──────────────────────────────────────────────
 export async function POST(req: NextRequest) {
@@ -256,6 +297,7 @@ const activeGenerations = new Set<string>();
 
   const stream = new ReadableStream({
     async start(controller) {
+      const startTime = Date.now(); // Product Completion Engine: repair budget
       const send = (event: string, data: object) => {
         if (closed) return;
         try {
@@ -335,27 +377,81 @@ Format: numbered list only. No preamble.`;
 
         // ── PHASE 4: Builder ──────────────────────────────────────
         send("phase", { agent:"Building", icon:"⚙️", action:"Writing production code...", pct:50 });
-        const systemPrompt = buildPrompt(prompt, projectType, executionPlan);
+
+        // Product Generation Engine: Phase 2 — Blueprint Generator.
+        // Build the structured project blueprint BEFORE generation —
+        // the AI extends this rather than starting from a blank prompt.
+        const blueprint: ProjectBlueprint | null = projectType !== "game"
+          ? generateWebsiteBlueprint(projectType, prompt)
+          : null;
+
+        const systemPrompt = buildPrompt(prompt, projectType, executionPlan)
+          + (blueprint ? `\n\n${buildBlueprintPrompt(blueprint)}` : "");
         // Fix 5: Abort if client disconnected
         if ((req as any).signal?.aborted) {
           finish(); return;
         }
-        const { text: rawHTML, provider } = await kryptonGenerate(systemPrompt, prompt);
-        const html = cleanHTML(rawHTML);
+        const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
+        let provider = genProvider;
+        let html = cleanHTML(rawHTML);
         send("phase", { agent:"Building", icon:"⚙️", action:`Code generated via ${provider}`, pct:72, done:true });
 
-        // ── PHASE 5: QA ───────────────────────────────────────────
-        send("phase", { agent:"Validating", icon:"🧪", action:"Validating output...", pct:78 });
-        const { valid, issues } = validateHTML(html);
-        if (!valid && html.length > 500) {
-          // Minor issues but has content — proceed
-          send("phase", { agent:"Validating", icon:"🧪", action:"Validation passed with fixes", pct:84, done:true });
-        } else if (!valid) {
-          send("phase", { agent:"Validating", icon:"🧪", action:"Running auto-fix...", pct:80 });
-          // If truly broken, it's still better to return what we have
-        } else {
-          send("phase", { agent:"Validating", icon:"🧪", action:"All checks passed", pct:84, done:true });
+        // ── PHASE 5: QA — Product Completion Engine: Production Gate ────
+        send("phase", { agent:"Validating", icon:"🧪", action:"Running production gate audit...", pct:78 });
+
+        const gateKind  = projectType === "game" ? "game" : "website";
+        const gateSubtype = projectType === "game" ? "arcade" : projectType;
+        let gate: ProductionGateResult = runProductionGate(html, gateKind, gateSubtype);
+        let repairAttempts = 0;
+        const MAX_REPAIR_ATTEMPTS = 1; // websites get 1 repair pass (vs 2 for dedicated game route)
+
+        while (!gate.overallPass && repairAttempts < MAX_REPAIR_ATTEMPTS) {
+          const elapsed = Date.now() - startTime;
+          const remainingMs = 115000 - elapsed; // edge maxDuration=120s, leave 5s buffer
+          if (remainingMs < 20000) break;
+
+          const reasons: string[] = [];
+          if (!gate.buildPass)      reasons.push("build issues");
+          if (!gate.runtimePass)    reasons.push("syntax errors");
+          if (!gate.mobilePass)     reasons.push("mobile gaps");
+          if (!gate.validationPass) reasons.push(`score ${gate.score}/100`);
+          else if (gate.score < 95) reasons.push(`score ${gate.score}/95`);
+
+          send("phase", { agent:"Validating", icon:"🧪", action:`Repair pass: fixing ${reasons.join(", ")}...`, pct:80 });
+
+          const instructions = buildRepairInstructions(gate);
+          const fixPrompt = `The page below has the following issues that MUST be fixed:
+
+${instructions}
+
+Fix ALL of the above WITHOUT removing or breaking any feature that
+already works. If there are SYNTAX ERRORS, fixing those is the highest
+priority. Return the COMPLETE updated HTML file (starting with
+<!DOCTYPE html> and ending with </html>).
+
+EXISTING CODE:
+${html}`;
+
+          repairAttempts++;
+          try {
+            const { text: repairedRaw, provider: repairProvider } = await kryptonGenerate(systemPrompt, fixPrompt);
+            const repairedHtml = cleanHTML(repairedRaw);
+            if (repairedHtml.length > 500 && repairedHtml.includes("</html>")) {
+              const repairedGate = runProductionGate(repairedHtml, gateKind, gateSubtype);
+              if (repairedGate.score > gate.score) {
+                html = repairedHtml;
+                gate = repairedGate;
+                provider = `${provider} → ${repairProvider} (repair)`;
+              }
+            }
+          } catch { /* keep current result */ }
         }
+
+        send("phase", {
+          agent:"Validating", icon:"🧪",
+          action: `Production Gate: ${gate.score}/100${gate.overallPass ? " ✅ all gates passed" : repairAttempts > 0 ? ` (after ${repairAttempts} repair pass)` : ""}`,
+          pct:84, done:true,
+        });
 
         // ── PHASE 6: Optimizer ────────────────────────────────────
         send("phase", { agent:"Optimizing", icon:"⚡", action:"Optimizing performance...", pct:88 });
@@ -422,6 +518,18 @@ Format: numbered list only. No preamble.`;
           creditCost,
           linesOfCode: html.split("\n").length,
           executionPlan,
+          blueprint,
+          // Product Completion Engine — Production Gate
+          completenessScore:     gate.score,
+          dimensions:            gate.dimensions,
+          buildPass:             gate.buildPass,
+          validationPass:        gate.validationPass,
+          runtimePass:           gate.runtimePass,
+          mobilePass:            gate.mobilePass,
+          overallPass:           gate.overallPass,
+          auditFailed:           gate.failedFeatures.map(f => f.label),
+          belowQualityThreshold: gate.score < 90,
+          repairAttempts,
         });
 
       } catch (err: any) {
@@ -443,4 +551,3 @@ Format: numbered list only. No preamble.`;
     },
   });
 }
-  
