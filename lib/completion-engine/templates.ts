@@ -187,7 +187,10 @@ function updateHUD(){
 
 /* ====================================================================
    GAME-SPECIFIC LOGIC GOES HERE — see category requirements below.
-   Implement update() and render() and call them from the loop.
+   Define your OWN function update(){...} and function render(){...}
+   here — they will OVERRIDE the stub versions defined just above
+   (last declaration wins in JS). Do not skip defining them — if you
+   don't, the stubs above (which do nothing) remain active.
 
    RECOMMENDED: define an initGame() function that (re)initializes all
    game-specific state (player position/velocity, enemies array, coins,
@@ -195,8 +198,6 @@ function updateHUD(){
    loop starts. restart() automatically calls initGame() if it exists,
    so this is what makes the Restart button fully reset the game.
 ==================================================================== */
-__GAME_SPECIFIC_JS__
-
 function update(){
   if (state!=='playing') return;
   // TODO: game-specific update logic
@@ -205,6 +206,9 @@ function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   // TODO: game-specific rendering
 }
+
+__GAME_SPECIFIC_JS__
+
 function loop(){ update(); render(); requestAnimationFrame(loop); }
 if (typeof initGame === 'function') { try { initGame(); } catch(e){} }
 updateHUD();
