@@ -48,22 +48,33 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
   const router = useRouter();
   const supabase = createClient();
   const [detail, setDetail] = useState<SessionDetail | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [rollbackReason, setRollbackReason] = useState("");
   const [showRollbackInput, setShowRollbackInput] = useState(false);
 
   const load = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { router.push("/auth/login"); return; }
-    const res = await fetch(`/api/admin/ai-engineer/sessions/${params.id}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    if (res.ok) setDetail(await res.json());
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.push("/auth/login"); return; }
+      const res = await fetch(`/api/admin/ai-engineer/sessions/${params.id}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setDetail(json);
+        setLoadError(null);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setLoadError(`API error ${res.status}: ${err.error ?? "Unknown error"}`);
+      }
+    } catch (e: any) {
+      setLoadError(`Failed to load: ${e.message}`);
+    }
   }, [params.id]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Poll while in-flight statuses
   useEffect(() => {
     if (!detail) return;
     const live = new Set(["analyzing", "backing_up", "applying", "deploying", "verifying", "rolling_back"]);
@@ -105,7 +116,7 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
   }
 
   async function rollback() {
-    if (!rollbackReason.trim()) { alert("A rollback reason is required."); return; }
+    if (!rollbackReason.trim()) { alert("Rollback reason required."); return; }
     setBusy(true);
     const res = await fetch("/api/admin/ai-engineer/rollback", {
       method: "POST", headers: await authHeader(), body: JSON.stringify({ session_id: params.id, reason: rollbackReason.trim() }),
@@ -118,12 +129,38 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
     setBusy(false);
   }
 
+  // ── Loading / Error states ─────────────────────────────────────────
+  if (loadError) {
+    return (
+      <div style={{ padding: 32, color: T.text }}>
+        <button onClick={() => router.push("/admin/ai-engineer")} style={{ background: "transparent", border: "none", color: T.muted, cursor: "pointer", marginBottom: 16, fontSize: 13 }}>
+          ← Back
+        </button>
+        <div style={{ border: `1px solid ${T.red}`, color: T.red, borderRadius: 10, padding: 16, marginBottom: 16 }}>
+          ⚠ {loadError}
+        </div>
+        <button onClick={load} style={{ background: G, color: "#000", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, cursor: "pointer" }}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   if (!detail) {
-    return <div style={{ padding: 32, color: T.muted }}>Loading...</div>;
+    return (
+      <div style={{ padding: 32, color: T.muted, display: "flex", flexDirection: "column", gap: 12 }}>
+        <button onClick={() => router.push("/admin/ai-engineer")} style={{ background: "transparent", border: "none", color: T.muted, cursor: "pointer", fontSize: 13, textAlign: "left" }}>
+          ← Back
+        </button>
+        <div>Loading session...</div>
+        <button onClick={load} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 12, width: "fit-content" }}>
+          Force reload
+        </button>
+      </div>
+    );
   }
 
   const { session, analysis, patches, audit_log, deployments } = detail;
-  const proposedPatches = patches.filter((p) => p.status === "proposed");
   const approvedPatches = patches.filter((p) => p.status === "approved");
   const appliedPatches = patches.filter((p) => p.status === "applied");
   const latestDeployment = deployments[0];
@@ -141,7 +178,9 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
           {session.status.replace(/_/g, " ")}
         </span>
       </div>
-      <div style={{ color: T.muted, fontSize: 12, marginBottom: 24 }}>{new Date(session.created_at).toLocaleString()}</div>
+      <div style={{ color: T.muted, fontSize: 12, marginBottom: 24 }}>
+        {session.created_at ? new Date(session.created_at).toLocaleString() : "—"}
+      </div>
 
       {session.error_message && (
         <div style={{ border: `1px solid ${T.red}`, color: T.red, borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13 }}>
@@ -149,7 +188,6 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
         </div>
       )}
 
-      {/* ── Historical Context ── */}
       {analysis?.historical_context && (
         <details style={{ border: `1px solid ${T.border}`, borderRadius: 10, padding: 14, marginBottom: 20 }}>
           <summary style={{ cursor: "pointer", color: T.gold, fontWeight: 700, fontSize: 14 }}>Historical Context</summary>
@@ -157,7 +195,6 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
         </details>
       )}
 
-      {/* ── Root cause / report ── */}
       {analysis?.full_report && (
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
           <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 10px", color: T.gold }}>Analysis Report</h2>
@@ -176,12 +213,9 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
         </div>
       )}
 
-      {/* ── Proposed patches ── */}
       {patches.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 10px" }}>
-            Proposed Patches ({patches.length})
-          </h2>
+          <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 10px" }}>Proposed Patches ({patches.length})</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {patches.map((p) => (
               <div key={p.id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16 }}>
@@ -208,19 +242,17 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
             ))}
           </div>
 
-          {/* ── Apply ── */}
           {allDecided && approvedPatches.length > 0 && session.status === "approved" && (
             <button disabled={busy} onClick={applyChanges} style={{ marginTop: 14, background: G, color: "#000", border: "none", borderRadius: 10, padding: "10px 22px", fontWeight: 800, cursor: "pointer", fontSize: 14 }}>
               Deploy Changes ({approvedPatches.length} file{approvedPatches.length === 1 ? "" : "s"})
             </button>
           )}
           {allDecided && approvedPatches.length === 0 && session.status === "rejected" && (
-            <div style={{ marginTop: 14, color: T.muted, fontSize: 13 }}>All patches rejected — no changes will be deployed.</div>
+            <div style={{ marginTop: 14, color: T.muted, fontSize: 13 }}>All patches rejected — no changes deployed.</div>
           )}
         </div>
       )}
 
-      {/* ── Deployment status / verify ── */}
       {latestDeployment && (
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, marginBottom: 20 }}>
           <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 10px" }}>Deployment</h2>
@@ -239,7 +271,6 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
         </div>
       )}
 
-      {/* ── Rollback ── */}
       {(appliedPatches.length > 0 || session.status === "completed" || session.status === "failed") && session.status !== "rolled_back" && (
         <div style={{ background: T.card, border: `1px solid ${T.red}`, borderRadius: 12, padding: 16, marginBottom: 20 }}>
           <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 10px", color: T.red }}>Rollback</h2>
@@ -249,13 +280,9 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
             </button>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <textarea
-                value={rollbackReason}
-                onChange={(e) => setRollbackReason(e.target.value)}
-                placeholder="Reason for rollback (required) — e.g. 'Regression: build error in production', 'Fix did not resolve the issue'"
-                rows={2}
-                style={{ background: "#0a0a0a", border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, color: T.text, fontSize: 13, fontFamily: "inherit" }}
-              />
+              <textarea value={rollbackReason} onChange={(e) => setRollbackReason(e.target.value)}
+                placeholder="Reason for rollback (required)" rows={2}
+                style={{ background: "#0a0a0a", border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, color: T.text, fontSize: 13, fontFamily: "inherit" }} />
               <div style={{ display: "flex", gap: 10 }}>
                 <button disabled={busy} onClick={rollback} style={{ background: T.red, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
                   Confirm Rollback
@@ -269,13 +296,10 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
         </div>
       )}
 
-      {/* ── Audit log ── */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16 }}>
         <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 12px" }}>Audit Log</h2>
         <AuditLog entries={audit_log} />
       </div>
     </div>
   );
-  }
-
-            
+                                                                   }
