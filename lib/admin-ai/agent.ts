@@ -1,9 +1,10 @@
 // lib/admin-ai/agent.ts
-// Agent Orchestrator — runs the Claude tool-use loop for a session.
-// Tools have READ access to the repo/logs/schema/memory, and a
-// write-only `propose_patch` that only ever writes to the DATABASE
-// (never to GitHub). GitHub writes happen exclusively in /apply,
-// after admin approval — see ADMIN_AI_ENGINEER_ARCHITECTURE.md §2.
+// Agent Orchestrator — 3-layer provider fallback:
+//   1. Anthropic Claude (primary)
+//   2. OpenAI GPT-4o-mini (fallback)
+//   3. Gemini 1.5 Flash (last resort)
+// Billing/quota/429/400 errors trigger automatic fallback.
+// Session continues — never marked failed due to provider errors alone.
 
 import { supabaseAdmin } from "./supabase-admin";
 import { RepoSession } from "./code-search";
@@ -22,13 +23,34 @@ import {
 } from "./memory";
 import { AGENT_TOOLS, type ToolCallLogEntry } from "./types";
 
-const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-6";
+// ── Constants ────────────────────────────────────────────────────────
 const MAX_ITERATIONS = 15;
 const MAX_TOKENS = 8000;
 
 export type SendFn = (event: string, data: Record<string, unknown>) => void;
 
+// ── Provider types ───────────────────────────────────────────────────
+type Provider = "anthropic" | "openai" | "gemini";
+
+interface ProviderResult {
+  provider: Provider;
+  response: any;
+}
+
+// Errors that should trigger fallback (billing, quota, auth, rate-limit)
+const FALLBACK_STATUS_CODES = new Set([400, 401, 402, 403, 429]);
+const FALLBACK_KEYWORDS = [
+  "credit", "billing", "quota", "limit", "payment", "balance",
+  "insufficient", "exceeded", "rate", "overloaded", "capacity",
+];
+
+function isFallbackError(status: number, body: string): boolean {
+  if (FALLBACK_STATUS_CODES.has(status)) return true;
+  const lower = body.toLowerCase();
+  return FALLBACK_KEYWORDS.some((k) => lower.includes(k));
+}
+
+// ── System prompt ────────────────────────────────────────────────────
 const SYSTEM_PROMPT_BASE = `You are the Krypton AI Engineer — an AI CTO / senior software engineer for the
 Krypton AI codebase (Next.js 14 + TypeScript + Supabase + Vercel Edge functions,
 a website/app/game builder product).
@@ -42,20 +64,296 @@ available tools, and either:
 
 Rules:
 - ALWAYS check recall_memory / match_issue_pattern / get_file_intelligence
-  EARLY — do not re-discover what is already known. The Historical Context
-  below was already retrieved for you; use recall_memory/match_issue_pattern
-  again only for FOLLOW-UP lookups on new files/topics you discover.
+  EARLY — do not re-discover what is already known.
 - If match_issue_pattern returns a match >=70% similarity, your FIRST action
-  must be to read_file the affected_files from that match and verify whether
-  the previously-applied fix is STILL PRESENT in the current code, before
-  doing anything else.
-- propose_patch does NOT modify any file — it only records a proposal for
-  admin approval. Always provide the FULL new file content for create/modify.
-- Be surgical: prefer the smallest correct change. Re-use existing patterns
-  in the codebase (this project has very specific conventions — read
-  neighboring code before writing new code).
+  must be to read_file the affected_files and verify the fix is still present.
+- propose_patch does NOT modify any file — only records a proposal for admin approval.
+  Always provide FULL new file content for create/modify.
+- Be surgical: smallest correct change. Re-use existing codebase patterns.
 - ALWAYS end by calling finish_analysis exactly once.`;
 
+// ── OpenAI tool format converter ─────────────────────────────────────
+// OpenAI uses a slightly different tool format than Anthropic.
+function toOpenAITools(tools: typeof AGENT_TOOLS): any[] {
+  return ([...tools] as any[]).map((t) => ({
+    type: "function",
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.input_schema,
+    },
+  }));
+}
+
+// OpenAI response → Anthropic-compatible format
+function normalizeOpenAIResponse(res: any): any {
+  const choice = res.choices?.[0];
+  const msg = choice?.message;
+  const content: any[] = [];
+
+  if (msg?.content) content.push({ type: "text", text: msg.content });
+
+  if (msg?.tool_calls) {
+    for (const tc of msg.tool_calls) {
+      let input: any = {};
+      try { input = JSON.parse(tc.function.arguments); } catch {}
+      content.push({ type: "tool_use", id: tc.id, name: tc.function.name, input });
+    }
+  }
+
+  return {
+    content,
+    stop_reason: choice?.finish_reason === "tool_calls" ? "tool_use" : "end_turn",
+    _openai_raw: msg,
+  };
+}
+
+// OpenAI messages format (tool_results need different structure)
+function toOpenAIMessages(messages: any[]): any[] {
+  return messages.map((m) => {
+    if (m.role === "user" && Array.isArray(m.content)) {
+      // tool_result array → individual tool messages
+      const toolResults = m.content.filter((c: any) => c.type === "tool_result");
+      if (toolResults.length > 0) {
+        return toolResults.map((tr: any) => ({
+          role: "tool",
+          tool_call_id: tr.tool_use_id,
+          content: typeof tr.content === "string" ? tr.content : JSON.stringify(tr.content),
+        }));
+      }
+    }
+    if (m.role === "assistant" && Array.isArray(m.content)) {
+      const text = m.content.filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n");
+      const tool_calls = m.content
+        .filter((c: any) => c.type === "tool_use")
+        .map((c: any) => ({
+          id: c.id,
+          type: "function",
+          function: { name: c.name, arguments: JSON.stringify(c.input) },
+        }));
+      return { role: "assistant", content: text || null, tool_calls: tool_calls.length ? tool_calls : undefined };
+    }
+    return m;
+  }).flat();
+}
+
+// Gemini tool format
+function toGeminiTools(tools: typeof AGENT_TOOLS): any[] {
+  return [{
+    function_declarations: ([...tools] as any[]).map((t) => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.input_schema,
+    })),
+  }];
+}
+
+// Gemini response → Anthropic-compatible format
+function normalizeGeminiResponse(res: any): any {
+  const candidate = res.candidates?.[0];
+  const parts = candidate?.content?.parts ?? [];
+  const content: any[] = [];
+
+  for (const part of parts) {
+    if (part.text) content.push({ type: "text", text: part.text });
+    if (part.functionCall) {
+      content.push({
+        type: "tool_use",
+        id: `gemini_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        name: part.functionCall.name,
+        input: part.functionCall.args ?? {},
+      });
+    }
+  }
+
+  const finishReason = candidate?.finishReason;
+  return {
+    content,
+    stop_reason: finishReason === "STOP" ? "end_turn" : "tool_use",
+  };
+}
+
+// Gemini messages format
+function toGeminiMessages(systemPrompt: string, messages: any[]): { system: string; contents: any[] } {
+  const contents: any[] = [];
+  for (const m of messages) {
+    if (m.role === "user" && Array.isArray(m.content)) {
+      const toolResults = m.content.filter((c: any) => c.type === "tool_result");
+      if (toolResults.length > 0) {
+        contents.push({
+          role: "user",
+          parts: toolResults.map((tr: any) => ({
+            functionResponse: {
+              name: tr.tool_use_id,
+              response: { result: typeof tr.content === "string" ? tr.content : JSON.stringify(tr.content) },
+            },
+          })),
+        });
+        continue;
+      }
+      const text = Array.isArray(m.content)
+        ? m.content.filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n")
+        : m.content;
+      contents.push({ role: "user", parts: [{ text }] });
+    } else if (m.role === "assistant" && Array.isArray(m.content)) {
+      const parts: any[] = [];
+      for (const c of m.content) {
+        if (c.type === "text" && c.text) parts.push({ text: c.text });
+        if (c.type === "tool_use") parts.push({ functionCall: { name: c.name, args: c.input } });
+      }
+      if (parts.length) contents.push({ role: "model", parts });
+    } else {
+      const text = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+      contents.push({ role: m.role === "assistant" ? "model" : "user", parts: [{ text }] });
+    }
+  }
+  return { system: systemPrompt, contents };
+}
+
+// ── Provider callers ──────────────────────────────────────────────────
+
+async function callAnthropic(systemPrompt: string, messages: any[]): Promise<any> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY!,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: MAX_TOKENS,
+      system: systemPrompt,
+      messages,
+      tools: AGENT_TOOLS,
+    }),
+    signal: AbortSignal.timeout(90000),
+  });
+  const body = await res.text();
+  if (!res.ok) {
+    const err = new Error(`Anthropic: ${res.status} ${body}`);
+    (err as any).status = res.status;
+    (err as any).body = body;
+    (err as any).isFallback = isFallbackError(res.status, body);
+    throw err;
+  }
+  return JSON.parse(body);
+}
+
+async function callOpenAI(systemPrompt: string, messages: any[]): Promise<any> {
+  const oaiMessages = [{ role: "system", content: systemPrompt }, ...toOpenAIMessages(messages)];
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      max_tokens: MAX_TOKENS,
+      messages: oaiMessages,
+      tools: toOpenAITools(AGENT_TOOLS),
+      tool_choice: "auto",
+    }),
+    signal: AbortSignal.timeout(90000),
+  });
+  const body = await res.text();
+  if (!res.ok) {
+    const err = new Error(`OpenAI: ${res.status} ${body}`);
+    (err as any).status = res.status;
+    (err as any).body = body;
+    (err as any).isFallback = isFallbackError(res.status, body);
+    throw err;
+  }
+  return normalizeOpenAIResponse(JSON.parse(body));
+}
+
+async function callGemini(systemPrompt: string, messages: any[]): Promise<any> {
+  const { contents } = toGeminiMessages(systemPrompt, messages);
+  const model = "gemini-1.5-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents,
+      tools: toGeminiTools(AGENT_TOOLS),
+      generationConfig: { maxOutputTokens: MAX_TOKENS },
+    }),
+    signal: AbortSignal.timeout(90000),
+  });
+  const body = await res.text();
+  if (!res.ok) {
+    const err = new Error(`Gemini: ${res.status} ${body}`);
+    (err as any).status = res.status;
+    (err as any).body = body;
+    (err as any).isFallback = isFallbackError(res.status, body);
+    throw err;
+  }
+  return normalizeGeminiResponse(JSON.parse(body));
+}
+
+// ── 3-layer fallback caller ───────────────────────────────────────────
+async function callWithFallback(
+  systemPrompt: string,
+  messages: any[],
+  send: SendFn,
+  sessionId: string,
+  currentProvider: { value: Provider }
+): Promise<ProviderResult> {
+  const providers: Provider[] = ["anthropic", "openai", "gemini"];
+  const startIndex = providers.indexOf(currentProvider.value);
+
+  for (let i = startIndex; i < providers.length; i++) {
+    const provider = providers[i];
+    currentProvider.value = provider;
+
+    send("provider", { action: "started", provider });
+    await auditLog(sessionId, "system", "provider_started", { provider });
+
+    try {
+      let response: any;
+      if (provider === "anthropic") response = await callAnthropic(systemPrompt, messages);
+      else if (provider === "openai") response = await callOpenAI(systemPrompt, messages);
+      else response = await callGemini(systemPrompt, messages);
+
+      send("provider", { action: "selected", provider });
+      await auditLog(sessionId, "system", "provider_selected", { provider });
+      return { provider, response };
+
+    } catch (err: any) {
+      const shouldFallback = err.isFallback ?? false;
+      send("provider", {
+        action: "failed",
+        provider,
+        reason: err.message?.slice(0, 200),
+        will_fallback: shouldFallback && i < providers.length - 1,
+      });
+      await auditLog(sessionId, "system", "provider_failed", {
+        provider,
+        error: err.message?.slice(0, 500),
+        status: err.status,
+        will_fallback: shouldFallback,
+      });
+
+      // Only fallback on billing/quota/rate errors, not on logic errors
+      if (shouldFallback && i < providers.length - 1) {
+        const nextProvider = providers[i + 1];
+        send("provider", { action: "fallback_triggered", from: provider, to: nextProvider });
+        await auditLog(sessionId, "system", "fallback_triggered", { from: provider, to: nextProvider });
+        continue;
+      }
+
+      // Non-fallback error (network timeout, bad request logic, etc.) — throw
+      throw err;
+    }
+  }
+
+  throw new Error("All providers exhausted — billing/quota issues on all three providers.");
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
 function logToolCall(log: ToolCallLogEntry[], tool: string, input: Record<string, unknown>, outputSummary: string) {
   log.push({ tool, input, output_summary: outputSummary, ts: new Date().toISOString() });
 }
@@ -70,29 +368,6 @@ async function auditLog(sessionId: string, actor: "ai" | "admin" | "system", act
   });
 }
 
-async function callClaude(systemPrompt: string, messages: any[]): Promise<any> {
-  const res = await fetch(ANTHROPIC_API, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY!,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: systemPrompt,
-      messages,
-      tools: AGENT_TOOLS,
-    }),
-    signal: AbortSignal.timeout(90000),
-  });
-  if (!res.ok) {
-    throw new Error(`Anthropic API error: ${res.status} ${await res.text()}`);
-  }
-  return res.json();
-}
-
 interface AgentContext {
   sessionId: string;
   repo: RepoSession;
@@ -101,6 +376,7 @@ interface AgentContext {
   send: SendFn;
 }
 
+// ── Tool dispatcher ──────────────────────────────────────────────────
 async function dispatchTool(name: string, input: any, ctx: AgentContext): Promise<unknown> {
   switch (name) {
     case "list_files": {
@@ -189,6 +465,7 @@ async function dispatchTool(name: string, input: any, ctx: AgentContext): Promis
   }
 }
 
+// ── Main entry point ─────────────────────────────────────────────────
 export async function runAgentSession(sessionId: string, prompt: string, send: SendFn): Promise<void> {
   const repo = new RepoSession();
   const toolCallLog: ToolCallLogEntry[] = [];
@@ -198,8 +475,6 @@ export async function runAgentSession(sessionId: string, prompt: string, send: S
   send("historical_context", { markdown: historicalContext });
   await auditLog(sessionId, "system", "historical_context_built", { patternMatches: patternMatches.length });
 
-  // Pre-create the analysis row so historical_context is visible even if
-  // the session later fails mid-investigation.
   await supabaseAdmin.from("ai_engineer_analysis").insert({
     session_id: sessionId,
     historical_context: historicalContext,
@@ -209,21 +484,27 @@ export async function runAgentSession(sessionId: string, prompt: string, send: S
 
   const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\n${historicalContext}`;
   const messages: any[] = [{ role: "user", content: prompt }];
-
   const ctx: AgentContext = { sessionId, repo, toolCallLog, patternMatches, send };
+
+  // Track which provider is currently active (mutable ref for fallback continuity)
+  const currentProvider: { value: Provider } = { value: "anthropic" };
+  let completedProvider: Provider = "anthropic";
 
   let finished = false;
   for (let iter = 0; iter < MAX_ITERATIONS && !finished; iter++) {
     send("phase", { action: `Thinking (step ${iter + 1})...` });
-    let response: any;
+
+    let providerResult: ProviderResult;
     try {
-      response = await callClaude(systemPrompt, messages);
+      providerResult = await callWithFallback(systemPrompt, messages, send, sessionId, currentProvider);
+      completedProvider = providerResult.provider;
     } catch (e: any) {
-      send("error", { message: `Agent call failed: ${e.message}` });
-      await markSessionFailed(sessionId, `Agent call failed: ${e.message}`, historicalContext, toolCallLog);
+      send("error", { message: `All providers failed: ${e.message}` });
+      await markSessionFailed(sessionId, e.message, toolCallLog);
       return;
     }
 
+    const response = providerResult.response;
     messages.push({ role: "assistant", content: response.content });
 
     const toolUses = (response.content || []).filter((b: any) => b.type === "tool_use");
@@ -233,7 +514,6 @@ export async function runAgentSession(sessionId: string, prompt: string, send: S
     }
 
     if (toolUses.length === 0) {
-      // Model stopped without calling finish_analysis — nudge once, then bail.
       if (response.stop_reason === "end_turn" && iter < MAX_ITERATIONS - 1) {
         messages.push({ role: "user", content: "Please call finish_analysis to conclude, or propose_patch first if you have a fix." });
         continue;
@@ -246,8 +526,12 @@ export async function runAgentSession(sessionId: string, prompt: string, send: S
       send("tool_call", { tool: block.name, input: block.input });
 
       if (block.name === "finish_analysis") {
-        await finalizeAnalysis(sessionId, block.input, toolCallLog, historicalContext, patternMatches, prompt);
-        send("complete", { root_cause: block.input.root_cause, summary: block.input.summary });
+        await finalizeAnalysis(sessionId, block.input, toolCallLog, historicalContext, patternMatches, prompt, completedProvider);
+        send("complete", {
+          root_cause: block.input.root_cause,
+          summary: block.input.summary,
+          provider: completedProvider,
+        });
         finished = true;
         toolResults.push({ type: "tool_result", tool_use_id: block.id, content: "Analysis finalized." });
         break;
@@ -263,11 +547,11 @@ export async function runAgentSession(sessionId: string, prompt: string, send: S
 
   if (!finished) {
     send("error", { message: "Investigation did not conclude within the step limit." });
-    await markSessionFailed(sessionId, "Max iterations reached without finish_analysis.", historicalContext, toolCallLog);
+    await markSessionFailed(sessionId, "Max iterations reached without finish_analysis.", toolCallLog);
   }
 }
 
-async function markSessionFailed(sessionId: string, errorMessage: string, historicalContext: string, toolCallLog: ToolCallLogEntry[]) {
+async function markSessionFailed(sessionId: string, errorMessage: string, toolCallLog: ToolCallLogEntry[]) {
   await supabaseAdmin.from("ai_engineer_sessions").update({ status: "failed", error_message: errorMessage, updated_at: new Date().toISOString() }).eq("id", sessionId);
   await supabaseAdmin.from("ai_engineer_analysis").update({ tool_calls: toolCallLog }).eq("session_id", sessionId);
   await writeSessionMemory(sessionId, "failed", { summary: errorMessage });
@@ -279,7 +563,8 @@ async function finalizeAnalysis(
   toolCallLog: ToolCallLogEntry[],
   historicalContext: string,
   patternMatches: IssuePatternMatch[],
-  prompt: string
+  prompt: string,
+  completedProvider: Provider,
 ) {
   const affectedFiles: string[] = input.affected_files ?? [];
   const tags: string[] = input.memory_tags ?? [];
@@ -294,7 +579,6 @@ async function finalizeAnalysis(
     })
     .eq("session_id", sessionId);
 
-  // Determine whether patches were proposed during this session
   const { count } = await supabaseAdmin
     .from("ai_engineer_patches")
     .select("id", { count: "exact", head: true })
@@ -304,10 +588,13 @@ async function finalizeAnalysis(
 
   await supabaseAdmin
     .from("ai_engineer_sessions")
-    .update({ status: newStatus, summary: input.summary, updated_at: new Date().toISOString() })
+    .update({
+      status: newStatus,
+      summary: `[${completedProvider.toUpperCase()}] ${input.summary}`,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", sessionId);
 
-  // Memory write-back: root_cause + audit
   await writeSessionMemory(sessionId, "analysis_complete", {
     rootCause: input.root_cause,
     summary: input.summary,
@@ -315,7 +602,6 @@ async function finalizeAnalysis(
     tags,
   });
 
-  // Issue pattern record/update
   const topMatch = patternMatches[0] ?? null;
   await recordIssuePattern({
     prompt,
@@ -326,9 +612,8 @@ async function finalizeAnalysis(
     matched: topMatch,
   });
 
-  // File intelligence write-back
   const fileNotes: Array<{ path: string; purpose?: string; related_features?: string[]; related_tables?: string[] }> = input.file_notes ?? [];
-  const noteByPath = new Map(fileNotes.map((n) => [n.path, n]));
+  const noteByPath = new Map(fileNotes.map((n: any) => [n.path, n]));
   await upsertFileIntelligence(
     affectedFiles.map((path) => {
       const note = noteByPath.get(path);
@@ -342,4 +627,3 @@ async function finalizeAnalysis(
     })
   );
 }
-
