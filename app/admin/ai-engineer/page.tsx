@@ -147,7 +147,7 @@ export default function AiEngineerPage() {
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
                 <span style={{ color: STATUS_COLOR[s.status] ?? T.muted }}>{s.status}</span>
-                <span style={{ color: T.muted }}>{new Date(s.created_at).toLocaleDateString()}</span>
+                <span style={{ color: T.muted }}>{s.created_at ? new Date(s.created_at).toLocaleDateString() : '—'}</span>
               </div>
             </button>
           ))}
@@ -283,4 +283,3 @@ const PROVIDER_LABEL: Record<string, string> = {
   openai: "GPT-4o-mini",
   gemini: "Gemini 1.5 Flash",
 };
-        
