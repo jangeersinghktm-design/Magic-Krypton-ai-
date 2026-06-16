@@ -136,4 +136,3 @@ export async function commitFiles(changes: CommitFileChange[], message: string):
 
   return newCommit.sha as string;
 }
-
