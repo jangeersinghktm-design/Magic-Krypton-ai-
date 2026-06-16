@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     for (const user of freeUsers || []) {
       const remaining = Math.max(0, (user.total_credits || 0) - (user.used_credits || 0));
 
-      if (remaining < 5) {
+      if (remaining <= 0) { // Changing the condition here
         // Top up to 5 — never exceed 5
         const creditsToAdd = 5 - remaining;
 
