@@ -19,7 +19,7 @@ interface SessionRow {
 }
 
 interface StreamEvent {
-  type: "phase" | "historical_context" | "thinking" | "tool_call" | "patch_proposed" | "complete" | "error";
+  type: "phase" | "historical_context" | "thinking" | "tool_call" | "patch_proposed" | "complete" | "error" | "provider";
   data: any;
 }
 
@@ -230,15 +230,40 @@ function StreamEventView({ event }: { event: StreamEvent }) {
           <div style={{ color: "#9CA3AF", fontSize: 12, marginTop: 4 }}>{event.data.explanation}</div>
         </div>
       );
+    case "provider": {
+      const p = event.data.provider;
+      const color = PROVIDER_COLOR[p] ?? "#9CA3AF";
+      const label = PROVIDER_LABEL[p] ?? p;
+      if (event.data.action === "started")
+        return <div style={{ fontSize: 12, color, fontStyle: "italic" }}>🔌 Provider started: <strong>{label}</strong></div>;
+      if (event.data.action === "failed")
+        return (
+          <div style={{ fontSize: 12, color: "#ef4444" }}>
+            ⚡ <strong>{label}</strong> failed — {event.data.reason}
+            {event.data.will_fallback && <span style={{ color: "#F5D800", marginLeft: 6 }}>→ Falling back...</span>}
+          </div>
+        );
+      if (event.data.action === "fallback_triggered")
+        return <div style={{ fontSize: 12, color: "#F5D800" }}>↩ Fallback: {PROVIDER_LABEL[event.data.from] ?? event.data.from} → <strong>{PROVIDER_LABEL[event.data.to] ?? event.data.to}</strong></div>;
+      if (event.data.action === "selected")
+        return <div style={{ fontSize: 12, color, fontWeight: 700 }}>✓ Using: <strong>{label}</strong></div>;
+      return null;
+    }
     case "complete":
       return (
         <div style={{ fontSize: 14, color: T.green, fontWeight: 700, border: `1px solid ${T.green}`, borderRadius: 8, padding: 10 }}>
-          ✅ Investigation complete — {event.data.summary}
+          ✅ Investigation complete
+          {event.data.provider && (
+            <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 400, color: PROVIDER_COLOR[event.data.provider] ?? "#9CA3AF", border: `1px solid ${PROVIDER_COLOR[event.data.provider] ?? "#9CA3AF"}`, borderRadius: 4, padding: "1px 6px" }}>
+              {PROVIDER_LABEL[event.data.provider] ?? event.data.provider}
+            </span>
+          )}
+          <div style={{ fontSize: 13, fontWeight: 400, marginTop: 4 }}>{event.data.summary}</div>
         </div>
       );
     case "error":
       return (
-        <div style={{ fontSize: 14, color: T.red, fontWeight: 700, border: `1px solid ${T.red}`, borderRadius: 8, padding: 10 }}>
+        <div style={{ fontSize: 14, color: "#ef4444", fontWeight: 700, border: `1px solid #ef4444`, borderRadius: 8, padding: 10 }}>
           ⚠ {event.data.message}
         </div>
       );
@@ -247,3 +272,15 @@ function StreamEventView({ event }: { event: StreamEvent }) {
   }
 }
 
+// Provider badge colors
+const PROVIDER_COLOR: Record<string, string> = {
+  anthropic: "#F5D800",
+  openai: "#00CC44",
+  gemini: "#8b9bff",
+};
+const PROVIDER_LABEL: Record<string, string> = {
+  anthropic: "Claude",
+  openai: "GPT-4o-mini",
+  gemini: "Gemini 1.5 Flash",
+};
+        
