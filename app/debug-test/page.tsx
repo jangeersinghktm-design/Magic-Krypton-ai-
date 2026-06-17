@@ -1,7 +1,8 @@
 "use client";
-// app/debug-test/page.tsx — Pro System Health Check
+// app/debug-test/page.tsx — Pro System Health Check (Admin Only)
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const T = {
@@ -29,9 +30,28 @@ const INITIAL: CheckResult[] = [
 
 export default function DebugTestPage() {
   const supabase = createClient();
-  const [checks, setChecks] = useState<CheckResult[]>(INITIAL);
-  const [running, setRunning]   = useState(false);
-  const [done, setDone]         = useState(false);
+  const router   = useRouter();
+  const [checks, setChecks]   = useState<CheckResult[]>(INITIAL);
+  const [running, setRunning] = useState(false);
+  const [done, setDone]       = useState(false);
+  const [allowed, setAllowed] = useState(false);
+
+  // ── Admin check ──────────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.push("/auth/login"); return; }
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single();
+      if (profile?.role !== "admin") { router.push("/dashboard"); return; }
+      setAllowed(true);
+    })();
+  }, []);
+
+  if (!allowed) return (
+    <div style={{ minHeight: "100vh", background: "#050505", display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7280", fontFamily: "system-ui" }}>
+      Checking access...
+    </div>
+  );
 
   const update = (name: string, patch: Partial<CheckResult>) =>
     setChecks(prev => prev.map(c => c.name === name ? { ...c, ...patch } : c));
@@ -262,3 +282,4 @@ export default function DebugTestPage() {
 }
 
 function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+  
