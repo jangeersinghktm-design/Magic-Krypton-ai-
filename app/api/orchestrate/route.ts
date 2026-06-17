@@ -55,7 +55,7 @@ async function callOpenAI(system: string, user: string, maxTokens = 8000): Promi
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type":"application/json","Authorization":`Bearer ${key}` },
-    body: JSON.stringify({ model:"gpt-4o-mini", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
+    body: JSON.stringify({ model:"gpt-4o", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
     signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
