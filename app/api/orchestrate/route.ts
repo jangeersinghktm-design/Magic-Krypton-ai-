@@ -42,7 +42,7 @@ async function callClaude(system: string, user: string, maxTokens = 8000): Promi
     method: "POST",
     headers: { "Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01" },
     body: JSON.stringify({ model:"claude-haiku-4-5-20251001", max_tokens:maxTokens, system, messages:[{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(50000),
+    signal: AbortSignal.timeout(5000),
   });
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const d = await res.json();
@@ -56,7 +56,7 @@ async function callOpenAI(system: string, user: string, maxTokens = 8000): Promi
     method: "POST",
     headers: { "Content-Type":"application/json","Authorization":`Bearer ${key}` },
     body: JSON.stringify({ model:"gpt-4o-mini", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(50000),
+    signal: AbortSignal.timeout(22000),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
   const d = await res.json();
@@ -70,7 +70,7 @@ async function callGemini(system: string, user: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:12000} }),
-    signal: AbortSignal.timeout(50000),
+    signal: AbortSignal.timeout(20000),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}`);
   const d = await res.json();
