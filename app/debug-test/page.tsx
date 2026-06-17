@@ -563,7 +563,7 @@ export default function OpsCenter() {
   const scoreLabel = score >= 80 ? "Healthy" : score >= 60 ? "Degraded" : "Critical";
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans', system-ui" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans', system-ui", overflowY: "auto", maxHeight: "100vh", position: "fixed", inset: 0, zIndex: 999" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         * { box-sizing: border-box; }
