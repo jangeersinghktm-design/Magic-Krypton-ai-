@@ -157,7 +157,14 @@ export default function AiEngineerPage() {
 
       {/* ── Main panel ── */}
       <div style={{ flex: 1, padding: 32, maxWidth: 900 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>AI Engineer Dashboard</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+          <a href="/admin/monitor" style={{
+            color: "#6B7280", fontSize: 13, textDecoration: "none",
+            padding: "4px 10px", border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 6, display: "flex", alignItems: "center", gap: 4,
+          }}>← Monitor</a>
+          <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>AI Engineer Dashboard</h1>
+        </div>
         <p style={{ color: T.muted, fontSize: 14, margin: "0 0 24px" }}>
           Describe a bug, audit request, or improvement. The AI Engineer recalls memory of past
           audits/fixes/failures first, then investigates the codebase, logs, and schema.
@@ -283,3 +290,4 @@ const PROVIDER_LABEL: Record<string, string> = {
   openai: "GPT-4o-mini",
   gemini: "Gemini 1.5 Flash",
 };
+                     
