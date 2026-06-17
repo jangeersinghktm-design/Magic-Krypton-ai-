@@ -379,7 +379,7 @@ async function callClaude(system: string, prompt: string, model: string, maxToke
       system,
       messages: [{ role: "user", content: prompt }],
     }),
-    signal: AbortSignal.timeout(55000),
+    signal: AbortSignal.timeout(90000),
   });
 
   if (!res.ok) throw new Error(`Claude ${res.status}: ${await res.text()}`);
@@ -408,7 +408,7 @@ async function callOpenAI(system: string, prompt: string, model: string, maxToke
         { role: "user",      content: prompt },
       ],
     }),
-    signal: AbortSignal.timeout(55000),
+    signal: AbortSignal.timeout(90000),
   });
 
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
@@ -432,7 +432,7 @@ async function callGemini(system: string, prompt: string, model: string): Promis
         contents: [{ parts: [{ text: `${system}\n\nUser request: ${prompt}` }] }],
         generationConfig: { maxOutputTokens: 16000, temperature: 0.7 },
       }),
-      signal: AbortSignal.timeout(55000),
+      signal: AbortSignal.timeout(90000),
     }
   );
 
