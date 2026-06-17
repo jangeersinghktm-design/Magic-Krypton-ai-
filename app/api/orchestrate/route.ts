@@ -284,7 +284,6 @@ function detectCompetitorFromURL(prompt: string): CompetitorBlueprint | null {
   }
   return null;
 }
-
 // ── PHASE 2: Competitor Style Detector ──────────────────────────
 function detectCompetitorStyle(prompt: string, tone: string): string {
   const p = prompt.toLowerCase();
@@ -880,15 +879,16 @@ function buildNichePrompt(userPrompt: string, type: string, plan: string, cached
   // Phase 1: URL Reverse Engineering (cached DB blueprint takes priority)
   const urlBlueprint = cachedBlueprint
     ? {
-        style: cachedBlueprint.competitor_dna?.designLanguage || cachedBlueprint.domain?.split(".")[0] || "custom",
-        heroPattern: cachedBlueprint.hero_pattern || "split",
-        ctaStrategy: cachedBlueprint.competitor_dna?.ctaStrategy || `"${cachedBlueprint.cta_primary}" — ${cachedBlueprint.cta_pattern}`,
-        trustPattern: cachedBlueprint.competitor_dna?.trustStrategy || cachedBlueprint.trust_pattern || "testimonials",
-        layoutPhilosophy: `Section order: ${(cachedBlueprint.section_order || []).join(" → ")}`,
-        typographyFeel: `${cachedBlueprint.design_profile?.theme || "dark"} theme · ${cachedBlueprint.design_profile?.cardStyle || "elevated"} cards`,
-        conversionTactic: cachedBlueprint.competitor_dna?.conversionStrategy || "balanced conversion",
-        // BUG 7 FIX: use the full reusable prompt from competitor DNA
-        fullBlueprint: cachedBlueprint.competitor_dna?.reusableBlueprintPrompt || null,
+        style:           cachedBlueprint.competitor_dna?.designLanguage || cachedBlueprint.domain || "custom",
+        heroPattern:     cachedBlueprint.hero_pattern || "center",
+        ctaStrategy:     `"${cachedBlueprint.cta_primary}" (${cachedBlueprint.cta_pattern})`,
+        trustPattern:    cachedBlueprint.trust_pattern || "testimonials",
+        layoutPhilosophy: (cachedBlueprint.section_order || []).join(" → "),
+        typographyFeel:  `${cachedBlueprint.design_profile?.theme || "dark"} · ${cachedBlueprint.design_profile?.cardStyle || "elevated"}`,
+        conversionTactic: cachedBlueprint.competitor_dna?.conversionStrategy || "",
+        fullBlueprint:   cachedBlueprint.competitor_dna?.reusableBlueprintPrompt || null,
+        // FIX 7: Extracted colors now flow into CSS
+        extractedColors: (cachedBlueprint.design_profile?.colorPalette || []).filter((c: string) => /^#[0-9a-f]{6}$/i.test(c)),
       }
     : detectCompetitorFromURL(userPrompt);
   // Phase 2: Competitor style
@@ -1058,17 +1058,19 @@ Build sections IN THIS ORDER: ${niche.sectionOrder.join(" → ")}
 
 ${urlBlueprint ? `
 ════════════════════════════════════════════════════════════
-PHASE 1: STRUCTURAL BLUEPRINT (from competitor analysis)
+PHASE 1: COMPETITOR BLUEPRINT (apply structurally)
 ════════════════════════════════════════════════════════════
-${urlBlueprint.fullBlueprint ? urlBlueprint.fullBlueprint : `Reference Style: ${urlBlueprint.style}
-Hero Pattern:    ${urlBlueprint.heroPattern}
-CTA Strategy:    ${urlBlueprint.ctaStrategy}
-Trust Pattern:   ${urlBlueprint.trustPattern}
-Layout:          ${urlBlueprint.layoutPhilosophy}
-Typography:      ${urlBlueprint.typographyFeel}
-Conversion:      ${urlBlueprint.conversionTactic}`}
+${urlBlueprint.fullBlueprint || `Design: ${urlBlueprint.style} | Hero: ${urlBlueprint.heroPattern}
+Sections: ${urlBlueprint.layoutPhilosophy}
+CTA: ${urlBlueprint.ctaStrategy} | Trust: ${urlBlueprint.trustPattern}
+Visual: ${urlBlueprint.typographyFeel}`}
 
-IMPORTANT: Apply these STRUCTURAL patterns only. Generate your own original content.
+${urlBlueprint.extractedColors?.length >= 2 ? `CSS COLOR OVERRIDE (extracted from competitor — use in :root):
+  --primary:   ${urlBlueprint.extractedColors[0]};
+  --secondary: ${urlBlueprint.extractedColors[1] || urlBlueprint.extractedColors[0]};
+  --accent:    ${urlBlueprint.extractedColors[2] || urlBlueprint.extractedColors[0]};` : ''}
+
+RULE: Copy structure + layout + conversion patterns. Generate 100% original content.
 ` : ''}
 
 ════════════════════════════════════════════════════════════
@@ -2409,3 +2411,5 @@ ${html}`;
     },
   });
 }
+
+    (design/15 * 15 
