@@ -64,7 +64,7 @@ async function callOpenAI(system: string, prompt: string): Promise<string> {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       max_tokens: 16000,
       messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
     }),
