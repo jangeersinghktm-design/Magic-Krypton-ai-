@@ -582,7 +582,7 @@ ${html}`;
         // ── Update generation log: success ───────────────────────
         await updateLog({
           status:       "completed",
-          provider:     usedProvider,
+          provider:     provider,
           credits_used: creditCost,
           html_length:  html.length,
           duration_ms:  Date.now() - startTime,
