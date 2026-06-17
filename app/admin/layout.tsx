@@ -68,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div style={{
       position: "fixed", inset: 0, background: T.bg, color: T.text,
       fontFamily: "system-ui", zIndex: 9999, display: "flex", flexDirection: "column",
-      overflow: "hidden",
+      overflow: "auto",
     }}>
       {/* ── Top Bar ── */}
       <div style={{
