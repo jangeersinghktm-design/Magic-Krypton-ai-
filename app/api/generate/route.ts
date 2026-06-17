@@ -483,7 +483,7 @@ function getModelCascade(plan: string) {
     },
     {
       provider: "openai",
-      model: isPaid ? "gpt-4o" : "gpt-4o-mini",
+      model: "gpt-4o",
       maxTokens: isPaid ? 16000 : 8000,
       label: "OpenAI",
     },
