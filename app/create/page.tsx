@@ -446,7 +446,7 @@ function CreatePageInner() {
       const res = await fetch(apiEndpoint,{
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({prompt:userPrompt,userId:session.user.id,accessToken:session.access_token}),
-        signal:AbortSignal.timeout(55000),
+        signal:AbortSignal.timeout(90000),
       });
       if (!res.ok||!res.body) throw new Error("stream_failed");
 
@@ -455,6 +455,11 @@ function CreatePageInner() {
         const em=chunk.match(/event:\s*(\S+)/); const dm=chunk.match(/data:\s*([\s\S]+)/);
         if (!em||!dm) return;
         let data:any={}; try{data=JSON.parse(dm[1].trim());}catch{return;}
+        if (em[1]==="projectId" && data.projectId) {
+          // Early draft projectId — set immediately so URL updates
+          setProjectId(data.projectId);
+          window.history.replaceState({},"",`/create?id=${data.projectId}`);
+        }
         if (em[1]==="phase"){
           const p:AgentPhaseEvent={agent:data.agent,icon:data.icon,action:data.action,pct:data.pct,done:data.done,status:data.done?"done":"running"};
           const idx=livePhases.findIndex(x=>x.agent===data.agent);
