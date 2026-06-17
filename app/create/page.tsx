@@ -423,27 +423,26 @@ function CreatePageInner() {
       return;
     }
     setLoading(true); setPrompt(""); promptRef.current=userPrompt;
-
-    // FIX Bug 5: Pre-analyze competitor URL before generation
-    if (competitorUrl.trim()) {
-      try {
-        const urlRes = await fetch("/api/reverse-engineer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: competitorUrl.trim(), accessToken: session.access_token, depth: "quick" }),
-          signal: AbortSignal.timeout(20000),
-        });
-        if (!urlRes.ok) console.warn("[create] reverse-engineer failed:", urlRes.status);
-        // Result is cached in DB — orchestrate will pick it up
-      } catch (e) {
-        console.warn("[create] URL analysis skipped:", e);
-      }
-    }
     addMsg({role:"user",type:"text",content:userPrompt});
     const thinkId = addMsg({role:"ai",type:"thinking",content:"",phases:[],isActive:true});
 
     const {data:{session}} = await supabase.auth.getSession();
     if (!session) { setLoading(false); return; }
+
+    // FIX Bug 5: Pre-analyze competitor URL before generation
+    if (competitorUrl.trim()) {
+      try {
+       const urlRes = await fetch("/api/reverse-engineer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: competitorUrl.trim(), accessToken: session.access_token, depth: "quick" }),
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!urlRes.ok) console.warn("[create] reverse-engineer failed:", urlRes.status);
+      } catch (e) {
+        console.warn("[create] URL analysis skipped:", e);
+       }
+      }
 
     // ── Route to Game Builder if game detected ──────────────────
     const detected = detectGameType(userPrompt);
