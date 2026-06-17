@@ -23,6 +23,12 @@
     },
     "app/api/deploy/netlify/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/reverse-engineer/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/reverse-engineer/status/[jobId]/route.ts": {
+      "maxDuration": 30
     }
   },
   "crons": [
