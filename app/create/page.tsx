@@ -256,6 +256,8 @@ function CreatePageInner() {
 
   const [user, setUser]         = useState<any>(null);
   const [prompt, setPrompt]     = useState("");
+  const [competitorUrl, setCompetitorUrl] = useState("");
+  const [urlAnalyzing, setUrlAnalyzing]   = useState(false);
   const [result, setResult]     = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading]   = useState(false);
@@ -421,6 +423,22 @@ function CreatePageInner() {
       return;
     }
     setLoading(true); setPrompt(""); promptRef.current=userPrompt;
+
+    // FIX Bug 5: Pre-analyze competitor URL before generation
+    if (competitorUrl.trim()) {
+      try {
+        const urlRes = await fetch("/api/reverse-engineer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: competitorUrl.trim(), accessToken: session.access_token, depth: "quick" }),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!urlRes.ok) console.warn("[create] reverse-engineer failed:", urlRes.status);
+        // Result is cached in DB — orchestrate will pick it up
+      } catch (e) {
+        console.warn("[create] URL analysis skipped:", e);
+      }
+    }
     addMsg({role:"user",type:"text",content:userPrompt});
     const thinkId = addMsg({role:"ai",type:"thinking",content:"",phases:[],isActive:true});
 
@@ -445,8 +463,8 @@ function CreatePageInner() {
     try {
       const res = await fetch(apiEndpoint,{
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:userPrompt,userId:session.user.id,accessToken:session.access_token}),
-        signal:AbortSignal.timeout(90000),
+        body:JSON.stringify({prompt:userPrompt,userId:session.user.id,accessToken:session.access_token,competitorUrl:competitorUrl.trim()||undefined}),
+        signal:AbortSignal.timeout(55000),
       });
       if (!res.ok||!res.body) throw new Error("stream_failed");
 
@@ -455,11 +473,6 @@ function CreatePageInner() {
         const em=chunk.match(/event:\s*(\S+)/); const dm=chunk.match(/data:\s*([\s\S]+)/);
         if (!em||!dm) return;
         let data:any={}; try{data=JSON.parse(dm[1].trim());}catch{return;}
-        if (em[1]==="projectId" && data.projectId) {
-          // Early draft projectId — set immediately so URL updates
-          setProjectId(data.projectId);
-          window.history.replaceState({},"",`/create?id=${data.projectId}`);
-        }
         if (em[1]==="phase"){
           const p:AgentPhaseEvent={agent:data.agent,icon:data.icon,action:data.action,pct:data.pct,done:data.done,status:data.done?"done":"running"};
           const idx=livePhases.findIndex(x=>x.agent===data.agent);
@@ -834,6 +847,23 @@ function CreatePageInner() {
             {/* Input */}
             <div style={{padding:"10px 14px 12px",borderTop:`1px solid ${C.border}`,background:`rgba(7,9,26,0.95)`,flexShrink:0}}>
               <div style={{background:C.card,border:`1px solid ${loading?"rgba(139,92,246,0.25)":C.border}`,borderRadius:14,padding:"10px 12px",transition:"border-color .2s"}}>
+                {!result && (
+                  <div style={{marginBottom:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:"1px solid rgba(255,255,255,0.06)"}}>
+                      <span style={{fontSize:14,flexShrink:0}}>🔗</span>
+                      <input
+                        type="url"
+                        value={competitorUrl}
+                        onChange={e=>setCompetitorUrl(e.target.value)}
+                        placeholder="Competitor URL (optional): https://stripe.com"
+                        style={{flex:1,background:"none",border:"none",outline:"none",color:"#94A3B8",fontSize:12,fontFamily:"inherit"}}
+                      />
+                      {competitorUrl.trim() && (
+                        <button onClick={()=>setCompetitorUrl("")} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:12}}>✕</button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!loading){e.preventDefault();handleSend();}}}
                   placeholder={loading?"Working on it…":result?"Describe a change to make…":"Describe what you want to build…"}
                   rows={2} disabled={loading}
