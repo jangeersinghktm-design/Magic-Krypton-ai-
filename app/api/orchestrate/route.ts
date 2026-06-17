@@ -2044,8 +2044,7 @@ function computeQualityScoreV2(html: string, niche: NicheProfile, gate: any): {
 
   // 7. CONTENT QUALITY (10pts)
   let content = 0;
-  const lines = html.split("
-").length;
+  const lines = html.split("\n").length;
   if (lines > 700) { content += 4; breakdown.push(`✓ ${lines} lines of code`); }
   else if (lines > 500) content += 2;
   if ((h.match(/<img/g) || []).length >= 3) { content += 3; breakdown.push("✓ Multiple images"); }
