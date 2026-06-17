@@ -32,15 +32,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { router.push("/auth/login"); return; }
+      // FIX: getUser() instead of getSession() — always fresh from server
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) { router.push("/auth/login"); return; }
 
       const { data: profile } = await supabase
-        .from("profiles").select("role").eq("id", session.user.id).single();
+        .from("profiles").select("role").eq("id", user.id).single();
 
       if (profile?.role !== "admin") { router.push("/dashboard"); return; }
 
-      setUserEmail(session.user.email || "");
+      setUserEmail(user.email || "");
       setAllowed(true);
       setChecking(false);
     })();
@@ -64,7 +65,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!allowed) return null;
 
   return (
-    /* Full-screen fixed overlay — covers the main app nav completely */
     <div style={{
       position: "fixed", inset: 0, background: T.bg, color: T.text,
       fontFamily: "system-ui", zIndex: 9999, display: "flex", flexDirection: "column",
@@ -152,10 +152,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      {/* ── Page Content (scrollable) ── */}
+      {/* ── Page Content ── */}
       <div style={{ flex: 1, overflowY: "auto" }}>
         {children}
       </div>
     </div>
   );
 }
+  
