@@ -573,7 +573,7 @@ export default function OpsCenter() {
       `}</style>
 
       {/* Top Bar */}
-      <div style={{ borderBottom: `1px solid ${C.border}`, padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, position: "sticky", top: 0, zIndex: 10 }}>
+      <div style={{ borderBottom: `1px solid ${C.border}`, padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, position: "relative", zIndex: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <a href="/admin/monitor" style={{ color: C.muted, fontSize: 13, textDecoration: "none" }}>← Monitor</a>
           <span style={{ color: C.border }}>|</span>
