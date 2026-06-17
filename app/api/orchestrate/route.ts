@@ -298,6 +298,25 @@ const activeGenerations = new Set<string>();
   const stream = new ReadableStream({
     async start(controller) {
       const startTime = Date.now(); // Product Completion Engine: repair budget
+
+        // ── Generation Log: create entry ─────────────────────────
+        let genLogId: string | null = null;
+        try {
+          const { data: logRow } = await supabase.from("generation_logs").insert({
+            user_id:    authedUserId || null,
+            type:       "website",
+            prompt:     prompt?.slice(0, 500) || "",
+            status:     "started",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }).select("id").single();
+          genLogId = logRow?.id || null;
+        } catch {}
+
+        const updateLog = async (upd: Record<string, any>) => {
+          if (!genLogId) return;
+          try { await supabase.from("generation_logs").update({ ...upd, updated_at: new Date().toISOString() }).eq("id", genLogId); } catch {}
+        };
       const send = (event: string, data: object) => {
         if (closed) return;
         try {
@@ -560,6 +579,16 @@ ${html}`;
         send("phase", { agent:"Finalizing", icon:"📋", action:"Project saved successfully", pct:100, done:true });
 
         // ── COMPLETE ──────────────────────────────────────────────
+        // ── Update generation log: success ───────────────────────
+        await updateLog({
+          status:       "completed",
+          provider:     usedProvider,
+          credits_used: creditCost,
+          html_length:  html.length,
+          duration_ms:  Date.now() - startTime,
+          type:         projectType || "website",
+        });
+
         send("complete", {
           html,
           projectId:   savedProjectId,
@@ -583,6 +612,13 @@ ${html}`;
         });
 
       } catch (err: any) {
+        // Log error to monitor
+        try {
+          if (genLogId) await supabase.from("generation_logs").update({
+            status: "failed", error_message: (err as any)?.message || "Fatal error",
+            duration_ms: Date.now() - startTime, updated_at: new Date().toISOString(),
+          }).eq("id", genLogId);
+        } catch {}
         send("error", { message: "Generation failed. Please try again." });
       } finally {
         // Fix 6: Release generation lock
