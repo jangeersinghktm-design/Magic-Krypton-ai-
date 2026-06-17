@@ -83,7 +83,45 @@ export default function MonitorPage() {
   const filtered = filter === "all" ? logs : logs.filter(l => l.status === filter);
 
   return (
-    <div style={{ minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "system-ui", padding: 24 }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "system-ui" }}>
+
+      {/* ── Left Sidebar ── */}
+      <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.06)", padding: "24px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", letterSpacing: 1, marginBottom: 8 }}>ADMIN TOOLS</div>
+
+        {/* Debug Test Card */}
+        <a href="/debug-test" style={{ textDecoration: "none" }}>
+          <div style={{
+            background: "#0D0D0D", border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 12, padding: 14, cursor: "pointer", transition: "all 0.2s",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(245,216,0,0.4)")}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+          >
+            <div style={{ fontSize: 22, marginBottom: 6 }}>🔬</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: "#fff", marginBottom: 4 }}>Debug Test</div>
+            <div style={{ fontSize: 11, color: "#6B7280", lineHeight: 1.4 }}>System health check — DB, APIs, Credits</div>
+          </div>
+        </a>
+
+        {/* AI Engineer Card */}
+        <a href="/admin/ai-engineer" style={{ textDecoration: "none" }}>
+          <div style={{
+            background: "#0D0D0D", border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 12, padding: 14, cursor: "pointer", transition: "all 0.2s",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(0,204,68,0.4)")}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+          >
+            <div style={{ fontSize: 22, marginBottom: 6 }}>🤖</div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: "#fff", marginBottom: 4 }}>AI Engineer</div>
+            <div style={{ fontSize: 11, color: "#6B7280", lineHeight: 1.4 }}>Investigate bugs & fix codebase</div>
+          </div>
+        </a>
+      </div>
+
+      {/* ── Main Content ── */}
+      <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
@@ -226,6 +264,6 @@ export default function MonitorPage() {
         </div>
       )}
     </div>
+      </div>
   );
 }
-
