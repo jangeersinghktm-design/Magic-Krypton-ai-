@@ -55,7 +55,7 @@ async function callOpenAI(system: string, user: string, maxTokens = 8000): Promi
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type":"application/json","Authorization":`Bearer ${key}` },
-    body: JSON.stringify({ model:"gpt-4o", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
+    body: JSON.stringify({ model:"gpt-4o-mini", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
     signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
@@ -344,24 +344,41 @@ const activeGenerations = new Set<string>();
           } catch {}
         }
 
+        // ── EARLY DRAFT SAVE (before generation, so project always exists) ──
+        let savedProjectId: string | null = null;
+        if (authedUserId) {
+          try {
+            const { data: draftProj, error: draftErr } = await supabase.from("projects").insert({
+              user_id:    authedUserId,
+              title:      prompt.slice(0, 60),
+              name:       prompt.slice(0, 60),
+              prompt,
+              html_code:  "",
+              status:     "draft",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }).select("id").single();
+            if (draftErr) {
+              console.error("[orchestrate] draft save failed:", draftErr.message || draftErr);
+            } else {
+              savedProjectId = draftProj?.id || null;
+              if (savedProjectId) send("projectId", { projectId: savedProjectId });
+            }
+          } catch (e: any) {
+            console.error("[orchestrate] draft save threw:", e?.message || e);
+          }
+        }
+
         // ── PHASE 1: Reading ──────────────────────────────────────
         send("phase", { agent:"Reading", icon:"🔍", action:"Analyzing your request...", pct:8 });
         const projectType = detectProjectType(prompt);
 
-        // Quick plan via fast AI call
-        let executionPlan = "";
-        try {
-          const planPrompt = `User wants: "${prompt}" (type: ${projectType})
-Create a brief 5-point implementation plan for building this. Be specific, not generic.
-Format: numbered list only. No preamble.`;
-          const planResult = await callClaude(
-            "You are a senior software architect. Create brief, specific implementation plans.",
-            planPrompt, 500
-          );
-          executionPlan = planResult;
-        } catch {
-          executionPlan = `1. Set up ${projectType} structure\n2. Build core functionality\n3. Style with premium design system\n4. Add interactivity\n5. Optimize and finalize`;
-        }
+        // Instant execution plan (no extra AI call — saves ~8s on free plan)
+        const executionPlan = `1. Set up ${projectType} structure with premium design system
+2. Build all required sections with real content (no placeholders)
+3. Implement full interactivity — every button, tab, accordion functional
+4. Apply mobile-responsive layout (320px to 1920px)
+5. Add scroll animations, hover effects, and micro-interactions`;
 
         send("phase", { agent:"Reading", icon:"🔍", action:`Detected: ${projectType} project`, pct:15, done:true });
 
@@ -407,8 +424,8 @@ Format: numbered list only. No preamble.`;
 
         while (!gate.overallPass && repairAttempts < MAX_REPAIR_ATTEMPTS) {
           const elapsed = Date.now() - startTime;
-          const remainingMs = 115000 - elapsed; // edge maxDuration=120s, leave 5s buffer
-          if (remainingMs < 20000) break;
+          const remainingMs = 25000 - elapsed; // 25s budget for free plan (30s edge limit)
+          if (remainingMs < 8000) break; // skip repair if less than 8s left
 
           const reasons: string[] = [];
           if (!gate.buildPass)      reasons.push("build issues");
@@ -461,15 +478,10 @@ ${html}`;
         // ── PHASE 7: Project Manager ──────────────────────────────
         send("phase", { agent:"Finalizing", icon:"📋", action:"Saving project...", pct:95 });
 
-        let savedProjectId: string | null = null;
         let creditCost = 2;
 
         if (authedUserId) {
-          // Profile lookup — for credit accounting only. A failure here
-          // (missing profiles row, bad column name, etc.) must NOT block
-          // project persistence below — that's the "Total Projects = 0"
-          // bug. Logging the error surfaces the EXACT cause in server
-          // logs on the next generation.
+          // Profile lookup — for credit accounting only.
           const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("total_credits, used_credits, plan")
@@ -485,28 +497,36 @@ ${html}`;
             creditCost = Math.min(remaining, 3);
           }
 
-          // Project persistence — ALWAYS attempted, independent of the
-          // profile lookup above and its result. Own try/catch so a
-          // thrown error here doesn't get conflated with the credit
-          // deduction block below.
-          try {
-            const { data: proj, error: projError } = await supabase.from("projects").insert({
-              user_id:    authedUserId,
-              title:      prompt.slice(0, 60),
-              name:       prompt.slice(0, 60),
-              prompt,
-              html_code:  html,
-              status:     "completed",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }).select().single();
-
-            if (projError) {
-              console.error(`[orchestrate/route] projects insert FAILED for user ${authedUserId}:`, projError.message || projError);
+          // Update the draft project with final HTML (draft was created before generation)
+          if (savedProjectId) {
+            try {
+              const { error: updateErr } = await supabase.from("projects").update({
+                html_code:  html,
+                status:     "completed",
+                updated_at: new Date().toISOString(),
+              }).eq("id", savedProjectId);
+              if (updateErr) console.error("[orchestrate] project update failed:", updateErr.message);
+            } catch (e: any) {
+              console.error("[orchestrate] project update threw:", e?.message);
             }
-            savedProjectId = proj?.id || null;
-          } catch (e: any) {
-            console.error(`[orchestrate/route] projects insert threw for user ${authedUserId}:`, e?.message || e);
+          } else {
+            // Fallback: draft save failed earlier, try fresh insert
+            try {
+              const { data: proj, error: projError } = await supabase.from("projects").insert({
+                user_id:    authedUserId,
+                title:      prompt.slice(0, 60),
+                name:       prompt.slice(0, 60),
+                prompt,
+                html_code:  html,
+                status:     "completed",
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }).select("id").single();
+              if (projError) console.error("[orchestrate] fallback insert failed:", projError.message);
+              savedProjectId = proj?.id || null;
+            } catch (e: any) {
+              console.error("[orchestrate] fallback insert threw:", e?.message);
+            }
           }
 
           // Credit deduction + transaction log — separate concern, only
