@@ -183,6 +183,8 @@ interface CompetitorBlueprint {
   layoutPhilosophy: string;
   typographyFeel: string;
   conversionTactic: string;
+  fullBlueprint?:   string | null;
+  extractedColors?: string[];
 }
 
 const COMPETITOR_BLUEPRINTS: Record<string, CompetitorBlueprint> = {
