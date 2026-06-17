@@ -50,11 +50,10 @@ export async function POST(req: NextRequest) {
   const { url, accessToken, depth = "standard", assetType = "url" } = body;
   // assetType: "url" | "pdf_base64" | "zip_base64" | "image_base64"
 
-  // Auth
-  if (accessToken) {
-    const { data: { user } } = await supabase.auth.getUser(accessToken);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Auth — REQUIRED (no anonymous access)
+  if (!accessToken) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser(accessToken);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // ── Route to correct analyzer ─────────────────────────────────
   try {
@@ -62,10 +61,41 @@ export async function POST(req: NextRequest) {
 
     if (assetType === "pdf_base64") {
       result = await analyzePDF(body.data, body.filename || "document.pdf");
+      // FIX 5: Save to extracted_blueprints so orchestrate can find it
+      if (result?.competitor_dna) {
+        const key = `pdf:${body.filename || "document"}:${Date.now()}`;
+        await supabase.from("extracted_blueprints").insert({
+          url: key, domain: "pdf-upload", title: body.filename || "PDF Document",
+          fetch_status: "success", fetch_method: "pdf_analysis",
+          competitor_dna: result.competitor_dna,
+          quality_score: result.quality_score,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        }).select("id").single().then(({ data }) => { if (data) result.blueprintId = data.id; });
+      }
     } else if (assetType === "zip_base64") {
       result = await analyzeZIP(body.data, body.filename || "archive.zip");
+      if (result?.competitor_dna) {
+        const key = `zip:${body.filename || "archive"}:${Date.now()}`;
+        await supabase.from("extracted_blueprints").insert({
+          url: key, domain: "zip-upload", title: body.filename || "Source Code ZIP",
+          fetch_status: "success", fetch_method: "zip_analysis",
+          competitor_dna: result.competitor_dna,
+          quality_score: result.quality_score,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        }).select("id").single().then(({ data }) => { if (data) result.blueprintId = data.id; });
+      }
     } else if (assetType === "image_base64") {
       result = await analyzeImage(body.data, body.mediaType || "image/png");
+      if (result?.competitor_dna) {
+        const key = `image:${Date.now()}`;
+        await supabase.from("extracted_blueprints").insert({
+          url: key, domain: "image-upload", title: "Uploaded Image",
+          fetch_status: "success", fetch_method: "image_vision",
+          competitor_dna: result.competitor_dna,
+          quality_score: result.quality_score,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        }).select("id").single().then(({ data }) => { if (data) result.blueprintId = data.id; });
+      }
     } else {
       // URL analysis (main path)
       if (!url?.trim()) return NextResponse.json({ error: "URL required" }, { status: 400 });
@@ -79,7 +109,7 @@ export async function POST(req: NextRequest) {
       const { data: cached } = await supabase
         .from("extracted_blueprints").select("*")
         .eq("url", normalizedUrl)
-        .not("fetch_status","in","(error,processing)")
+        .not("fetch_status","in","(\"error\",\"processing\")")
         .single();
       if (cached) return NextResponse.json({ status:"cached", blueprint:cached, cached:true });
 
@@ -186,7 +216,7 @@ async function analyzeURL(url: string, domain: string, depth: string, supabase: 
     competitor_dna: dna,
     quality_score:  score,
     analysis_meta: {
-      tier:            SERVICES.browserless ? 3 : SERVICES.screenshotOne ? 2 : 1,
+      tier:            analysisMethod === "playwright_browserless" ? 3 : analysisMethod.includes("vision") ? 2 : 1,
       method:          analysisMethod,
       isJSHeavy,
       screenshotUrl,
@@ -209,12 +239,10 @@ async function analyzeURL(url: string, domain: string, depth: string, supabase: 
 // https://browserless.io
 // ══════════════════════════════════════════════════════════════════
 async function browserlessAnalysis(url: string): Promise<{html:string; screenshotBase64:string}> {
-  const wsUrl = `wss://chrome.browserless.io?token=${process.env.BROWSERLESS_API_KEY}`;
-
   // Browserless REST API (simpler than WebSocket, works in Node.js)
   const [htmlRes, screenshotRes] = await Promise.allSettled([
     // Get rendered HTML
-    fetch(`https://chrome.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`, {
+    fetch(process.env.BROWSERLESS_API_URL || `https://chrome.browserless.io/content?token=${process.env.BROWSERLESS_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -227,7 +255,7 @@ async function browserlessAnalysis(url: string): Promise<{html:string; screensho
       signal: AbortSignal.timeout(25000),
     }),
     // Get screenshot
-    fetch(`https://chrome.browserless.io/screenshot?token=${process.env.BROWSERLESS_API_KEY}`, {
+    fetch((process.env.BROWSERLESS_API_URL || "https://chrome.browserless.io").replace("/content","/screenshot") + `?token=${process.env.BROWSERLESS_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -267,8 +295,8 @@ function getScreenshotOneUrl(url: string): string {
 
 async function fetchScreenshotAsBase64(screenshotUrl: string): Promise<string> {
   const res = await fetch(screenshotUrl, {
-    signal: AbortSignal.timeout(10000),
-    headers: { "Accept": "image/*" },
+    signal: AbortSignal.timeout(12000),
+    headers: { "Accept": "image/png,image/jpeg,image/*" },
   });
   if (!res.ok) throw new Error(`Screenshot ${res.status}`);
   const ct = res.headers.get("content-type") || "image/png";
@@ -305,17 +333,17 @@ Return ONLY valid JSON — no markdown, no explanation:
   "spacingSystem":"generous",
   "visualDensity":"balanced",
   "layoutHierarchy":"describe the visual hierarchy you see",
-  "heroType":"split|center|full-bleed|editorial|product|dashboard",
-  "ctaPlacement":"above-fold|mid-page|multiple",
+  "heroType":"split",
+  "ctaPlacement":"above-fold",
   "trustElements":["logo bar","testimonials","security badges"],
   "conversionStrategy":"one sentence describing how this converts",
   "trustStrategy":"one sentence describing trust building",
   "ctaStrategy":"one sentence on CTA approach",
-  "brandPositioning":"luxury|premium|professional|friendly|innovative|corporate",
+  "brandPositioning":"professional",
   "visualSummary":"two sentences describing the overall visual design",
-  "cardPatterns":"elevated|outlined|flat|glass",
-  "buttonStyle":"pill|rounded|square|ghost|gradient",
-  "cardStyle":"elevated|outlined|flat|glass",
+  "cardPatterns":"elevated",
+  "buttonStyle":"rounded",
+  "cardStyle":"elevated",
   "designScore":85,
   "conversionScore":80,
   "trustScore":75,
@@ -335,7 +363,7 @@ Return ONLY valid JSON — no markdown, no explanation:
       messages: [{
         role: "user",
         content: [
-          { type:"image_url", image_url:{ url:`data:image/png;base64,${base64}`, detail:"high" } },
+          { type:"image_url", image_url:{ url:`data:image/png;base64,${base64}`, detail:"low" } }, // "low" = 512x512 equivalent, faster+cheaper
           { type:"text", text:prompt },
         ],
       }],
@@ -460,11 +488,9 @@ async function analyzeZIP(base64Data: string, filename: string): Promise<any> {
 
   const fileTree: string[] = [];
   const cssFiles:  string[] = [];
-  const jsFiles:   string[] = [];
   const components: string[] = [];
   let colorTokens:  string[] = [];
   let fontTokens:   string[] = [];
-  let designTokens  = "";
 
   // Analyze file structure
   zip.forEach((path) => fileTree.push(path));
@@ -606,14 +632,19 @@ function buildCompetitorDNA(structure: any, design: any, components: any, vision
     cardPatterns:        vision?.cardPatterns     || design.cardStyle,
     trustElements:       vision?.trustElements    || [structure.trustPattern],
     reusableBlueprintPrompt: [
-      `COMPETITOR DNA — ${structure.industry || "Business"}:`,
-      `Design: ${dl} | Brand: ${vision?.brandPositioning||"professional"}`,
-      `Theme: ${design.theme} | Density: ${design.density} | Cards: ${design.cardStyle}`,
-      `Sections: ${structure.sectionOrder.slice(0,8).join(" → ")}`,
-      `Hero: ${vision?.heroType||structure.heroPattern} | CTA: ${structure.ctaPattern}`,
-      `Trust: ${(vision?.trustElements||[structure.trustPattern]).slice(0,3).join(", ")}`,
-      vision ? `Vision insight: ${vision.conversionStrategy}` : "",
-      vision ? `Recommendations: ${vision.recommendations?.slice(0,2).join(" | ")}` : "",
+      `COMPETITOR BLUEPRINT — ${structure.industry || "Business"}:`,
+      `Design Language: ${dl} | Brand Positioning: ${vision?.brandPositioning||"professional"}`,
+      `Theme: ${design.theme} | Density: ${design.density} | Cards: ${vision?.cardStyle||design.cardStyle} | Buttons: ${vision?.buttonStyle||"rounded"}`,
+      `Section order: ${structure.sectionOrder.slice(0,8).join(" → ")}`,
+      `Hero type: ${vision?.heroType||structure.heroPattern} | CTA placement: ${vision?.ctaPlacement||"above-fold"} | CTA pattern: ${structure.ctaPattern}`,
+      `Visual density: ${vision?.visualDensity||design.density} | Spacing: ${vision?.spacingSystem||design.densityLabel}`,
+      `Typography scale: ${vision?.typographyScale||design.typographyHint}`,
+      vision?.colorPalette?.length ? `Color palette: ${vision.colorPalette.join(", ")} (use these as --primary and --secondary in CSS)` : "",
+      vision?.layoutHierarchy ? `Layout hierarchy: ${vision.layoutHierarchy}` : "",
+      `Trust elements: ${(vision?.trustElements||[structure.trustPattern]).slice(0,3).join(", ")}`,
+      vision?.conversionStrategy ? `Conversion: ${vision.conversionStrategy}` : "",
+      vision?.visualSummary ? `Visual style: ${vision.visualSummary}` : "",
+      vision?.recommendations?.length ? `Improve: ${vision.recommendations.slice(0,2).join(" | ")}` : "",
     ].filter(Boolean).join("\n"),
   };
 }
@@ -768,4 +799,5 @@ async function fetchPageSafe(url: string): Promise<string> {
     return await res.text();
   } catch { return ""; }
 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           }
+
+  " 
