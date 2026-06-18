@@ -183,8 +183,6 @@ interface CompetitorBlueprint {
   layoutPhilosophy: string;
   typographyFeel: string;
   conversionTactic: string;
-  fullBlueprint?:   string | null;
-  extractedColors?: string[];
 }
 
 const COMPETITOR_BLUEPRINTS: Record<string, CompetitorBlueprint> = {
@@ -286,6 +284,7 @@ function detectCompetitorFromURL(prompt: string): CompetitorBlueprint | null {
   }
   return null;
 }
+
 // ── PHASE 2: Competitor Style Detector ──────────────────────────
 function detectCompetitorStyle(prompt: string, tone: string): string {
   const p = prompt.toLowerCase();
@@ -1686,7 +1685,7 @@ TARGET: 95+/100. Penalty for each failure listed below.
    ✓ No "lorem ipsum" person names
 
 7. COMPETITOR MATCH (10pts):
-   ✓ Design quality matches ${niche.competitorStyle || "premium agency"} caliber
+   ✓ Design quality matches ${competitorStyle} caliber
    ✓ Animations are subtle and purposeful
    ✓ No amateur effects (no rainbow gradients, no excessive shadows)
    ✓ Would pass as agency-built to a designer
@@ -2046,7 +2045,8 @@ function computeQualityScoreV2(html: string, niche: NicheProfile, gate: any): {
 
   // 7. CONTENT QUALITY (10pts)
   let content = 0;
-  const lines = html.split("\n").length;
+  const lines = html.split("
+").length;
   if (lines > 700) { content += 4; breakdown.push(`✓ ${lines} lines of code`); }
   else if (lines > 500) content += 2;
   if ((h.match(/<img/g) || []).length >= 3) { content += 3; breakdown.push("✓ Multiple images"); }
@@ -2071,7 +2071,7 @@ function computeQualityScoreV2(html: string, niche: NicheProfile, gate: any): {
 
 // ── Main SSE Handler ──────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const { prompt, userId, accessToken, competitorUrl } = await req.json().catch(() => ({}));
+  const { prompt, userId, accessToken, competitorUrl, forceType } = await req.json().catch(() => ({}));
 
   if (!prompt?.trim()) {
     return new Response(JSON.stringify({ error: "Prompt required" }), { status: 400 });
@@ -2148,7 +2148,9 @@ const activeGenerations = new Set<string>();
 
         // ── PHASE 1: Reading ──────────────────────────────────────
         send("phase", { agent:"Reading", icon:"🔍", action:"Analyzing your request...", pct:8 });
-        const projectType = detectProjectType(prompt);
+        const rawProjectType = detectProjectType(prompt);
+        // forceType from UI dropdown overrides auto-detection
+        const projectType = forceType ? forceType.replace("-page","").replace("-","") : rawProjectType;
 
         // Quick plan via fast AI call
         let executionPlan = "";
@@ -2187,7 +2189,11 @@ Format: numbered list only. No preamble.`;
           ? generateWebsiteBlueprint(projectType, prompt)
           : null;
 
-        const _niche = detectNiche(prompt);
+        // forceType (from UI dropdown) prepended for better niche detection
+        const nicheDetectPrompt = forceType
+          ? `${forceType.replace(/-/g," ")} project: ${prompt}`
+          : prompt;
+        const _niche = detectNiche(nicheDetectPrompt);
 
         // ── Reverse Engineering: fetch cached blueprint if URL provided ──
         let cachedUrlBlueprint: any = null;
@@ -2211,7 +2217,7 @@ Format: numbered list only. No preamble.`;
           } catch {}
         }
 
-        const systemPrompt = buildNichePrompt(prompt, projectType, executionPlan, cachedUrlBlueprint)
+        const systemPrompt = buildNichePrompt(nicheDetectPrompt, projectType, executionPlan, cachedUrlBlueprint)
           + (blueprint ? `\n\n${buildBlueprintPrompt(blueprint)}` : "");
         // Fix 5: Abort if client disconnected
         if ((req as any).signal?.aborted) {
