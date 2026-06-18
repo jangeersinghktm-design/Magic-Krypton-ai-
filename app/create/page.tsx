@@ -254,6 +254,7 @@ function CreatePageInner() {
   const params   = useSearchParams();
   const supabase = createClient();
 
+  const [forceType, setForceType] = useState("");
   const [user, setUser]         = useState<any>(null);
   const [prompt, setPrompt]     = useState("");
   const [competitorUrl, setCompetitorUrl] = useState("");
@@ -318,7 +319,8 @@ function CreatePageInner() {
     }
     const urlId = params.get("id");
     const urlPrompt  = params.get("prompt");
-    const forceType  = params.get("forceType") || "";
+    const ft = params.get("forceType") || "";
+    setForceType(ft);
     if (urlId) await loadProject(urlId, session.user.id);
     else if (urlPrompt) {
       const dec = decodeURIComponent(urlPrompt);
