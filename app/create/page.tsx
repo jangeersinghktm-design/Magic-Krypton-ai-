@@ -703,8 +703,7 @@ function CreatePageInner() {
     { id:"files"   as RightTab, icon:"📁", label:"Files" },
     { id:"deploy"  as RightTab, icon:"🚀", label:"Deploy" },
     { id:"history" as RightTab, icon:"⏱", label:"History" },
-  ];
-
+  ]
   return (
     <>
       <style>{`
