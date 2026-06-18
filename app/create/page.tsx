@@ -265,7 +265,6 @@ function CreatePageInner() {
   const [projectName, setProjectName] = useState("New Project");
   const [editingName, setEditingName] = useState(false);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
-  const [forceType, setForceType] = useState("");
   const [device, setDevice]     = useState<Device>("desktop");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -320,8 +319,7 @@ function CreatePageInner() {
     }
     const urlId = params.get("id");
     const urlPrompt  = params.get("prompt");
-    const ft = params.get("forceType") || "";
-    setForceType(ft);
+    const forceType  = params.get("forceType") || "";
     if (urlId) await loadProject(urlId, session.user.id);
     else if (urlPrompt) {
       const dec = decodeURIComponent(urlPrompt);
@@ -376,7 +374,7 @@ function CreatePageInner() {
                   : addMsg({role:"ai",type:"text",content:"Project loaded. Describe changes below."});
     const {data:vers} = await supabase.from("project_versions").select("*").eq("project_id",id).order("version_number",{ascending:false}).limit(20);
     if (vers) setVersions(vers as Version[]);
- 
+
     // Backfill DB for old rows that had no stored memory at all
     if (!storedGameMemory && !storedProjectMemory && (restoredGameMemory || restoredProjectMemory)) {
       persistMemory(id, restoredProjectMemory, restoredGameMemory);
@@ -703,7 +701,7 @@ function CreatePageInner() {
     { id:"preview" as RightTab, icon:"✨", label:"Preview" },
     { id:"files"   as RightTab, icon:"📁", label:"Files" },
     { id:"deploy"  as RightTab, icon:"🚀", label:"Deploy" },
-    { id:"history" as RightTab, icon:"🕐", label:"History" },
+    { id:"history" as RightTab, icon:"⏱", label:"History" },
   ];
 
   return (
@@ -966,7 +964,7 @@ function CreatePageInner() {
 
             {/* Preview */}
             {rightTab==="preview"&&(
-              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0f1117":"#0a0a1a",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto"
+              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0f1117":"#0a0a1a",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto",alignItems:device==="desktop"?"stretch":"flex-start"}}>
                 {result
                   ? <iframe key={`${result.length}-${device}`} srcDoc={result} style={{
                       border:"none",
