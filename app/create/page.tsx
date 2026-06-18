@@ -317,7 +317,8 @@ function CreatePageInner() {
       }
     }
     const urlId = params.get("id");
-    const urlPrompt = params.get("prompt");
+    const urlPrompt  = params.get("prompt");
+    const forceType  = params.get("forceType") || "";
     if (urlId) await loadProject(urlId, session.user.id);
     else if (urlPrompt) {
       const dec = decodeURIComponent(urlPrompt);
@@ -429,23 +430,14 @@ function CreatePageInner() {
     const {data:{session}} = await supabase.auth.getSession();
     if (!session) { setLoading(false); return; }
 
-    // FIX Bug 5: Pre-analyze competitor URL before generation
-    if (competitorUrl.trim()) {
-      try {
-       const urlRes = await fetch("/api/reverse-engineer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: competitorUrl.trim(), accessToken: session.access_token, depth: "quick" }),
-        signal: AbortSignal.timeout(20000),
-      });
-      if (!urlRes.ok) console.warn("[create] reverse-engineer failed:", urlRes.status);
-      } catch (e) {
-        console.warn("[create] URL analysis skipped:", e);
-       }
-      }
-
     // ── Route to Game Builder if game detected ──────────────────
-    const detected = detectGameType(userPrompt);
+    const rawDetected = detectGameType(userPrompt);
+    const forcedToGame = forceType === "game";
+    const forcedAwayFromGame = forceType !== "" && forceType !== "game";
+    const detected = {
+      ...rawDetected,
+      isGame: forcedAwayFromGame ? false : (forcedToGame ? true : rawDetected.isGame),
+    };
     if (detected.isGame) {
       setIsGameProject(true);
     }
@@ -462,7 +454,7 @@ function CreatePageInner() {
     try {
       const res = await fetch(apiEndpoint,{
         method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:userPrompt,userId:session.user.id,accessToken:session.access_token,competitorUrl:competitorUrl.trim()||undefined}),
+        body:JSON.stringify({prompt:userPrompt,userId:session.user.id,accessToken:session.access_token,forceType:forceType||undefined,competitorUrl:competitorUrl?.trim()||undefined}),
         signal:AbortSignal.timeout(55000),
       });
       if (!res.ok||!res.body) throw new Error("stream_failed");
@@ -583,6 +575,18 @@ function CreatePageInner() {
     ]});
     const {data:{session}}=await supabase.auth.getSession();
     if(!session){setLoading(false);return;}
+
+    // Pre-analyze competitor URL before generation (result cached in DB)
+    if (competitorUrl.trim()) {
+      try {
+        await fetch("/api/reverse-engineer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: competitorUrl.trim(), accessToken: session.access_token, depth: "quick" }),
+          signal: AbortSignal.timeout(20000),
+        });
+      } catch {}
+    }
     updateMsg(thinkId,{phases:[
       {agent:"Reading",icon:"○",action:"Request understood",pct:100,done:true,status:"done"},
       {agent:"Building",icon:"○",action:"Applying changes...",pct:55,status:"running"},
@@ -718,7 +722,7 @@ function CreatePageInner() {
       `}</style>
 
       <div
-        style={{height:"100dvh",display:"flex",flexDirection:"column",background:C.bg,color:C.text,overflow:"hidden",fontFamily:"'DM Sans',sans-serif",position:"fixed",inset:0}}
+         style={{height:"100dvh",display:"flex",flexDirection:"column",background:C.bg,color:C.text,overflow:"hidden",fontFamily:"'DM Sans',sans-serif",position:"fixed",inset:0}}
         onDragOver={e=>{e.preventDefault();setIsDragging(true);}}
         onDragLeave={()=>setIsDragging(false)}
         onDrop={e=>{e.preventDefault();setIsDragging(false);}}
@@ -845,24 +849,38 @@ function CreatePageInner() {
 
             {/* Input */}
             <div style={{padding:"10px 14px 12px",borderTop:`1px solid ${C.border}`,background:`rgba(7,9,26,0.95)`,flexShrink:0}}>
-              <div style={{background:C.card,border:`1px solid ${loading?"rgba(139,92,246,0.25)":C.border}`,borderRadius:14,padding:"10px 12px",transition:"border-color .2s"}}>
-                {!result && (
-                  <div style={{marginBottom:8}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(255,255,255,0.03)",borderRadius:10,border:"1px solid rgba(255,255,255,0.06)"}}>
-                      <span style={{fontSize:14,flexShrink:0}}>🔗</span>
-                      <input
-                        type="url"
-                        value={competitorUrl}
-                        onChange={e=>setCompetitorUrl(e.target.value)}
-                        placeholder="Competitor URL (optional): https://stripe.com"
-                        style={{flex:1,background:"none",border:"none",outline:"none",color:"#94A3B8",fontSize:12,fontFamily:"inherit"}}
-                      />
-                      {competitorUrl.trim() && (
-                        <button onClick={()=>setCompetitorUrl("")} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:12}}>✕</button>
-                      )}
-                    </div>
+              {/* Competitor URL input */}
+              {!result && (
+                <div style={{marginBottom:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:"rgba(255,255,255,0.02)",borderRadius:8,border:`1px solid ${C.border}`}}>
+                    <span style={{fontSize:13,flexShrink:0}}>🔗</span>
+                    <input type="url" value={competitorUrl} onChange={e=>setCompetitorUrl(e.target.value)}
+                      placeholder="Competitor URL (optional): https://stripe.com"
+                      style={{flex:1,background:"none",border:"none",outline:"none",color:"#94A3B8",fontSize:12,fontFamily:"inherit"}}/>
+                    {competitorUrl.trim()&&<button onClick={()=>setCompetitorUrl("")} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:12}}>✕</button>}
                   </div>
-                )}
+                </div>
+              )}
+              {/* Quick engineering actions — show only when project exists */}
+              {result && !loading && (
+                <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+                  {[
+                    {label:"🐛 Debug",  action:"[debug] Find and fix all errors and issues in this project"},
+                    {label:"⬆️ Upgrade", action:"[upgrade] Add premium animations, interactions, and missing sections"},
+                    {label:"📱 Mobile",  action:"Fix all mobile and responsive issues in this project"},
+                    {label:"⚡ Speed",   action:"Optimize performance: lazy loading, clean CSS, faster animations"},
+                    {label:"🔍 SEO",     action:"Add proper meta tags, structured data, and semantic HTML for SEO"},
+                  ].map(btn => (
+                    <button key={btn.label} onClick={()=>{ setPrompt(btn.action); }}
+                      style={{fontSize:11,padding:"4px 10px",borderRadius:8,background:"rgba(255,255,255,0.04)",
+                        border:`1px solid ${C.border}`,color:C.muted,cursor:"pointer",transition:"all .15s",whiteSpace:"nowrap"}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(139,92,246,0.4)";e.currentTarget.style.color="#fff";}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}
+                    >{btn.label}</button>
+                  ))}
+                </div>
+              )}
+              <div style={{background:C.card,border:`1px solid ${loading?"rgba(139,92,246,0.25)":C.border}`,borderRadius:14,padding:"10px 12px",transition:"border-color .2s"}}>
                 <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!loading){e.preventDefault();handleSend();}}}
                   placeholder={loading?"Working on it…":result?"Describe a change to make…":"Describe what you want to build…"}
                   rows={2} disabled={loading}
