@@ -703,7 +703,7 @@ function CreatePageInner() {
     { id:"preview" as RightTab, icon:"✨", label:"Preview" },
     { id:"files"   as RightTab, icon:"📁", label:"Files" },
     { id:"deploy"  as RightTab, icon:"🚀", label:"Deploy" },
-    { id:"history" as RightTab, icon:"⏱", label:"History" },
+    { id:"history" as RightTab, icon:"🕐", label:"History" },
   ];
 
   return (
