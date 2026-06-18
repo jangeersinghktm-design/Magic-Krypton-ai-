@@ -720,7 +720,7 @@ function CreatePageInner() {
         .msg-in{animation:fadeUp .22s ease both;}
         .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 0 20px rgba(139,92,246,0.45);}
         .tab-icon:hover{background:rgba(255,255,255,0.07)!important;color:#fff!important;}
-        .quick-btn:hover{border-color:rgba(139,92,246,0.4)!important;color:${C.text}!important;}
+        .quick-btn:hover{border-color:rgba(139,92,246,0.4)!important;color:#FFFFFF!important;}
       `}</style>
 
       <div
