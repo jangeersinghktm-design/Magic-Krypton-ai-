@@ -1687,7 +1687,7 @@ TARGET: 95+/100. Penalty for each failure listed below.
    ✓ No "lorem ipsum" person names
 
 7. COMPETITOR MATCH (10pts):
-   ✓ Design quality matches ${competitorStyle} caliber
+   ✓ Design quality matches ${niche.competitorStyle || "premium agency"} caliber
    ✓ Animations are subtle and purposeful
    ✓ No amateur effects (no rainbow gradients, no excessive shadows)
    ✓ Would pass as agency-built to a designer
