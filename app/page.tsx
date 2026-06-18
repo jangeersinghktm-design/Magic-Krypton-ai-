@@ -249,22 +249,84 @@ export default function HomePage() {
             )}
 
             {!loadingProjects && projects.length > 0 && (
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:12 }}>
                 {projects.map(p => {
                   const name = p.title || p.name || p.prompt?.slice(0,40) || "Untitled Project";
                   const date = new Date(p.updated_at || p.created_at);
                   const timeAgo = formatTimeAgo(date);
+                  const pType = p.project_type || "website";
+                  const typeConfig: Record<string,{icon:string;color:string;label:string}> = {
+                    website:   {icon:"🌐", color:"#6366F1", label:"Website"},
+                    landing:   {icon:"🎯", color:"#EC4899", label:"Landing"},
+                    app:       {icon:"📱", color:"#06B6D4", label:"App"},
+                    game:      {icon:"🎮", color:"#10B981", label:"Game"},
+                    dashboard: {icon:"📊", color:"#F59E0B", label:"Dashboard"},
+                    ecommerce: {icon:"🛒", color:"#F97316", label:"Store"},
+                    portfolio: {icon:"💼", color:"#8B5CF6", label:"Portfolio"},
+                    tool:      {icon:"🔧", color:"#64748B", label:"Tool"},
+                  };
+                  const tc = typeConfig[pType] || typeConfig.website;
                   return (
-                    <button key={p.id} className="proj-btn"
-                      onClick={() => router.push(`/create?id=${p.id}`)}
-                      style={{ padding:"13px 16px", background:C.card, border:`1px solid ${C.border}`, borderRadius:12, color:C.text, fontSize:13, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:12, transition:"all .15s", width:"100%" }}>
-                      <div style={{ width:36, height:36, borderRadius:10, background:"rgba(255,215,0,.08)", border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>📄</div>
-                      <div style={{ flex:1, overflow:"hidden" }}>
-                        <div style={{ fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{name}</div>
-                        <div style={{ fontSize:11, color:C.muted }}>{timeAgo}</div>
+                    <div key={p.id} style={{
+                      background:C.card, border:`1px solid ${C.border}`, borderRadius:16,
+                      overflow:"hidden", cursor:"pointer", transition:"all 0.25s ease",
+                      display:"flex", flexDirection:"column",
+                    }}
+                    onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="rgba(255,215,0,0.3)";(e.currentTarget as HTMLElement).style.transform="translateY(-3px)";(e.currentTarget as HTMLElement).style.boxShadow="0 12px 40px rgba(0,0,0,0.4)";}}
+                    onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor=C.border;(e.currentTarget as HTMLElement).style.transform="";(e.currentTarget as HTMLElement).style.boxShadow="";}}
+                    >
+                      {/* Thumbnail */}
+                      <div style={{
+                        height:120, background:`linear-gradient(135deg,${tc.color}22,${tc.color}08)`,
+                        borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center",
+                        justifyContent:"center", position:"relative", overflow:"hidden",
+                      }}>
+                        <div style={{fontSize:40, opacity:0.4}}>{tc.icon}</div>
+                        <div style={{
+                          position:"absolute", inset:0,
+                          backgroundImage:`linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)`,
+                          backgroundSize:"20px 20px",
+                        }}/>
+                        {/* Type badge */}
+                        <div style={{
+                          position:"absolute", top:10, left:10,
+                          background:`${tc.color}33`, border:`1px solid ${tc.color}55`,
+                          color:tc.color, fontSize:10, fontWeight:700, padding:"2px 8px",
+                          borderRadius:20, letterSpacing:"0.05em",
+                        }}>{tc.label}</div>
+                        {/* Quality score if available */}
+                        {p.quality_score && (
+                          <div style={{
+                            position:"absolute", top:10, right:10,
+                            background:"rgba(16,185,129,0.15)", border:"1px solid rgba(16,185,129,0.3)",
+                            color:"#10B981", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20,
+                          }}>{p.quality_score}%</div>
+                        )}
                       </div>
-                      <span className="proj-arrow" style={{ fontSize:13, color:C.muted, flexShrink:0, transition:"color .15s" }}>Open ↗</span>
-                    </button>
+                      {/* Info */}
+                      <div style={{padding:"12px 14px", flex:1}}>
+                        <div style={{fontWeight:600, fontSize:13, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{name}</div>
+                        <div style={{fontSize:11, color:C.muted}}>{timeAgo}</div>
+                      </div>
+                      {/* Actions */}
+                      <div style={{display:"flex", borderTop:`1px solid ${C.border}`}}>
+                        <button onClick={()=>router.push(`/create?id=${p.id}`)}
+                          style={{flex:1, padding:"8px 0", background:"none", border:"none", color:C.gold,
+                            fontSize:12, fontWeight:600, cursor:"pointer", transition:"background 0.15s"}}
+                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,215,0,0.06)")}
+                          onMouseLeave={e=>(e.currentTarget.style.background="none")}>
+                          Open ↗
+                        </button>
+                        <div style={{width:1, background:C.border}}/>
+                        <button onClick={(e)=>{e.stopPropagation();router.push(`/create?id=${p.id}`);}}
+                          style={{flex:1, padding:"8px 0", background:"none", border:"none", color:C.muted,
+                            fontSize:12, cursor:"pointer", transition:"background 0.15s"}}
+                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
+                          onMouseLeave={e=>(e.currentTarget.style.background="none")}>
+                          Edit ✏️
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -288,4 +350,3 @@ function formatTimeAgo(date: Date): string {
   if (days < 7)    return `${days}d ago`;
   return date.toLocaleDateString();
 }
-                        
