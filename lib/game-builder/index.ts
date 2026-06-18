@@ -55,21 +55,20 @@ export function detectGameType(prompt: string): {
 
   // Is it a game request?
   const gameWords = [
-    'game', 'play', 'gaming', 'arcade', 'level', 'score', 'player',
-    'snake', 'tetris', 'mario', 'pacman', 'flappy', 'dino', 'pong',
-    'chess', 'checkers', 'sudoku', 'wordle', 'crossword',
-    'shooter', 'fps', 'rpg', 'platformer', 'runner', 'jumper',
-    'racing', 'drift', 'car game', 'kart', 'formula',
-    'zombie', 'survival', 'battle royale', 'defense', 'tower',
-    'cricket', 'football', 'basketball', 'soccer', 'baseball',
-    'fighting', 'brawl', 'boxing', 'wrestling',
-    'puzzle', 'match', 'block', 'merge', 'slide',
-    'strategy', 'rts', 'city builder', 'tycoon', 'simulation',
-    'gta', 'open world', 'sandbox', 'minecraft', 'city',
-    'space', 'galaxy', 'alien', 'asteroid', 'star',
-    'dungeon', 'castle', 'adventure', 'quest',
-    'multiplayer', 'clan', 'guild',
+    'game', 'gaming', 'arcade', 'score', 'player',
+    'snake game', 'tetris', 'mario', 'pacman', 'flappy', 'dino game', 'pong',
+    'chess game', 'checkers game', 'sudoku', 'wordle game', 'crossword game',
+    'shooter game', 'fps game', 'rpg game', 'platformer game', 'endless runner',
+    'racing game', 'drift game', 'car game', 'kart game',
+    'zombie game', 'battle royale', 'tower defense',
+    'fighting game', 'boxing game',
+    'match-3', 'block game', 'merge game',
+    'tycoon game', 'city builder game', 'minecraft like',
+    'space game', 'alien game', 'asteroid game',
+    'dungeon game', 'adventure game',
+    'multiplayer game',
     'flappy bird', 'angry birds', 'candy crush',
+    'make a game', 'create a game', 'build a game',
   ];
   const isGame = gameWords.some(w => p.includes(w));
 
