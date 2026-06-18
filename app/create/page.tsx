@@ -266,6 +266,8 @@ function CreatePageInner() {
   const [editingName, setEditingName] = useState(false);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
   const [device, setDevice]     = useState<Device>("desktop");
+  // forceType: read from URL params directly (avoids scope issues)
+  const forceType = (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("forceType") : "") || "";
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"chat"|"preview">("chat");
@@ -319,7 +321,6 @@ function CreatePageInner() {
     }
     const urlId = params.get("id");
     const urlPrompt  = params.get("prompt");
-    const forceType  = params.get("forceType") || "";
     if (urlId) await loadProject(urlId, session.user.id);
     else if (urlPrompt) {
       const dec = decodeURIComponent(urlPrompt);
