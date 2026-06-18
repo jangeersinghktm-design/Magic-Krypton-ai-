@@ -94,7 +94,8 @@ export default function HomePage() {
   const handleGenerate = () => {
     if (!prompt.trim()) return;
     const fullPrompt = buildType !== "Website" ? `Build a ${buildType}: ${prompt}` : prompt;
-    window.open(`/create?prompt=${encodeURIComponent(fullPrompt)}`, "_blank");
+    const typeParam = buildType.toLowerCase().replace(/ /g,"-");
+    window.open(`/create?prompt=${encodeURIComponent(fullPrompt)}&forceType=${encodeURIComponent(typeParam)}`, "_blank");
   };
 
   const handleVoice = () => {
@@ -287,3 +288,4 @@ function formatTimeAgo(date: Date): string {
   if (days < 7)    return `${days}d ago`;
   return date.toLocaleDateString();
 }
+                        
