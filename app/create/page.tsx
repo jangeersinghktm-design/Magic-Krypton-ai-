@@ -254,7 +254,6 @@ function CreatePageInner() {
   const params   = useSearchParams();
   const supabase = createClient();
 
-  const [forceType, setForceType] = useState("");
   const [user, setUser]         = useState<any>(null);
   const [prompt, setPrompt]     = useState("");
   const [competitorUrl, setCompetitorUrl] = useState("");
@@ -267,6 +266,7 @@ function CreatePageInner() {
   const [editingName, setEditingName] = useState(false);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
   const [device, setDevice]     = useState<Device>("desktop");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"chat"|"preview">("chat");
   const [credits, setCredits]   = useState({ total:5, used:0 });
@@ -319,8 +319,7 @@ function CreatePageInner() {
     }
     const urlId = params.get("id");
     const urlPrompt  = params.get("prompt");
-    const ft = params.get("forceType") || "";
-    setForceType(ft);
+    const forceType  = params.get("forceType") || "";
     if (urlId) await loadProject(urlId, session.user.id);
     else if (urlPrompt) {
       const dec = decodeURIComponent(urlPrompt);
@@ -375,7 +374,7 @@ function CreatePageInner() {
                   : addMsg({role:"ai",type:"text",content:"Project loaded. Describe changes below."});
     const {data:vers} = await supabase.from("project_versions").select("*").eq("project_id",id).order("version_number",{ascending:false}).limit(20);
     if (vers) setVersions(vers as Version[]);
-
+ 
     // Backfill DB for old rows that had no stored memory at all
     if (!storedGameMemory && !storedProjectMemory && (restoredGameMemory || restoredProjectMemory)) {
       persistMemory(id, restoredProjectMemory, restoredGameMemory);
@@ -724,12 +723,39 @@ function CreatePageInner() {
       `}</style>
 
       <div
-         style={{height:"100dvh",display:"flex",flexDirection:"column",background:C.bg,color:C.text,overflow:"hidden",fontFamily:"'DM Sans',sans-serif",position:"fixed",inset:0}}
+        style={{height:"100dvh",display:"flex",flexDirection:"column",background:C.bg,color:C.text,overflow:"hidden",fontFamily:"'DM Sans',sans-serif",position:"fixed",inset:0}}
         onDragOver={e=>{e.preventDefault();setIsDragging(true);}}
         onDragLeave={()=>setIsDragging(false)}
         onDrop={e=>{e.preventDefault();setIsDragging(false);}}
       >
-        {/* Drag overlay */}
+        {/* Fullscreen Preview Overlay */}
+      {isFullscreen && result && (
+        <div style={{position:"fixed",inset:0,zIndex:9999,background:"#fff",display:"flex",flexDirection:"column"}}>
+          <div style={{height:44,background:"#0a0a0a",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",flexShrink:0}}>
+            <div style={{display:"flex",gap:6}}>
+              {[{id:"desktop",icon:"🖥️"},{id:"tablet",icon:"⬜"},{id:"mobile",icon:"📱"}].map(d=>(
+                <button key={d.id} onClick={()=>setDevice(d.id as any)}
+                  style={{height:28,padding:"0 10px",borderRadius:6,border:`1px solid ${device===d.id?"rgba(139,92,246,0.5)":"rgba(255,255,255,0.08)"}`,background:device===d.id?"rgba(139,92,246,0.15)":"none",color:device===d.id?"#a78bfa":"#666",fontSize:12,fontWeight:device===d.id?700:400,cursor:"pointer"}}>
+                  {d.icon}
+                </button>
+              ))}
+            </div>
+            <button onClick={()=>setIsFullscreen(false)}
+              style={{height:28,padding:"0 14px",borderRadius:6,border:"1px solid rgba(255,255,255,0.1)",background:"none",color:"#999",fontSize:12,cursor:"pointer"}}>
+              Exit Fullscreen ✕
+            </button>
+          </div>
+          <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"center",justifyContent:"center",background:device==="desktop"?"#fff":"#0a0a1a",overflow:"auto"}}>
+            <iframe srcDoc={result}
+              style={{border:"none",width:device==="desktop"?"100%":device==="tablet"?"768px":"390px",height:"100%",minHeight:"100%",background:"#fff",
+                boxShadow:device!=="desktop"?"0 0 0 12px #1a1a2e,0 20px 60px rgba(0,0,0,0.8)":"none",
+                borderRadius:device==="mobile"?"40px":device==="tablet"?"16px":"0",flexShrink:0}}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" title="Fullscreen Preview"/>
+          </div>
+        </div>
+      )}
+
+      {/* Drag overlay */}
         {isDragging&&<div style={{position:"fixed",inset:0,background:"rgba(139,92,246,0.08)",border:"2px dashed rgba(139,92,246,0.4)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8}}><div style={{fontSize:18,fontWeight:700,color:C.purple}}>Drop files to attach</div></div>}
 
         {/* ── TOP BAR ── */}
@@ -766,7 +792,7 @@ function CreatePageInner() {
         <div style={{flex:1,display:"flex",overflow:"hidden"}}>
 
           {/* ── LEFT: CHAT ── */}
-          <div style={{width:isMobile?"100%":"50%",display:isMobile?(mobilePanel==="chat"?"flex":"none"):"flex",flexDirection:"column",borderRight:isMobile?"none":`1px solid ${C.border}`,background:C.surface,overflow:"hidden"}}>
+          <div style={{width:isMobile?"100%":"340px",minWidth:isMobile?"100%":"280px",maxWidth:isMobile?"100%":"380px",display:isMobile?(mobilePanel==="chat"?"flex":"none"):"flex",flexDirection:"column",borderRight:isMobile?"none":`1px solid ${C.border}`,background:C.surface,overflow:"hidden",flexShrink:0}}>
             {/* Loading indicator */}
             {loading&&<div style={{padding:"6px 16px",borderBottom:`1px solid ${C.border}`,background:"rgba(139,92,246,0.04)",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
               <div style={{display:"flex",gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:C.purple,animation:`pulse 1.2s ${i*.2}s ease-in-out infinite`}}/>)}</div>
@@ -909,7 +935,7 @@ function CreatePageInner() {
           </div>
 
           {/* ── RIGHT: PREVIEW / FILES / DEPLOY / HISTORY ── */}
-          <div style={{flex:1,display:isMobile?(mobilePanel==="preview"?"flex":"none"):"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{flex:1,display:isMobile?(mobilePanel==="preview"?"flex":"none"):"flex",flexDirection:"column",overflow:"hidden",position:"relative"}}>
             {/* Icon tab bar */}
             <div style={{display:"flex",alignItems:"center",padding:"0 8px",borderBottom:`1px solid ${C.border}`,background:C.surface,flexShrink:0,height:44}}>
               {RIGHT_TABS.map(t=>(
@@ -938,9 +964,20 @@ function CreatePageInner() {
 
             {/* Preview */}
             {rightTab==="preview"&&(
-              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:result?(device!=="desktop"?"#141924":"#fff"):"#07091A",padding:result&&device!=="desktop"?"20px":"0"}}>
+              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0f1117":"#0a0a1a",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto",alignItems:device==="desktop"?"stretch":"flex-start"}}>
                 {result
-                  ? <iframe key={`${result.length}-${device}`} srcDoc={result} style={{border:"none",width:device==="desktop"?"100%":device==="tablet"?"768px":"375px",height:device==="desktop"?"100%":"auto",minHeight:device==="desktop"?"100%":"600px",display:"block",opacity:1,background:"#fff",boxShadow:device!=="desktop"?"0 8px 48px rgba(0,0,0,0.8)":"none",transition:"width .3s ease",flexShrink:0}} sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" title="Live Preview"/>
+                  ? <iframe key={`${result.length}-${device}`} srcDoc={result} style={{
+                      border:"none",
+                      width:device==="desktop"?"100%":device==="tablet"?"768px":"390px",
+                      height:device==="desktop"?"100%":"100%",
+                      minHeight:"100%",
+                      display:"block",
+                      background:"#fff",
+                      boxShadow:device!=="desktop"?"0 0 0 12px #1a1a2e,0 0 0 14px #2a2a3e,0 20px 60px rgba(0,0,0,0.8)":"none",
+                      borderRadius:device==="mobile"?"40px":device==="tablet"?"16px":"0",
+                      transition:"width .3s cubic-bezier(0.16,1,0.3,1),border-radius .3s ease",
+                      flexShrink:0,
+                    }} sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" title="Live Preview"/>
                   : <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,height:"100%",textAlign:"center",padding:24}}>
                       <div style={{fontSize:48,opacity:.1}}>✦</div>
                       <div style={{fontSize:14,color:C.muted}}>Preview will appear here</div>
