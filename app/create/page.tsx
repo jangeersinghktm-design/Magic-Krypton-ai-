@@ -266,9 +266,8 @@ function CreatePageInner() {
   const [editingName, setEditingName] = useState(false);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
   const [device, setDevice]     = useState<Device>("desktop");
-  // forceType: read from URL params directly (avoids scope issues)
-  const forceType = (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("forceType") : "") || "";
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [forceType, setForceType] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"chat"|"preview">("chat");
   const [credits, setCredits]   = useState({ total:5, used:0 });
@@ -321,6 +320,7 @@ function CreatePageInner() {
     }
     const urlId = params.get("id");
     const urlPrompt  = params.get("prompt");
+    const ft = params.get("forceType") || ""; setForceType(ft);
     if (urlId) await loadProject(urlId, session.user.id);
     else if (urlPrompt) {
       const dec = decodeURIComponent(urlPrompt);
@@ -720,7 +720,7 @@ function CreatePageInner() {
         .msg-in{animation:fadeUp .22s ease both;}
         .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 0 20px rgba(139,92,246,0.45);}
         .tab-icon:hover{background:rgba(255,255,255,0.07)!important;color:#fff!important;}
-        .quick-btn:hover{border-color:rgba(139,92,246,0.4)!important;color:#FFFFFF!important;}
+        .quick-btn:hover{border-color:rgba(139,92,246,0.4)!important;color:${C.text}!important;}
       `}</style>
 
       <div
