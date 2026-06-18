@@ -965,7 +965,7 @@ function CreatePageInner() {
 
             {/* Preview */}
             {rightTab==="preview"&&(
-              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0f1117":"#0a0a1a",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto",alignItems:device==="desktop"?"stretch":"flex-start"}}>
+              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0f1117":"#0a0a1a",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto",
                 {result
                   ? <iframe key={`${result.length}-${device}`} srcDoc={result} style={{
                       border:"none",
