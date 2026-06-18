@@ -704,6 +704,7 @@ function CreatePageInner() {
     { id:"deploy"  as RightTab, icon:"🚀", label:"Deploy" },
     { id:"history" as RightTab, icon:"⏱", label:"History" },
   ]
+  
   return (
     <>
       <style>{`
