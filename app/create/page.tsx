@@ -265,6 +265,7 @@ function CreatePageInner() {
   const [projectName, setProjectName] = useState("New Project");
   const [editingName, setEditingName] = useState(false);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
+  const [forceType, setForceType] = useState("");
   const [device, setDevice]     = useState<Device>("desktop");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -319,7 +320,8 @@ function CreatePageInner() {
     }
     const urlId = params.get("id");
     const urlPrompt  = params.get("prompt");
-    const forceType  = params.get("forceType") || "";
+    const ft = params.get("forceType") || "";
+    setForceType(ft);
     if (urlId) await loadProject(urlId, session.user.id);
     else if (urlPrompt) {
       const dec = decodeURIComponent(urlPrompt);
