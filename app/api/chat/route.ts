@@ -123,7 +123,7 @@ async function callGemini(messages: any[], system: string): Promise<string> {
   ];
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -156,6 +156,54 @@ ABSOLUTE RULES:
 Even for large files (800-1200 lines) — return the COMPLETE file, never truncate.
 The game must remain fully playable after your edit.`;
 
+// ── Debug Mode System Prompt ────────────────────────────────────
+const DEBUG_SYSTEM = `You are Krypton Debug Engineer — expert at finding and fixing web code issues.
+
+TASK: Analyze the provided HTML/CSS/JS code and fix ALL issues found.
+
+WHAT TO LOOK FOR:
+1. JavaScript errors (undefined variables, missing functions, broken event listeners)
+2. CSS issues (broken layout, overflow, missing styles, z-index conflicts)
+3. HTML structure problems (unclosed tags, wrong nesting, missing elements)
+4. Mobile/responsive issues (no media queries, overflow, tiny touch targets)
+5. Broken interactions (buttons that don't work, forms that don't submit)
+6. Console errors (missing resources, failed fetches)
+7. Performance issues (heavy DOM operations, missing lazy loading)
+
+OUTPUT:
+- List all issues found (numbered)
+- Fix ALL of them in the returned code
+- Explain each fix briefly
+- Return COMPLETE fixed file
+
+RULES:
+1. Do NOT change design/colors/fonts unless they're broken
+2. Do NOT change content or text
+3. Return COMPLETE file: <code_changes>{"index.html": "complete fixed content"}</code_changes>`;
+
+// ── Upgrade Mode System Prompt ───────────────────────────────────
+const UPGRADE_SYSTEM = `You are Krypton Upgrade Engineer — expert at enhancing web projects.
+
+TASK: Upgrade the provided project by adding premium features and improvements.
+
+UPGRADES TO APPLY:
+1. Add smooth scroll animations (IntersectionObserver on all sections)
+2. Add hover micro-interactions on all cards and buttons
+3. Improve visual hierarchy (spacing, typography scale)
+4. Add loading states and transitions
+5. Add keyboard navigation support
+6. Improve mobile experience (better touch targets, spacing)
+7. Add missing sections if gaps exist (FAQ, testimonials, footer)
+8. Improve CTA prominence and conversion elements
+
+RULES:
+1. Preserve ALL existing content and design language
+2. Only ADD/IMPROVE — never remove existing functionality
+3. Match existing color scheme and fonts exactly
+4. Return COMPLETE upgraded file
+
+Return: <code_changes>{"index.html": "complete upgraded content"}</code_changes>`;
+
 // ── Main Route ───────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -171,8 +219,10 @@ export async function POST(req: NextRequest) {
       message,
     } = await req.json();
 
-    // Choose system prompt: game edits get specialized game engineer prompt
+    // Choose system prompt based on mode
     const isGameEdit = framework === "game" || !!gameMemory;
+    const isDebugMode   = userMessage?.toLowerCase().startsWith("[debug]") || message?.toLowerCase().startsWith("[debug]");
+    const isUpgradeMode = userMessage?.toLowerCase().startsWith("[upgrade]") || message?.toLowerCase().startsWith("[upgrade]");
 
     const actualMessage = userMessage || message || "";
     if (!actualMessage?.trim()) {
@@ -213,8 +263,10 @@ ${isGameEdit ? "GAME EDIT REQUEST" : "Edit Request"}: ${actualMessage}`
     ];
 
     // ── 3-Layer AI Cascade ────────────────────────────────────
-    // Game edits use specialized system prompt with strict preservation rules
-    const SYSTEM = isGameEdit ? GAME_EDIT_SYSTEM : CHAT_SYSTEM;
+    const SYSTEM = isGameEdit   ? GAME_EDIT_SYSTEM
+                 : isDebugMode   ? DEBUG_SYSTEM
+                 : isUpgradeMode ? UPGRADE_SYSTEM
+                 : CHAT_SYSTEM;
     const providers = [
       { name: "claude", fn: () => callClaude(messages, SYSTEM) },
       { name: "openai", fn: () => callOpenAI(messages, SYSTEM) },
@@ -279,3 +331,4 @@ ${isGameEdit ? "GAME EDIT REQUEST" : "Edit Request"}: ${actualMessage}`
     });
   }
 }
+        
