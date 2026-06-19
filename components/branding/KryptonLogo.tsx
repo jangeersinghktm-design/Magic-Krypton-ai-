@@ -1,12 +1,13 @@
 "use client";
 /**
- * KRYPTON AI — Global Brand Identity System
- * 
- * Design philosophy: Three geometric strokes.
- * No decorations. No glow. No nodes. No hexagons.
- * 
- * Inspired by: Stripe, Linear, OpenAI, Anthropic, Apple.
- * The K is recognizable at 16px favicon and 1000px billboard.
+ * KRYPTON AI — Premium Brand Identity System v2
+ *
+ * Design philosophy: Precision node-network mark.
+ * Represents intelligence, neural connection, and engineering precision.
+ * No letterforms. No gold. No cartoon feeling.
+ *
+ * Inspired by: OpenAI, Anthropic, Linear, Stripe — geometric restraint.
+ * Palette: Platinum / Silver on deep space background.
  */
 
 import { useState, useId } from "react";
@@ -37,10 +38,8 @@ export default function KryptonLogo({
 
   const hasText = showText || variant === "full";
 
-  // Canvas dimensions
-  // Icon = 40×40, text area adds 160px width
   const GAP_W  = 14;
-  const TEXT_W  = 160;
+  const TEXT_W = 168;
   const vbW    = 40 + (hasText ? GAP_W + TEXT_W : 0);
   const totalW = (size / 40) * vbW;
 
@@ -55,7 +54,7 @@ export default function KryptonLogo({
       style={{
         flexShrink:  0,
         cursor:      onClick ? "pointer" : "default",
-        transition:  animated ? "transform 0.2s ease, opacity 0.2s ease" : "none",
+        transition:  animated ? "transform 0.25s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease" : "none",
         transform:   hov && animated ? "scale(1.04)" : "scale(1)",
         ...style,
       }}
@@ -66,106 +65,102 @@ export default function KryptonLogo({
       role={onClick ? "button" : "img"}
     >
       <defs>
-        {/* Gold → Orange gradient — applied to strokes */}
-        <linearGradient
-          id={`${uid}_g`}
-          x1="10" y1="4" x2="32" y2="36"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0%"   stopColor="#FFD700"/>
-          <stop offset="55%"  stopColor="#FFB000"/>
-          <stop offset="100%" stopColor="#FF7A00"/>
+        {/* Platinum → Silver gradient for nodes/edges */}
+        <linearGradient id={`${uid}_g`} x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#F5F5F5"/>
+          <stop offset="55%"  stopColor="#D9D9D9"/>
+          <stop offset="100%" stopColor="#BFC5CC"/>
         </linearGradient>
 
-        {/* Wordmark text gradient */}
+        {/* Core node — brighter, the "intelligence" point */}
+        <radialGradient id={`${uid}_core`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stopColor="#FFFFFF"/>
+          <stop offset="100%" stopColor="#D9D9D9"/>
+        </radialGradient>
+
+        {/* Wordmark gradient */}
         <linearGradient id={`${uid}_t`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="#FFD700"/>
-          <stop offset="70%"  stopColor="#FFB000"/>
-          <stop offset="100%" stopColor="rgba(255,255,255,0.82)"/>
+          <stop offset="0%"   stopColor="#F5F5F5"/>
+          <stop offset="100%" stopColor="#BFC5CC"/>
         </linearGradient>
 
-        {/* Underline accent gradient */}
-        <linearGradient id={`${uid}_u`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="#FFD700" stopOpacity="0.7"/>
-          <stop offset="100%" stopColor="#FF7A00" stopOpacity="0"/>
-        </linearGradient>
+        {/* Glow filter for hover state */}
+        <filter id={`${uid}_glow`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.4" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
       </defs>
 
-      {/* ═══════════════════════════════════════ */}
-      {/*  THE K — Three precise strokes          */}
-      {/*  strokeLinecap="square": architectural  */}
-      {/*  All strokes meet at (10, 20)            */}
-      {/* ═══════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {/*  PRECISION NODE MARK                                */}
+      {/*  3 outer nodes (neural inputs) connect to 1 core    */}
+      {/*  node (intelligence) — asymmetric, engineered feel  */}
+      {/* ═══════════════════════════════════════════════════ */}
+      <g filter={hov && animated ? `url(#${uid}_glow)` : undefined} style={{ transition: "filter 0.25s ease" }}>
+        {/* Connection edges — drawn first, beneath nodes */}
+        <line x1="20" y1="20" x2="9"  y2="9"  stroke={`url(#${uid}_g)`} strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
+        <line x1="20" y1="20" x2="31" y2="9"  stroke={`url(#${uid}_g)`} strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
+        <line x1="20" y1="20" x2="9"  y2="31" stroke={`url(#${uid}_g)`} strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
+        <line x1="20" y1="20" x2="31" y2="31" stroke={`url(#${uid}_g)`} strokeWidth="1.4" strokeLinecap="round" opacity="0.55"/>
 
-      {/* Vertical stem */}
-      <line
-        x1="10" y1="4"
-        x2="10" y2="36"
-        stroke={`url(#${uid}_g)`}
-        strokeWidth={hov && animated ? 3.6 : 3.4}
-        strokeLinecap="square"
-        style={{ transition: "stroke-width 0.2s ease" }}
-      />
+        {/* Outer ring — precision boundary */}
+        <circle cx="20" cy="20" r="17.5" stroke={`url(#${uid}_g)`} strokeWidth="1" opacity="0.18" fill="none"/>
 
-      {/* Upper arm — rises 45° from center to top-right */}
-      <line
-        x1="10" y1="20"
-        x2="32" y2="4"
-        stroke={`url(#${uid}_g)`}
-        strokeWidth={hov && animated ? 3.6 : 3.4}
-        strokeLinecap="square"
-        style={{ transition: "stroke-width 0.2s ease" }}
-      />
+        {/* Four outer nodes */}
+        <circle cx="9"  cy="9"  r="2.6" fill={`url(#${uid}_g)`}/>
+        <circle cx="31" cy="9"  r="2.6" fill={`url(#${uid}_g)`}/>
+        <circle cx="9"  cy="31" r="2.6" fill={`url(#${uid}_g)`}/>
+        <circle cx="31" cy="31" r="2.6" fill={`url(#${uid}_g)`}/>
 
-      {/* Lower arm — descends 45° from center to bottom-right */}
-      <line
-        x1="10" y1="20"
-        x2="32" y2="36"
-        stroke={`url(#${uid}_g)`}
-        strokeWidth={hov && animated ? 3.6 : 3.4}
-        strokeLinecap="square"
-        style={{ transition: "stroke-width 0.2s ease" }}
-      />
+        {/* Core node — the intelligence point, larger + brighter */}
+        <circle
+          cx="20" cy="20"
+          r={hov && animated ? 5.6 : 5}
+          fill={`url(#${uid}_core)`}
+          style={{ transition: "r 0.25s cubic-bezier(0.16,1,0.3,1)" }}
+        />
+        <circle cx="20" cy="20" r={hov && animated ? 5.6 : 5} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="0.6"
+          style={{ transition: "r 0.25s cubic-bezier(0.16,1,0.3,1)" }}/>
+      </g>
 
-      {/* ═══════════════════════════════════════ */}
-      {/*  WORDMARK — KRYPTON + AI               */}
-      {/* ═══════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {/*  WORDMARK — KRYPTON AI                              */}
+      {/* ═══════════════════════════════════════════════════ */}
       {hasText && (
         <g>
-          {/* KRYPTON */}
           <text
-            x="54"
-            y="23"
-            fontFamily="'Baloo 2', 'DM Sans', system-ui, sans-serif"
+            x="54" y="23"
+            fontFamily="'Inter', system-ui, sans-serif"
             fontSize="15"
-            fontWeight="800"
-            letterSpacing="2.8"
+            fontWeight="700"
+            letterSpacing="1.2"
             fill={`url(#${uid}_t)`}
           >
-            KRYPTON
+            KRYPTON AI
           </text>
 
-          {/* AI — subdued, smaller, wider tracking */}
           <text
-            x="54"
-            y="33"
-            fontFamily="'DM Sans', system-ui, sans-serif"
-            fontSize="7.5"
-            fontWeight="400"
-            letterSpacing="5"
-            fill="rgba(255,255,255,0.38)"
+            x="54" y="33"
+            fontFamily="'Inter', system-ui, sans-serif"
+            fontSize="7"
+            fontWeight="500"
+            letterSpacing="2.6"
+            fill="rgba(255,255,255,0.36)"
           >
             ARTIFICIAL INTELLIGENCE
           </text>
 
-          {/* Animated underline */}
+          {/* Static precision underline — no animation, restrained */}
           <rect
             x="54" y="36.5"
-            width={hov && animated ? 162 : 98}
-            height="0.7"
-            rx="0.35"
-            fill={`url(#${uid}_u)`}
-            style={{ transition: "width 0.4s ease" }}
+            width="120"
+            height="0.6"
+            rx="0.3"
+            fill={`url(#${uid}_t)`}
+            opacity="0.3"
           />
         </g>
       )}
