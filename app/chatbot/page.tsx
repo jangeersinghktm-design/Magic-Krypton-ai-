@@ -132,7 +132,7 @@ export default function ChatbotPage(){
   return(
     <div style={{display:"flex",height:"100vh",background:C.bg,color:C.text,fontFamily:"'Inter',sans-serif",overflow:"hidden"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Baloo+2:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:rgba(255,217,61,.2);border-radius:4px;}
         textarea{font-family:'Inter',sans-serif;}input{font-family:'Inter',sans-serif;}
@@ -141,7 +141,7 @@ export default function ChatbotPage(){
         .cb pre{padding:14px;overflow-x:auto;}.cb code{font-family:'JetBrains Mono',monospace;font-size:13px;color:#E2E8F0;line-height:1.6;}
         .cpb{position:absolute;top:8px;right:8px;padding:4px 10px;background:rgba(255,217,61,.1);border:1px solid rgba(255,217,61,.25);border-radius:6px;color:#FFD93D;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;}
         .ic{background:rgba(255,255,255,.08);border-radius:4px;padding:2px 6px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#FFD93D;}
-        .mc h1{font-size:20px;font-weight:700;margin:12px 0 8px;font-family:'Syne',sans-serif;}
+        .mc h1{font-size:20px;font-weight:700;margin:12px 0 8px;font-family:'Baloo 2',sans-serif;}
         .mc h2{font-size:17px;font-weight:600;margin:10px 0 6px;}
         .mc h3{font-size:15px;font-weight:600;margin:8px 0 4px;color:#FFD93D;}
         .mc p{line-height:1.75;margin-bottom:10px;}.mc ul{padding-left:20px;margin-bottom:10px;}
@@ -166,7 +166,7 @@ export default function ChatbotPage(){
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{width:28,height:28,borderRadius:8,background:C.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🤖</div>
-                <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Krypton Chat</span>
+                <span style={{fontFamily:"'Baloo 2',sans-serif",fontWeight:800,fontSize:14,background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Krypton Chat</span>
               </div>
               {isMobile&&<button onClick={()=>setSidebar(false)} style={{background:"none",border:"none",color:C.sub,cursor:"pointer",fontSize:20}}>✕</button>}
             </div>
@@ -224,7 +224,7 @@ export default function ChatbotPage(){
         <div style={{padding:"10px 16px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10,background:"rgba(11,16,32,.85)",backdropFilter:"blur(20px)",flexShrink:0}}>
           <button onClick={()=>setSidebar(v=>!v)} style={{background:"rgba(255,255,255,.05)",border:`1px solid ${C.border}`,borderRadius:8,padding:"6px 10px",color:C.sub,cursor:"pointer",fontSize:13}}>☰</button>
           <div style={{flex:1}}>
-            <div style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:14}}>{activeChat?.title||"New Chat"}</div>
+            <div style={{fontFamily:"'Baloo 2',sans-serif",fontWeight:700,fontSize:14}}>{activeChat?.title||"New Chat"}</div>
             <div style={{fontSize:11,color:C.muted}}>{activeChat?.messages.length||0} messages</div>
           </div>
           <button onClick={addChat} style={{padding:"7px 14px",background:C.grad,border:"none",borderRadius:8,color:"#0B1020",fontWeight:700,fontSize:12,cursor:"pointer"}}>+ New</button>
@@ -235,7 +235,7 @@ export default function ChatbotPage(){
           {(!activeChat||activeChat.messages.length===0)&&(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:14,padding:32,textAlign:"center"}}>
               <div style={{width:56,height:56,borderRadius:18,background:C.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>🤖</div>
-              <h2 style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800}}>How can I help you?</h2>
+              <h2 style={{fontFamily:"'Baloo 2',sans-serif",fontSize:20,fontWeight:800}}>How can I help you?</h2>
               <p style={{color:C.sub,fontSize:14,maxWidth:380,lineHeight:1.6}}>Ask me anything — coding, writing, analysis, or creative ideas.</p>
               <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",maxWidth:520}}>
                 {SUGGESTIONS.map(q=>(
@@ -328,5 +328,3 @@ export default function ChatbotPage(){
     </div>
   );
 }
-
-          
