@@ -136,7 +136,7 @@ export default function KryptonLogo({
           <text
             x="54"
             y="23"
-            fontFamily="'Syne', 'DM Sans', system-ui, sans-serif"
+            fontFamily="'Baloo 2', 'DM Sans', system-ui, sans-serif"
             fontSize="15"
             fontWeight="800"
             letterSpacing="2.8"
