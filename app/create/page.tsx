@@ -17,21 +17,21 @@ import { runProductionGate } from "@/lib/completion-engine";
 
 // ── Design Tokens ─────────────────────────────────────────────────
 const C = {
-  bg:       "#07091A",   // Dark Navy
-  surface:  "#0C0F24",
-  card:     "#121629",
-  border:   "rgba(139,92,246,0.12)",
-  borderHi: "rgba(139,92,246,0.35)",
-  text:     "#F0F4FF",
-  sub:      "#8892A4",
-  muted:    "#3D4A6B",
-  gold:     "#FFD700",
-  purple:   "#8B5CF6",
-  violet:   "#7C3AED",
-  green:    "#00D084",
-  red:      "#FF4545",
-  grad:     "linear-gradient(135deg,#FFD700,#FF7A00)",
-  gradP:    "linear-gradient(135deg,#8B5CF6,#6D28D9)",
+  bg:       "#050816",   // Deep Space
+  surface:  "#0B1020",
+  card:     "#11151F",   // Graphite
+  border:   "rgba(255,255,255,0.08)",
+  borderHi: "rgba(245,245,245,0.22)",
+  text:     "#F5F5F5",   // Platinum
+  sub:      "#9AA3AF",
+  muted:    "#5B6472",
+  gold:     "#F5F5F5",   // legacy key name, platinum value
+  purple:   "#D9D9D9",   // legacy key name, silver value
+  violet:   "#BFC5CC",   // legacy key name, accent-silver value
+  green:    "#5FB88A",
+  red:      "#E5736B",
+  grad:     "linear-gradient(135deg,#F5F5F5,#BFC5CC)",
+  gradP:    "linear-gradient(135deg,#D9D9D9,#9AA3AF)",
 };
 
 type MsgRole  = "user" | "ai";
@@ -130,13 +130,13 @@ function ThinkingPanel({ phases, isActive }: { phases:AgentPhaseEvent[]; isActiv
   return (
     <div style={{ padding:"0 16px 4px" }}>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-        <div style={{ width:18, height:18, borderRadius:"50%", background:`rgba(139,92,246,0.1)`, border:`1px solid rgba(139,92,246,0.3)`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <div style={{ width:18, height:18, borderRadius:"50%", background:`rgba(245,245,245,0.1)`, border:`1px solid rgba(245,245,245,0.3)`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
           <img src="/logo.svg" width={10} height={10} alt="" style={{ opacity:.8 }}/>
         </div>
         <span style={{ fontSize:11, color:C.muted, fontWeight:500 }}>Krypton Intelligence</span>
       </div>
 
-      <div style={{ background:"rgba(139,92,246,0.04)", border:`1px solid rgba(139,92,246,0.12)`, borderRadius:12, overflow:"hidden" }}>
+      <div style={{ background:"rgba(245,245,245,0.04)", border:`1px solid rgba(245,245,245,0.12)`, borderRadius:12, overflow:"hidden" }}>
         {/* Thinking header */}
         <button
           onClick={()=>setCollapsed(v=>!v)}
@@ -171,17 +171,17 @@ function ThinkingPanel({ phases, isActive }: { phases:AgentPhaseEvent[]; isActiv
               return (
                 <div key={label} style={{ display:"flex", alignItems:"center", gap:10, padding:"4px 0", opacity:notReached?0.25:1, transition:"opacity .3s" }}>
                   <div style={{ width:14, height:14, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
-                    background:isDoneS?"rgba(0,208,132,0.1)":isActiveS?"rgba(139,92,246,0.12)":"rgba(255,255,255,0.04)",
-                    border:`1px solid ${isDoneS?"rgba(0,208,132,0.35)":isActiveS?"rgba(139,92,246,0.4)":"rgba(255,255,255,0.07)"}`,
+                    background:isDoneS?"rgba(0,208,132,0.1)":isActiveS?"rgba(245,245,245,0.12)":"rgba(255,255,255,0.04)",
+                    border:`1px solid ${isDoneS?"rgba(0,208,132,0.35)":isActiveS?"rgba(245,245,245,0.4)":"rgba(255,255,255,0.07)"}`,
                   }}>
                     {isDoneS ? <span style={{color:C.green,fontSize:7,fontWeight:800}}>✓</span>
-                    :isActiveS ? <div style={{width:5,height:5,borderRadius:"50%",border:"1.5px solid rgba(139,92,246,0.3)",borderTopColor:C.purple,animation:"spin .7s linear infinite"}}/>
+                    :isActiveS ? <div style={{width:5,height:5,borderRadius:"50%",border:"1.5px solid rgba(245,245,245,0.3)",borderTopColor:C.purple,animation:"spin .7s linear infinite"}}/>
                     : <div style={{width:3,height:3,borderRadius:"50%",background:"rgba(255,255,255,0.15)"}}/>}
                   </div>
                   <span style={{ fontSize:12, color:isDoneS?"rgba(255,255,255,0.2)":isActiveS?C.purple:C.sub, textDecoration:isDoneS?"line-through":"none", textDecorationColor:"rgba(255,255,255,0.1)", fontWeight:isActiveS?600:400 }}>
                     {label}
                   </span>
-                  {isActiveS && info.pct>0 && <span style={{fontSize:10,color:"rgba(139,92,246,0.5)",marginLeft:"auto"}}>{info.pct}%</span>}
+                  {isActiveS && info.pct>0 && <span style={{fontSize:10,color:"rgba(245,245,245,0.5)",marginLeft:"auto"}}>{info.pct}%</span>}
                 </div>
               );
             })}
@@ -224,7 +224,7 @@ function FilesPanel({ html, projectName }: { html:string; projectName:string }) 
       {/* File tabs */}
       <div style={{ display:"flex", gap:2, padding:"8px 12px", borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
         {files.map(f=>(
-          <button key={f.name} onClick={()=>setActiveFile(f.name)} style={{ padding:"5px 12px", borderRadius:8, border:"none", background:activeFile===f.name?"rgba(139,92,246,0.15)":"transparent", color:activeFile===f.name?C.purple:C.muted, fontSize:11.5, fontWeight:activeFile===f.name?600:400, cursor:"pointer", display:"flex", alignItems:"center", gap:5, transition:"all .15s" }}>
+          <button key={f.name} onClick={()=>setActiveFile(f.name)} style={{ padding:"5px 12px", borderRadius:8, border:"none", background:activeFile===f.name?"rgba(245,245,245,0.15)":"transparent", color:activeFile===f.name?C.purple:C.muted, fontSize:11.5, fontWeight:activeFile===f.name?600:400, cursor:"pointer", display:"flex", alignItems:"center", gap:5, transition:"all .15s" }}>
             <span>{f.icon}</span><span>{f.name}</span><span style={{opacity:.5,fontSize:10}}>{f.size}</span>
           </button>
         ))}
@@ -232,7 +232,7 @@ function FilesPanel({ html, projectName }: { html:string; projectName:string }) 
           <button onClick={handleCopy} style={{ padding:"4px 10px", background:copied?"rgba(0,208,132,0.1)":"rgba(255,255,255,0.04)", border:`1px solid ${copied?"rgba(0,208,132,0.2)":C.border}`, borderRadius:7, color:copied?C.green:C.muted, fontSize:11, cursor:"pointer" }}>
             {copied?"✓ Copied":"Copy"}
           </button>
-          <button onClick={handleDownload} style={{ padding:"4px 10px", background:C.grad, border:"none", borderRadius:7, color:"#080B14", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+          <button onClick={handleDownload} style={{ padding:"4px 10px", background:C.grad, border:"none", borderRadius:7, color:"#050816", fontSize:11, fontWeight:700, cursor:"pointer" }}>
             ↓ HTML
           </button>
         </div>
@@ -240,7 +240,7 @@ function FilesPanel({ html, projectName }: { html:string; projectName:string }) 
 
       {/* Code viewer */}
       <div style={{ flex:1, overflowY:"auto", padding:"12px 16px" }}>
-        <pre style={{ margin:0, fontSize:11.5, lineHeight:1.6, color:"#8B9FD4", fontFamily:"'JetBrains Mono',monospace", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+        <pre style={{ margin:0, fontSize:11.5, lineHeight:1.6, color:"#9AA3AF", fontFamily:"'JetBrains Mono',monospace", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
           {active?.content||""}
         </pre>
       </div>
@@ -531,7 +531,7 @@ function CreatePageInner() {
       newGameMem = buildGameMemory(html, userPrompt, detected, gameMemory, receivedBlueprint);
       setGameMemory(newGameMem);
     }
-     // Priority 1 — persist ProjectMemory + GameMemory for this project
+    // Priority 1 — persist ProjectMemory + GameMemory for this project
     persistMemory(savedPid||projectId, newProjMem, newGameMem||null);
     updateMsg(thinkId,{isActive:false});
     const qualityBadge = completenessScore!==null
@@ -708,19 +708,19 @@ function CreatePageInner() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
-        html,body{height:100%;overflow:hidden;background:#07091A;}
+        html,body{height:100%;overflow:hidden;background:#050816;}
         ::-webkit-scrollbar{width:3px;height:3px;}
-        ::-webkit-scrollbar-thumb{background:rgba(139,92,246,0.2);border-radius:4px;}
+        ::-webkit-scrollbar-thumb{background:rgba(245,245,245,0.2);border-radius:4px;}
         textarea,input,button{font-family:'DM Sans',sans-serif;}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
         .msg-in{animation:fadeUp .22s ease both;}
-        .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 0 20px rgba(139,92,246,0.45);}
+        .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 0 20px rgba(245,245,245,0.45);}
         .tab-icon:hover{background:rgba(255,255,255,0.07)!important;color:#fff!important;}
-        .quick-btn:hover{border-color:rgba(139,92,246,0.4)!important;color:${C.text}!important;}
+        .quick-btn:hover{border-color:rgba(245,245,245,0.4)!important;color:${C.text}!important;}
       `}</style>
 
       <div
@@ -736,7 +736,7 @@ function CreatePageInner() {
             <div style={{display:"flex",gap:6}}>
               {[{id:"desktop",icon:"🖥️"},{id:"tablet",icon:"⬜"},{id:"mobile",icon:"📱"}].map(d=>(
                 <button key={d.id} onClick={()=>setDevice(d.id as any)}
-                  style={{height:28,padding:"0 10px",borderRadius:6,border:`1px solid ${device===d.id?"rgba(139,92,246,0.5)":"rgba(255,255,255,0.08)"}`,background:device===d.id?"rgba(139,92,246,0.15)":"none",color:device===d.id?"#a78bfa":"#666",fontSize:12,fontWeight:device===d.id?700:400,cursor:"pointer"}}>
+                  style={{height:28,padding:"0 10px",borderRadius:6,border:`1px solid ${device===d.id?"rgba(245,245,245,0.5)":"rgba(255,255,255,0.08)"}`,background:device===d.id?"rgba(245,245,245,0.15)":"none",color:device===d.id?"#D9D9D9":"#666",fontSize:12,fontWeight:device===d.id?700:400,cursor:"pointer"}}>
                   {d.icon}
                 </button>
               ))}
@@ -746,10 +746,10 @@ function CreatePageInner() {
               Exit Fullscreen ✕
             </button>
           </div>
-          <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"center",justifyContent:"center",background:device==="desktop"?"#fff":"#0a0a1a",overflow:"auto"}}>
+          <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"center",justifyContent:"center",background:device==="desktop"?"#fff":"#050816",overflow:"auto"}}>
             <iframe srcDoc={result}
               style={{border:"none",width:device==="desktop"?"100%":device==="tablet"?"768px":"390px",height:"100%",minHeight:"100%",background:"#fff",
-                boxShadow:device!=="desktop"?"0 0 0 12px #1a1a2e,0 20px 60px rgba(0,0,0,0.8)":"none",
+                boxShadow:device!=="desktop"?"0 0 0 12px #11151F,0 20px 60px rgba(0,0,0,0.8)":"none",
                 borderRadius:device==="mobile"?"40px":device==="tablet"?"16px":"0",flexShrink:0}}
               sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" title="Fullscreen Preview"/>
           </div>
@@ -757,7 +757,7 @@ function CreatePageInner() {
       )}
 
       {/* Drag overlay */}
-        {isDragging&&<div style={{position:"fixed",inset:0,background:"rgba(139,92,246,0.08)",border:"2px dashed rgba(139,92,246,0.4)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8}}><div style={{fontSize:18,fontWeight:700,color:C.purple}}>Drop files to attach</div></div>}
+        {isDragging&&<div style={{position:"fixed",inset:0,background:"rgba(245,245,245,0.08)",border:"2px dashed rgba(245,245,245,0.4)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8}}><div style={{fontSize:18,fontWeight:700,color:C.purple}}>Drop files to attach</div></div>}
 
         {/* ── TOP BAR ── */}
         <div style={{height:50,flexShrink:0,padding:"0 14px",borderBottom:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",gap:10,zIndex:100}}>
@@ -766,7 +766,7 @@ function CreatePageInner() {
 
           {editingName
             ? <input autoFocus value={projectName} onChange={e=>setProjectName(e.target.value)} onBlur={()=>setEditingName(false)} onKeyDown={e=>e.key==="Enter"&&setEditingName(false)}
-                style={{flex:1,maxWidth:260,background:"rgba(139,92,246,0.08)",border:`1px solid ${C.purple}`,borderRadius:7,color:C.text,padding:"3px 10px",fontSize:13,fontWeight:600,outline:"none"}}/>
+                style={{flex:1,maxWidth:260,background:"rgba(245,245,245,0.08)",border:`1px solid ${C.purple}`,borderRadius:7,color:C.text,padding:"3px 10px",fontSize:13,fontWeight:600,outline:"none"}}/>
             : <button onClick={()=>setEditingName(true)} style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",padding:"2px 8px",flex:1,textAlign:"left",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:240}}>
                 {projectName} <span style={{opacity:.4}}>✏</span>
               </button>
@@ -785,7 +785,7 @@ function CreatePageInner() {
             <div onClick={()=>remaining===0?router.push("/billing"):undefined} style={{padding:"3px 10px",borderRadius:16,background:remaining>0?"rgba(255,215,0,0.07)":"rgba(255,69,69,0.12)",border:`1px solid ${remaining>0?"rgba(255,215,0,0.18)":"rgba(255,69,69,0.35)"}`,fontSize:11,fontWeight:700,color:remaining>0?C.gold:C.red,cursor:remaining===0?"pointer":"default",userSelect:"none"}} title={remaining===0?"Click to upgrade":"Credits remaining"}>
               ⚡ {remaining>0?remaining:"0 — Upgrade"}
             </div>
-            {result&&<button onClick={()=>saveProject(result,projectName)} style={{padding:"4px 12px",background:saved?"rgba(0,208,132,0.08)":"rgba(139,92,246,0.08)",border:`1px solid ${saved?"rgba(0,208,132,0.2)":"rgba(139,92,246,0.2)"}`,borderRadius:8,color:saved?C.green:C.purple,fontSize:11,fontWeight:600,cursor:"pointer"}}>{saving?"…":saved?"✓":"Save"}</button>}
+            {result&&<button onClick={()=>saveProject(result,projectName)} style={{padding:"4px 12px",background:saved?"rgba(0,208,132,0.08)":"rgba(245,245,245,0.08)",border:`1px solid ${saved?"rgba(0,208,132,0.2)":"rgba(245,245,245,0.2)"}`,borderRadius:8,color:saved?C.green:C.purple,fontSize:11,fontWeight:600,cursor:"pointer"}}>{saving?"…":saved?"✓":"Save"}</button>}
           </div>
         </div>
 
@@ -795,7 +795,7 @@ function CreatePageInner() {
           {/* ── LEFT: CHAT ── */}
           <div style={{width:isMobile?"100%":"340px",minWidth:isMobile?"100%":"280px",maxWidth:isMobile?"100%":"380px",display:isMobile?(mobilePanel==="chat"?"flex":"none"):"flex",flexDirection:"column",borderRight:isMobile?"none":`1px solid ${C.border}`,background:C.surface,overflow:"hidden",flexShrink:0}}>
             {/* Loading indicator */}
-            {loading&&<div style={{padding:"6px 16px",borderBottom:`1px solid ${C.border}`,background:"rgba(139,92,246,0.04)",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+            {loading&&<div style={{padding:"6px 16px",borderBottom:`1px solid ${C.border}`,background:"rgba(245,245,245,0.04)",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
               <div style={{display:"flex",gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:C.purple,animation:`pulse 1.2s ${i*.2}s ease-in-out infinite`}}/>)}</div>
               <span style={{fontSize:12,color:C.purple,fontWeight:500}}>Krypton Intelligence Engine — Active</span>
             </div>}
@@ -806,12 +806,12 @@ function CreatePageInner() {
                 <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:18,textAlign:"center",padding:"24px 20px"}}>
                   <KryptonLogo size={48} showText={false} animated={true}/>
                   <div>
-                    <div style={{fontSize:19,fontWeight:800,marginBottom:6,fontFamily:"'Baloo 2',sans-serif",background:"linear-gradient(135deg,#F0F4FF,#8B9FD4)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>What do you want to build?</div>
+                    <div style={{fontSize:19,fontWeight:800,marginBottom:6,fontFamily:"'Syne',sans-serif",background:"linear-gradient(135deg,#F5F5F5,#9AA3AF)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>What do you want to build?</div>
                     <div style={{fontSize:13,color:C.muted,lineHeight:1.65}}>Describe your idea — Krypton AI will build it.</div>
                   </div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:7,justifyContent:"center",maxWidth:430}}>
                     {["Build a restaurant website","Make a Snake game","Create a Space Shooter","Build a SaaS landing page","Create a Racing game","Make a Zombie Survival game","Design a portfolio","Create Tetris game","Build a Platformer"].map(s=>(
-                      <button key={s} className="quick-btn" onClick={()=>setPrompt(s)} style={{padding:"6px 14px",background:"rgba(139,92,246,0.06)",border:`1px solid rgba(139,92,246,0.15)`,borderRadius:20,color:C.muted,fontSize:12,cursor:"pointer",transition:"all .15s"}}>{s}</button>
+                      <button key={s} className="quick-btn" onClick={()=>setPrompt(s)} style={{padding:"6px 14px",background:"rgba(245,245,245,0.06)",border:`1px solid rgba(245,245,245,0.15)`,borderRadius:20,color:C.muted,fontSize:12,cursor:"pointer",transition:"all .15s"}}>{s}</button>
                     ))}
                   </div>
                 </div>
@@ -821,7 +821,7 @@ function CreatePageInner() {
                 <div key={msg.id} className="msg-in">
                   {msg.role==="user" ? (
                     <div style={{display:"flex",justifyContent:"flex-end",padding:"2px 16px"}}>
-                      <div style={{maxWidth:"82%",padding:"11px 16px",background:"linear-gradient(135deg,rgba(139,92,246,0.18),rgba(109,40,217,0.1))",border:"1px solid rgba(139,92,246,0.2)",borderRadius:"18px 18px 4px 18px",fontSize:14,lineHeight:1.65,color:C.text,fontWeight:450}}>
+                      <div style={{maxWidth:"82%",padding:"11px 16px",background:"linear-gradient(135deg,rgba(245,245,245,0.18),rgba(109,40,217,0.1))",border:"1px solid rgba(245,245,245,0.2)",borderRadius:"18px 18px 4px 18px",fontSize:14,lineHeight:1.65,color:C.text,fontWeight:450}}>
                         {msg.content}
                       </div>
                     </div>
@@ -830,9 +830,9 @@ function CreatePageInner() {
                   ) : (
                     <div style={{padding:"2px 16px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:7}}>
-                        <div style={{width:18,height:18,borderRadius:"50%",background:"rgba(139,92,246,0.1)",border:"1px solid rgba(139,92,246,0.2)",display:"flex",alignItems:"center",justifyContent:"center"}}><img src="/logo.svg" width={10} height={10} alt=""/></div>
+                        <div style={{width:18,height:18,borderRadius:"50%",background:"rgba(245,245,245,0.1)",border:"1px solid rgba(245,245,245,0.2)",display:"flex",alignItems:"center",justifyContent:"center"}}><img src="/logo.svg" width={10} height={10} alt=""/></div>
                         <span style={{fontSize:11,color:C.muted,fontWeight:500}}>Krypton AI</span>
-                        <span style={{fontSize:10,color:"#1e2540"}}>{fmtTime(msg.ts)}</span>
+                        <span style={{fontSize:10,color:"#161B26"}}>{fmtTime(msg.ts)}</span>
                       </div>
                       {msg.type==="summary" ? (
                         <div style={{maxWidth:"92%",padding:"13px 16px",background:"rgba(0,208,132,0.05)",border:"1px solid rgba(0,208,132,0.15)",borderRadius:"4px 18px 18px 18px"}}>
@@ -847,14 +847,14 @@ function CreatePageInner() {
                                     {pass?"✓":"✗"} {label}
                                   </span>
                                 ))}
-                                {msg.gate.repairAttempts>0&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(139,92,246,0.10)",border:"1px solid rgba(139,92,246,0.25)",color:"#a78bfa"}}>↻ {msg.gate.repairAttempts} repair{msg.gate.repairAttempts>1?"es":""}</span>}
+                                {msg.gate.repairAttempts>0&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:10,background:"rgba(245,245,245,0.10)",border:"1px solid rgba(245,245,245,0.25)",color:"#D9D9D9"}}>↻ {msg.gate.repairAttempts} repair{msg.gate.repairAttempts>1?"es":""}</span>}
                               </div>
                               <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:4}}>
                                 {msg.gate.dimensions.map(d=>(
                                   <div key={d.dimension} style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:C.muted}}>
                                     <span style={{width:62,flexShrink:0}}>{d.dimension}</span>
                                     <div style={{flex:1,height:4,background:"rgba(255,255,255,0.06)",borderRadius:2,overflow:"hidden"}}>
-                                      <div style={{width:`${d.score}%`,height:"100%",background:d.score>=90?C.green:d.score>=70?"#f5a623":C.red,borderRadius:2}}/>
+                                      <div style={{width:`${d.score}%`,height:"100%",background:d.score>=90?C.green:d.score>=70?"#D9D9D9":C.red,borderRadius:2}}/>
                                     </div>
                                     <span style={{width:28,textAlign:"right",flexShrink:0}}>{d.score}</span>
                                   </div>
@@ -885,7 +885,7 @@ function CreatePageInner() {
                     <span style={{fontSize:13,flexShrink:0}}>🔗</span>
                     <input type="url" value={competitorUrl} onChange={e=>setCompetitorUrl(e.target.value)}
                       placeholder="Competitor URL (optional): https://stripe.com"
-                      style={{flex:1,background:"none",border:"none",outline:"none",color:"#94A3B8",fontSize:12,fontFamily:"inherit"}}/>
+                      style={{flex:1,background:"none",border:"none",outline:"none",color:"#9AA3AF",fontSize:12,fontFamily:"inherit"}}/>
                     {competitorUrl.trim()&&<button onClick={()=>setCompetitorUrl("")} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:12}}>✕</button>}
                   </div>
                 </div>
@@ -903,31 +903,31 @@ function CreatePageInner() {
                     <button key={btn.label} onClick={()=>{ setPrompt(btn.action); }}
                       style={{fontSize:11,padding:"4px 10px",borderRadius:8,background:"rgba(255,255,255,0.04)",
                         border:`1px solid ${C.border}`,color:C.muted,cursor:"pointer",transition:"all .15s",whiteSpace:"nowrap"}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(139,92,246,0.4)";e.currentTarget.style.color="#fff";}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(245,245,245,0.4)";e.currentTarget.style.color="#fff";}}
                       onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}
                     >{btn.label}</button>
                   ))}
                 </div>
               )}
-              <div style={{background:C.card,border:`1px solid ${loading?"rgba(139,92,246,0.25)":C.border}`,borderRadius:14,padding:"10px 12px",transition:"border-color .2s"}}>
+              <div style={{background:C.card,border:`1px solid ${loading?"rgba(245,245,245,0.25)":C.border}`,borderRadius:14,padding:"10px 12px",transition:"border-color .2s"}}>
                 <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!loading){e.preventDefault();handleSend();}}}
                   placeholder={loading?"Working on it…":result?"Describe a change to make…":"Describe what you want to build…"}
                   rows={2} disabled={loading}
-                  style={{width:"100%",background:"none",border:"none",color:loading?"#1e2540":C.text,fontSize:14,resize:"none",outline:"none",lineHeight:1.65,maxHeight:130,overflowY:"auto"}}
+                  style={{width:"100%",background:"none",border:"none",color:loading?"#161B26":C.text,fontSize:14,resize:"none",outline:"none",lineHeight:1.65,maxHeight:130,overflowY:"auto"}}
                 />
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:7,paddingTop:7,borderTop:"1px solid rgba(255,255,255,0.04)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.txt" style={{display:"none"}} onChange={e=>{if(e.target.files?.length)addMsg({role:"user",type:"text",content:`📎 Attached: ${Array.from(e.target.files).map(f=>f.name).join(", ")}`});}}/>
                     <button onClick={()=>fileInputRef.current?.click()} style={{width:28,height:28,borderRadius:8,background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,color:C.muted,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}} title="Attach file">📎</button>
-                    <span style={{fontSize:10,color:"#181d35"}}>Krypton Intelligence Engine</span>
+                    <span style={{fontSize:10,color:"#11151F"}}>Krypton Intelligence Engine</span>
                   </div>
                   <div style={{display:"flex",gap:7}}>
-                    <button onClick={handleVoice} style={{width:32,height:32,borderRadius:"50%",background:listening?"rgba(139,92,246,0.2)":"rgba(255,255,255,0.04)",border:`1px solid ${listening?"rgba(139,92,246,0.4)":C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
+                    <button onClick={handleVoice} style={{width:32,height:32,borderRadius:"50%",background:listening?"rgba(245,245,245,0.2)":"rgba(255,255,255,0.04)",border:`1px solid ${listening?"rgba(245,245,245,0.4)":C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="11" rx="3" fill={listening?C.purple:"#666"}/><path d="M5 11a7 7 0 0014 0" stroke={listening?C.purple:"#666"} strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke={listening?C.purple:"#666"} strokeWidth="2" strokeLinecap="round"/></svg>
                     </button>
                     <button className="send-btn" onClick={handleSend} disabled={!prompt.trim()||loading} style={{width:38,height:38,borderRadius:"50%",background:(!loading&&prompt.trim())?C.gradP:"rgba(255,255,255,0.05)",border:"none",cursor:(!loading&&prompt.trim())?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
                       {loading?<div style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.2)",borderTopColor:"#fff",animation:"spin .7s linear infinite"}}/>
-                      :<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke={prompt.trim()?"#fff":"#3D4A6B"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      :<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke={prompt.trim()?"#fff":"#5B6472"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </button>
                   </div>
                 </div>
@@ -940,7 +940,7 @@ function CreatePageInner() {
             {/* Icon tab bar */}
             <div style={{display:"flex",alignItems:"center",padding:"0 8px",borderBottom:`1px solid ${C.border}`,background:C.surface,flexShrink:0,height:44}}>
               {RIGHT_TABS.map(t=>(
-                <button key={t.id} className="tab-icon" onClick={()=>setRightTab(t.id)} title={t.label} style={{width:36,height:36,borderRadius:9,border:"none",background:rightTab===t.id?"rgba(139,92,246,0.15)":"transparent",color:rightTab===t.id?C.purple:C.muted,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s",marginRight:2}} >
+                <button key={t.id} className="tab-icon" onClick={()=>setRightTab(t.id)} title={t.label} style={{width:36,height:36,borderRadius:9,border:"none",background:rightTab===t.id?"rgba(245,245,245,0.15)":"transparent",color:rightTab===t.id?C.purple:C.muted,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s",marginRight:2}} >
                   {t.icon}
                 </button>
               ))}
@@ -949,7 +949,7 @@ function CreatePageInner() {
               {rightTab==="preview"&&result&&(
                 <div style={{display:"flex",gap:3,marginLeft:"auto",alignItems:"center"}}>
                   {([{id:"desktop",icon:"🖥"},{id:"tablet",icon:"📱"},{id:"mobile",icon:"📲"}] as const).map(d=>(
-                    <button key={d.id} onClick={()=>setDevice(d.id)} style={{width:26,height:26,borderRadius:7,border:`1px solid ${device===d.id?"rgba(139,92,246,0.35)":C.border}`,background:device===d.id?"rgba(139,92,246,0.12)":"none",color:device===d.id?C.purple:C.muted,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{d.icon}</button>
+                    <button key={d.id} onClick={()=>setDevice(d.id)} style={{width:26,height:26,borderRadius:7,border:`1px solid ${device===d.id?"rgba(245,245,245,0.35)":C.border}`,background:device===d.id?"rgba(245,245,245,0.12)":"none",color:device===d.id?C.purple:C.muted,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{d.icon}</button>
                   ))}
                   <button onClick={()=>{if(!result)return;const b=new Blob([result],{type:"text/html"});window.open(URL.createObjectURL(b),"_blank");}} style={{width:26,height:26,borderRadius:7,border:`1px solid ${C.border}`,background:"none",color:C.muted,fontSize:11,cursor:"pointer",marginLeft:3}}>↗</button>
                 </div>
@@ -965,7 +965,7 @@ function CreatePageInner() {
 
             {/* Preview */}
             {rightTab==="preview"&&(
-              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0f1117":"#0a0a1a",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto"}}>
+              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0B1020":"#050816",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto"}}>
                 {result
                   ? <iframe key={`${result.length}-${device}`} srcDoc={result} style={{
                       border:"none",
@@ -974,7 +974,7 @@ function CreatePageInner() {
                       minHeight:"100%",
                       display:"block",
                       background:"#fff",
-                      boxShadow:device!=="desktop"?"0 0 0 12px #1a1a2e,0 0 0 14px #2a2a3e,0 20px 60px rgba(0,0,0,0.8)":"none",
+                      boxShadow:device!=="desktop"?"0 0 0 12px #11151F,0 0 0 14px #1A1F2B,0 20px 60px rgba(0,0,0,0.8)":"none",
                       borderRadius:device==="mobile"?"40px":device==="tablet"?"16px":"0",
                       transition:"width .3s cubic-bezier(0.16,1,0.3,1),border-radius .3s ease",
                       flexShrink:0,
@@ -993,12 +993,12 @@ function CreatePageInner() {
             {/* Deploy */}
             {rightTab==="deploy"&&(
               <div style={{flex:1,overflowY:"auto",padding:20}}>
-                <div style={{fontSize:15,fontWeight:700,marginBottom:16,fontFamily:"'Baloo 2',sans-serif"}}>Deploy Project</div>
-                {[{icon:"▲",label:"Deploy to Vercel",sub:"Instant global CDN",color:"#fff"},{icon:"◆",label:"Deploy to Netlify",sub:"Free hosting",color:"#00D2BE"}].map(d=>(
+                <div style={{fontSize:15,fontWeight:700,marginBottom:16,fontFamily:"'Syne',sans-serif"}}>Deploy Project</div>
+                {[{icon:"▲",label:"Deploy to Vercel",sub:"Instant global CDN",color:"#fff"},{icon:"◆",label:"Deploy to Netlify",sub:"Free hosting",color:"#5FB88A"}].map(d=>(
                   <div key={d.label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
                     <div style={{width:36,height:36,borderRadius:10,background:`rgba(255,255,255,0.04)`,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:d.color,flexShrink:0}}>{d.icon}</div>
                     <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{d.label}</div><div style={{fontSize:11,color:C.muted}}>{d.sub}</div></div>
-                    <button disabled={!result} style={{padding:"7px 14px",background:result?C.grad:"rgba(255,255,255,0.06)",border:"none",borderRadius:8,color:result?"#080B14":C.muted,fontSize:12,fontWeight:700,cursor:result?"pointer":"not-allowed"}}>Deploy</button>
+                    <button disabled={!result} style={{padding:"7px 14px",background:result?C.grad:"rgba(255,255,255,0.06)",border:"none",borderRadius:8,color:result?"#050816":C.muted,fontSize:12,fontWeight:700,cursor:result?"pointer":"not-allowed"}}>Deploy</button>
                   </div>
                 ))}
                 <button disabled={!result} onClick={()=>{if(!result)return;const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([result],{type:"text/html"}));a.download=`${projectName.replace(/\s+/g,"-")}.html`;a.click();}} style={{width:"100%",padding:"11px",background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:10,color:C.sub,fontSize:13,fontWeight:600,cursor:result?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
@@ -1010,17 +1010,17 @@ function CreatePageInner() {
             {/* History */}
             {rightTab==="history"&&(
               <div style={{flex:1,overflowY:"auto",padding:16}}>
-                <div style={{fontSize:13,fontWeight:700,marginBottom:14,fontFamily:"'Baloo 2',sans-serif"}}>Version History</div>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:14,fontFamily:"'Syne',sans-serif"}}>Version History</div>
                 {versions.length===0
                   ? <div style={{textAlign:"center",padding:40,color:C.muted,fontSize:13}}><div style={{fontSize:28,marginBottom:10,opacity:.2}}>○</div>No versions yet</div>
                   : versions.map((v,i)=>(
                     <div key={v.id||i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
-                      <div style={{width:32,height:32,borderRadius:8,background:"rgba(139,92,246,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C.purple,flexShrink:0,fontFamily:"'Baloo 2',sans-serif"}}>v{v.version_number}</div>
+                      <div style={{width:32,height:32,borderRadius:8,background:"rgba(245,245,245,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C.purple,flexShrink:0,fontFamily:"'Syne',sans-serif"}}>v{v.version_number}</div>
                       <div style={{flex:1,overflow:"hidden"}}>
                         <div style={{fontSize:13,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v.message}</div>
                         <div style={{fontSize:10,color:C.muted,marginTop:2}}>{new Date(v.created_at).toLocaleString()}</div>
                       </div>
-                      <button onClick={()=>restoreVersion(v)} style={{padding:"5px 12px",background:"rgba(139,92,246,0.08)",border:`1px solid rgba(139,92,246,0.2)`,borderRadius:7,color:C.purple,fontSize:11,fontWeight:600,cursor:"pointer"}}>Restore</button>
+                      <button onClick={()=>restoreVersion(v)} style={{padding:"5px 12px",background:"rgba(245,245,245,0.08)",border:`1px solid rgba(245,245,245,0.2)`,borderRadius:7,color:C.purple,fontSize:11,fontWeight:600,cursor:"pointer"}}>Restore</button>
                     </div>
                   ))
                 }
@@ -1035,7 +1035,7 @@ function CreatePageInner() {
 
 export default function CreatePage() {
   return (
-    <Suspense fallback={<div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#07091A"}}><div style={{width:32,height:32,borderRadius:"50%",border:"3px solid rgba(139,92,246,0.15)",borderTopColor:"#8B5CF6",animation:"spin .8s linear infinite"}}/></div>}>
+    <Suspense fallback={<div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#050816"}}><div style={{width:32,height:32,borderRadius:"50%",border:"3px solid rgba(245,245,245,0.15)",borderTopColor:"#D9D9D9",animation:"spin .8s linear infinite"}}/></div>}>
       <CreatePageInner/>
     </Suspense>
   );
