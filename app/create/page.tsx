@@ -531,7 +531,7 @@ function CreatePageInner() {
       newGameMem = buildGameMemory(html, userPrompt, detected, gameMemory, receivedBlueprint);
       setGameMemory(newGameMem);
     }
-    // Priority 1 — persist ProjectMemory + GameMemory for this project
+     // Priority 1 — persist ProjectMemory + GameMemory for this project
     persistMemory(savedPid||projectId, newProjMem, newGameMem||null);
     updateMsg(thinkId,{isActive:false});
     const qualityBadge = completenessScore!==null
@@ -703,12 +703,12 @@ function CreatePageInner() {
     { id:"files"   as RightTab, icon:"📁", label:"Files" },
     { id:"deploy"  as RightTab, icon:"🚀", label:"Deploy" },
     { id:"history" as RightTab, icon:"⏱", label:"History" },
-  ]
-  
+  ];
+
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         html,body{height:100%;overflow:hidden;background:#07091A;}
         ::-webkit-scrollbar{width:3px;height:3px;}
@@ -720,7 +720,7 @@ function CreatePageInner() {
         .msg-in{animation:fadeUp .22s ease both;}
         .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 0 20px rgba(139,92,246,0.45);}
         .tab-icon:hover{background:rgba(255,255,255,0.07)!important;color:#fff!important;}
-        .quick-btn:hover{border-color:rgba(139,92,246,0.4)!important;color:#FFFFFF!important;}
+        .quick-btn:hover{border-color:rgba(139,92,246,0.4)!important;color:${C.text}!important;}
       `}</style>
 
       <div
@@ -806,7 +806,7 @@ function CreatePageInner() {
                 <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:18,textAlign:"center",padding:"24px 20px"}}>
                   <KryptonLogo size={48} showText={false} animated={true}/>
                   <div>
-                    <div style={{fontSize:19,fontWeight:800,marginBottom:6,fontFamily:"'Syne',sans-serif",background:"linear-gradient(135deg,#F0F4FF,#8B9FD4)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>What do you want to build?</div>
+                    <div style={{fontSize:19,fontWeight:800,marginBottom:6,fontFamily:"'Baloo 2',sans-serif",background:"linear-gradient(135deg,#F0F4FF,#8B9FD4)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>What do you want to build?</div>
                     <div style={{fontSize:13,color:C.muted,lineHeight:1.65}}>Describe your idea — Krypton AI will build it.</div>
                   </div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:7,justifyContent:"center",maxWidth:430}}>
@@ -965,7 +965,7 @@ function CreatePageInner() {
 
             {/* Preview */}
             {rightTab==="preview"&&(
-              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0f1117":"#0a0a1a",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto"}}>
+              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0f1117":"#0a0a1a",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto",
                 {result
                   ? <iframe key={`${result.length}-${device}`} srcDoc={result} style={{
                       border:"none",
@@ -993,7 +993,7 @@ function CreatePageInner() {
             {/* Deploy */}
             {rightTab==="deploy"&&(
               <div style={{flex:1,overflowY:"auto",padding:20}}>
-                <div style={{fontSize:15,fontWeight:700,marginBottom:16,fontFamily:"'Syne',sans-serif"}}>Deploy Project</div>
+                <div style={{fontSize:15,fontWeight:700,marginBottom:16,fontFamily:"'Baloo 2',sans-serif"}}>Deploy Project</div>
                 {[{icon:"▲",label:"Deploy to Vercel",sub:"Instant global CDN",color:"#fff"},{icon:"◆",label:"Deploy to Netlify",sub:"Free hosting",color:"#00D2BE"}].map(d=>(
                   <div key={d.label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
                     <div style={{width:36,height:36,borderRadius:10,background:`rgba(255,255,255,0.04)`,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:d.color,flexShrink:0}}>{d.icon}</div>
@@ -1010,12 +1010,12 @@ function CreatePageInner() {
             {/* History */}
             {rightTab==="history"&&(
               <div style={{flex:1,overflowY:"auto",padding:16}}>
-                <div style={{fontSize:13,fontWeight:700,marginBottom:14,fontFamily:"'Syne',sans-serif"}}>Version History</div>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:14,fontFamily:"'Baloo 2',sans-serif"}}>Version History</div>
                 {versions.length===0
                   ? <div style={{textAlign:"center",padding:40,color:C.muted,fontSize:13}}><div style={{fontSize:28,marginBottom:10,opacity:.2}}>○</div>No versions yet</div>
                   : versions.map((v,i)=>(
                     <div key={v.id||i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
-                      <div style={{width:32,height:32,borderRadius:8,background:"rgba(139,92,246,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C.purple,flexShrink:0,fontFamily:"'Syne',sans-serif"}}>v{v.version_number}</div>
+                      <div style={{width:32,height:32,borderRadius:8,background:"rgba(139,92,246,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C.purple,flexShrink:0,fontFamily:"'Baloo 2',sans-serif"}}>v{v.version_number}</div>
                       <div style={{flex:1,overflow:"hidden"}}>
                         <div style={{fontSize:13,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v.message}</div>
                         <div style={{fontSize:10,color:C.muted,marginTop:2}}>{new Date(v.created_at).toLocaleString()}</div>
