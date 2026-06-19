@@ -7,15 +7,10 @@ import { useRouter } from "next/navigation";
 
 /* ── Themes ── */
 const THEMES = [
-  { a:"#F5C542",b:"#00D084" },
-  { a:"#8B5CF6",b:"#EC4899" },
-  { a:"#FACC15",b:"#FB923C" },
-  { a:"#3B82F6",b:"#06B6D4" },
-  { a:"#7C3AED",b:"#2563EB" },
-  { a:"#10B981",b:"#14B8A6" },
+  { a:"#F5F5F5",b:"#BFC5CC" },
 ];
 
-const BG="#07091A", CARD="#0D1230", WHITE="#F0F4FF", SUB="#8892A4", MUTED="#4A5568";
+const BG="#050816", CARD="#0B1020", WHITE="#F5F5F5", SUB="#9CA3AF", MUTED="#5B6472";
 
 const PROMPTS = [
   "Build a restaurant website with online menu...",
@@ -109,7 +104,7 @@ function Counter({value,suffix,label}:{value:number;suffix:string;label:string})
   return(
     <div ref={ref} style={{textAlign:"center",padding:"36px 16px",background:"rgba(13,18,48,0.8)",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 50% 0%,rgba(var(--ga-rgb),.04) 0%,transparent 70%)",pointerEvents:"none"}}/>
-      <div style={{fontSize:"clamp(36px,4vw,56px)",fontWeight:800,fontFamily:"'Syne',sans-serif",lineHeight:1,background:"linear-gradient(135deg,var(--ga),var(--gb))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:8}}>
+      <div style={{fontSize:"clamp(36px,4vw,56px)",fontWeight:800,fontFamily:"'Inter',sans-serif",lineHeight:1,background:"linear-gradient(135deg,var(--ga),var(--gb))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:8}}>
         {n}{suffix}
       </div>
       <div style={{color:MUTED,fontSize:13,fontWeight:500,letterSpacing:"0.02em"}}>{label}</div>
@@ -241,8 +236,8 @@ export default function LandingPage(){
       }}/>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
-        :root{--ga:#F5C542;--gb:#00D084;--ga-rgb:245,197,66;--gb-rgb:0,208,132;}
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        :root{--ga:#F5F5F5;--gb:#BFC5CC;--ga-rgb:245,245,245;--gb-rgb:191,197,204;}
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
         html,body{overflow-x:hidden;background:#050505;}
         .gt{background:linear-gradient(135deg,var(--ga),var(--gb));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
@@ -252,7 +247,7 @@ export default function LandingPage(){
         .card-hover{transition:all 0.3s ease;}
         .card-hover:hover{transform:translateY(-6px);border-color:rgba(var(--ga-rgb),.3)!important;box-shadow:0 24px 56px rgba(0,0,0,.5);}
         .ptcl{position:absolute;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(var(--ga-rgb),.4) 0%,transparent 70%);animation:pfloat var(--d,12s) ease-in-out infinite var(--dl,0s);}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @media(max-width:640px){
           h1{font-size:clamp(20px,6.5vw,32px)!important;line-height:1.12!important;}
           h2{font-size:clamp(18px,5vw,28px)!important;}
@@ -262,31 +257,31 @@ export default function LandingPage(){
           h1{font-size:clamp(28px,4vw,48px)!important;}
         }
         @keyframes shineL{0%{left:-60%;opacity:0}10%{opacity:1}40%{left:130%;opacity:1}41%{opacity:0}100%{left:130%;opacity:0}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes gm1{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(3%,-3%)scale(1.05)}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes gm2{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(-4%,4%)scale(1.07)}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes gm3{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(4%,-2%)scale(1.04)}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes gl{0%,100%{opacity:.45}50%{opacity:.85}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes pfloat{0%,100%{transform:translate(0,0)scale(1);opacity:0}10%{opacity:.7}50%{transform:translate(var(--tx,30px),var(--ty,-60px))scale(1.3);opacity:.4}90%{opacity:.15}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes fl1{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes fl2{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes gridFade{0%,100%{opacity:.15}50%{opacity:.35}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @keyframes stepGlow{0%,100%{box-shadow:0 0 0 0 rgba(var(--ga-rgb),0)}50%{box-shadow:0 0 0 8px rgba(var(--ga-rgb),.1)}}
         .prompt-box:focus-within{border-color:rgba(var(--ga-rgb),.5)!important;box-shadow:0 0 0 3px rgba(var(--ga-rgb),.08),0 20px 60px rgba(0,0,0,.4)!important;}
         .prompt-box:focus-within .prompt-glow{opacity:1!important;}
@@ -331,7 +326,7 @@ export default function LandingPage(){
           </button>
           {dropdown&&(
             <div style={{position:"absolute",top:54,left:0,background:"rgba(10,10,10,.98)",border:"1px solid rgba(255,255,255,.08)",borderRadius:18,padding:8,minWidth:230,zIndex:200,boxShadow:"0 24px 64px rgba(0,0,0,.9)",backdropFilter:"blur(20px)"}}>
-              {[{icon:"🏠",label:"Home",path:"/landing"},{icon:"✨",label:"Features",cb:()=>goto("features")},{icon:"🖼️",label:"Templates",path:"/templates"},{icon:"💰",label:"Pricing",cb:()=>goto("pricing")},{icon:"❓",label:"FAQ",cb:()=>goto("faq")}].map(it=>(
+              {[{icon:"",label:"Home",path:"/landing"},{icon:"",label:"Features",cb:()=>goto("features")},{icon:"",label:"Templates",path:"/templates"},{icon:"",label:"Pricing",path:"/billing"},{icon:"",label:"FAQ",path:"/faq"}].map(it=>(
                 <button key={it.label} onClick={()=>{if((it as any).path)router.push((it as any).path);else(it as any).cb();setDrop(false);}}
                   style={{width:"100%",textAlign:"left",padding:"10px 12px",background:"none",border:"none",color:MUTED,fontSize:13,cursor:"pointer",borderRadius:10,display:"flex",alignItems:"center",gap:9,transition:"all .15s"}}
                   onMouseEnter={e=>{e.currentTarget.style.background="#1a1a1a";e.currentTarget.style.color=WHITE;}}
@@ -343,7 +338,7 @@ export default function LandingPage(){
               <button onClick={()=>{router.push("/auth/signup");setDrop(false);}}
                 className="gb"
                 style={{width:"100%",textAlign:"left",padding:"10px 12px",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:9,marginTop:4,color:"#050505"}}>
-                🟢 Get Started Free
+                Get Started Free
               </button>
             </div>
           )}
@@ -352,7 +347,7 @@ export default function LandingPage(){
         {isWide&&(
           <div style={{display:"flex",gap:32,position:"absolute",left:"50%",transform:"translateX(-50%)"}}>
             {NAV_LINKS.map(l=>(
-              <button key={l} onClick={()=>goto(l.toLowerCase())}
+              <button key={l} onClick={()=>l==="Pricing"?router.push("/billing"):goto(l.toLowerCase())}
                 style={{background:"none",border:"none",color:MUTED,fontSize:13,cursor:"pointer",fontWeight:500,transition:"color .2s",padding:"4px 0",letterSpacing:"0.01em"}}
                 onMouseEnter={e=>e.currentTarget.style.color=WHITE}
                 onMouseLeave={e=>e.currentTarget.style.color=MUTED}>
@@ -389,7 +384,7 @@ export default function LandingPage(){
       {mobMenu&&!isWide&&(
         <div style={{position:"fixed",top:64,left:0,right:0,background:"rgba(6,6,6,.98)",borderBottom:"1px solid rgba(255,255,255,.08)",padding:"16px 20px",zIndex:99,backdropFilter:"blur(20px)",display:"flex",flexDirection:"column",gap:4}}>
           {NAV_LINKS.map(l=>(
-            <button key={l} onClick={()=>goto(l.toLowerCase())}
+            <button key={l} onClick={()=>{if(l==="Pricing"){router.push("/billing");}else{goto(l.toLowerCase());}setMob(false);}}
               style={{background:"none",border:"none",color:SUB,fontSize:15,cursor:"pointer",padding:"12px 0",textAlign:"left",fontWeight:500,borderBottom:"1px solid rgba(255,255,255,.05)"}}>
               {l}
             </button>
@@ -414,23 +409,23 @@ export default function LandingPage(){
           {/* Badge */}
           <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(var(--ga-rgb),.08)",border:"1px solid rgba(var(--ga-rgb),.2)",borderRadius:24,padding:"6px 18px",marginBottom:28,fontSize:12,fontWeight:600,animation:"fadeUp .6s ease both"}}>
             <span style={{width:7,height:7,borderRadius:"50%",background:"#00D084",display:"inline-block",animation:"pulse 2s infinite"}}/>
-            <span style={gtext}>✨ Build Websites, Apps &amp; Games with AI</span>
+            <span style={gtext}>Enterprise AI Operating System</span>
           </div>
 
           {/* H1 — premium typography */}
           <h1 style={{
-            fontFamily:"'Syne',system-ui,sans-serif",
-            fontSize:"clamp(22px,4.5vw,64px)",
-            fontWeight:800,
-            lineHeight:1.08,
-            letterSpacing:"-0.03em",
+            fontFamily:"'Inter',system-ui,sans-serif",
+            fontSize:"clamp(26px,4.8vw,62px)",
+            fontWeight:700,
+            lineHeight:1.12,
+            letterSpacing:"-0.01em",
             marginBottom:24,
             color:WHITE,
             animation:"fadeUp .6s .1s ease both",
-            maxWidth:800,
+            maxWidth:780,
             whiteSpace:"normal",
           }}>
-            Build <span style={gtext}>Websites, Apps & Games</span> with AI.
+            One AI Platform.<br/><span style={gtext}>Unlimited Possibilities.</span>
           </h1>
 
           <p className="hero-sub" style={{
@@ -443,8 +438,8 @@ export default function LandingPage(){
             letterSpacing:"0.01em",
             animation:"fadeUp .6s .2s ease both",
           }}>
-            Describe what you want. Krypton AI builds it — complete,
-            responsive, and ready to deploy in seconds.
+            Create websites, apps, dashboards, games, and intelligent
+            products with enterprise-grade AI.
           </p>
 
           {/* ── AI Prompt Box ── */}
@@ -576,7 +571,7 @@ export default function LandingPage(){
       <section style={{...sec,background:"rgba(255,255,255,.018)",borderTop:"1px solid rgba(255,255,255,.05)",borderBottom:"1px solid rgba(255,255,255,.05)"}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>How It Works</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:700,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.01em"}}>
             From Idea to <span style={gtext}>Live App</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",maxWidth:480,margin:"0 auto 56px",lineHeight:1.6}}>
@@ -605,8 +600,8 @@ export default function LandingPage(){
                   fontSize:26,margin:"0 auto 20px",
                   animation:"stepGlow 3s ease-in-out infinite",
                 }}>{step.icon}</div>
-                <div style={{fontSize:11,fontWeight:700,letterSpacing:".1em",marginBottom:10,fontFamily:"'Syne',sans-serif"}}><span style={gtext}>{step.step}</span></div>
-                <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,color:WHITE,fontFamily:"'Syne',sans-serif"}}>{step.title}</h3>
+                <div style={{fontSize:11,fontWeight:700,letterSpacing:".1em",marginBottom:10,fontFamily:"'Inter',sans-serif"}}><span style={gtext}>{step.step}</span></div>
+                <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,color:WHITE,fontFamily:"'Inter',sans-serif"}}>{step.title}</h3>
                 <p style={{color:SUB,fontSize:15,lineHeight:1.7,margin:0}}>{step.desc}</p>
               </div>
             ))}
@@ -618,7 +613,7 @@ export default function LandingPage(){
       <section id="features" style={{...sec,scrollMarginTop:80}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>What You Can Build</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:700,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.01em"}}>
             One AI. <span style={gtext}>Infinite Possibilities.</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",maxWidth:480,margin:"0 auto 52px",lineHeight:1.6}}>
@@ -641,7 +636,7 @@ export default function LandingPage(){
                   transition:"all .3s",
                   ...(hoverCard===i?{background:"rgba(var(--ga-rgb),.15)",transform:"scale(1.08)"}:{}),
                 }}>{f.icon}</div>
-                <h3 style={{fontSize:16,fontWeight:700,marginBottom:10,fontFamily:"'Syne',sans-serif"}}><span style={gtext}>{f.title}</span></h3>
+                <h3 style={{fontSize:16,fontWeight:700,marginBottom:10,fontFamily:"'Inter',sans-serif"}}><span style={gtext}>{f.title}</span></h3>
                 <p style={{color:SUB,fontSize:14,lineHeight:1.75,margin:0}}>{f.desc}</p>
               </div>
             ))}
@@ -653,7 +648,7 @@ export default function LandingPage(){
       <section id="examples" style={{...sec,scrollMarginTop:80,background:"rgba(255,255,255,.018)",borderTop:"1px solid rgba(255,255,255,.05)"}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>Examples</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:700,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.01em"}}>
             See What&apos;s <span style={gtext}>Possible</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",maxWidth:480,margin:"0 auto 52px",lineHeight:1.6}}>
@@ -672,7 +667,7 @@ export default function LandingPage(){
                 </div>
                 <div style={{padding:"18px 20px"}}>
                   <span style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",color:`rgba(${ex.acc},1)`}}>{ex.tag}</span>
-                  <p style={{fontSize:16,fontWeight:600,margin:"6px 0 4px",color:WHITE,fontFamily:"'Syne',sans-serif"}}>{ex.title}</p>
+                  <p style={{fontSize:16,fontWeight:600,margin:"6px 0 4px",color:WHITE,fontFamily:"'Inter',sans-serif"}}>{ex.title}</p>
                   <p style={{fontSize:12,color:MUTED}}>Built in under 10 seconds →</p>
                 </div>
               </div>
@@ -693,7 +688,7 @@ export default function LandingPage(){
       <section style={{...sec,scrollMarginTop:80}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>Testimonials</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:700,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.01em"}}>
             Loved by <span style={gtext}>Builders</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",maxWidth:480,margin:"0 auto 52px",lineHeight:1.6}}>
@@ -709,7 +704,7 @@ export default function LandingPage(){
                 <div style={{fontSize:15,marginBottom:16,letterSpacing:".05em"}}>⭐⭐⭐⭐⭐</div>
                 <p style={{color:"rgba(255,255,255,.85)",fontSize:15,lineHeight:1.8,marginBottom:24,fontStyle:"italic",fontWeight:400}}>&ldquo;{t.text}&rdquo;</p>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,rgba(var(--ga-rgb),.3),rgba(var(--gb-rgb),.3))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,flexShrink:0,color:WHITE,fontFamily:"'Syne',sans-serif"}}>{t.name[0]}</div>
+                  <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,rgba(var(--ga-rgb),.3),rgba(var(--gb-rgb),.3))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:700,flexShrink:0,color:WHITE,fontFamily:"'Inter',sans-serif"}}>{t.name[0]}</div>
                   <div>
                     <p style={{fontWeight:700,fontSize:14,margin:0,color:WHITE}}>{t.name}</p>
                     <p style={{color:MUTED,fontSize:12,margin:"2px 0 0"}}>{t.role} · {t.company}</p>
@@ -725,7 +720,7 @@ export default function LandingPage(){
       <section id="pricing" style={{...sec,scrollMarginTop:80,background:"rgba(255,255,255,.018)",borderTop:"1px solid rgba(255,255,255,.05)"}}>
         <div style={wrap}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>Pricing</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:12,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:12,color:WHITE,letterSpacing:"-0.02em"}}>
             Simple, <span style={gtext}>Transparent Pricing</span>
           </h2>
           <p style={{color:SUB,textAlign:"center",fontSize:17,marginBottom:36,lineHeight:1.6}}>Start free. Upgrade when you&apos;re ready.</p>
@@ -744,10 +739,10 @@ export default function LandingPage(){
                 onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-6px)";e.currentTarget.style.boxShadow=plan.hot?"0 24px 64px rgba(var(--ga-rgb),.16)":"0 24px 48px rgba(0,0,0,.4)";}}
                 onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=plan.hot?"0 0 60px rgba(var(--ga-rgb),.08)":"none";}}>
                 {plan.hot&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,var(--ga),var(--gb))",borderRadius:"22px 22px 0 0"}}/>}
-                {plan.hot&&<div className="gb" style={{position:"absolute",top:-13,left:"50%",transform:"translateX(-50%)",color:"#050505",fontSize:11,fontWeight:700,padding:"4px 16px",borderRadius:20,whiteSpace:"nowrap"}}>✨ Most Popular</div>}
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><span style={{fontSize:18}}>{plan.emoji}</span><h3 style={{fontSize:18,fontWeight:700,color:WHITE,fontFamily:"'Syne',sans-serif"}}><span style={gtext}>{plan.name}</span></h3></div>
+                {plan.hot&&<div className="gb" style={{position:"absolute",top:-13,left:"50%",transform:"translateX(-50%)",color:"#050505",fontSize:11,fontWeight:700,padding:"4px 16px",borderRadius:20,whiteSpace:"nowrap"}}>Most Popular</div>}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><span style={{fontSize:18}}>{plan.emoji}</span><h3 style={{fontSize:18,fontWeight:700,color:WHITE,fontFamily:"'Inter',sans-serif"}}><span style={gtext}>{plan.name}</span></h3></div>
                 <p style={{color:"#10B981",fontSize:11,fontWeight:600,marginBottom:16,letterSpacing:"0.03em"}}>{plan.credits}</p>
-                <div style={{marginBottom:20}}><span style={{...gtext,fontSize:40,fontWeight:800,fontFamily:"'Syne',sans-serif"}}>{billing==="m"?plan.m:plan.y}</span><span style={{color:MUTED,fontSize:13}}>/mo</span></div>
+                <div style={{marginBottom:20}}><span style={{...gtext,fontSize:40,fontWeight:800,fontFamily:"'Inter',sans-serif"}}>{billing==="m"?plan.m:plan.y}</span><span style={{color:MUTED,fontSize:13}}>/mo</span></div>
                 {plan.inc.map(f=><div key={f} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:9}}><span style={{...gtext,fontSize:12,flexShrink:0,fontWeight:700}}>✓</span><span style={{fontSize:13,color:SUB,lineHeight:1.5}}>{f}</span></div>)}
                 {plan.off.map(f=><div key={f} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:9}}><span style={{fontSize:12,flexShrink:0,color:"#2a2a2a"}}>✕</span><span style={{fontSize:13,color:"#2f2f2f"}}>{f}</span></div>)}
                 <button className={plan.hot?"gb shine":""} onClick={()=>router.push("/auth/signup")}
@@ -767,7 +762,7 @@ export default function LandingPage(){
       <section id="faq" style={{...sec,scrollMarginTop:80}}>
         <div style={{width:"100%",maxWidth:700,margin:"0 auto",padding:"0 clamp(20px,4vw,64px)"}}>
           <p style={{textAlign:"center",fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}><span style={gtext}>FAQ</span></p>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:800,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.02em"}}>
+          <h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:"clamp(24px,3.5vw,44px)",fontWeight:700,textAlign:"center",marginBottom:16,color:WHITE,letterSpacing:"-0.01em"}}>
             <span style={gtext}>Common Questions</span>
           </h2>
           <p style={{color:SUB,fontSize:17,textAlign:"center",marginBottom:48,lineHeight:1.6}}>Everything you need to know.</p>
@@ -775,7 +770,7 @@ export default function LandingPage(){
             <div key={i} style={{borderBottom:"1px solid rgba(255,255,255,.06)"}}>
               <button onClick={()=>setFaq(openFaq===i?null:i)}
                 style={{width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",padding:"22px 0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:16}}>
-                <span style={{fontWeight:600,fontSize:16,color:WHITE,fontFamily:"'Syne',sans-serif",lineHeight:1.4}}>{item.q}</span>
+                <span style={{fontWeight:600,fontSize:16,color:WHITE,fontFamily:"'Inter',sans-serif",lineHeight:1.4}}>{item.q}</span>
                 <span style={{color:"var(--ga)",transition:"transform .3s",transform:openFaq===i?"rotate(45deg)":"none",display:"inline-block",fontSize:24,flexShrink:0,lineHeight:1}}>+</span>
               </button>
               {openFaq===i&&<p style={{color:SUB,fontSize:15,lineHeight:1.8,paddingBottom:22,margin:0}}>{item.a}</p>}
@@ -795,7 +790,7 @@ export default function LandingPage(){
             margin:"0 auto 32px",
             display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,
           }}>⚡</div>
-          <h2 style={{fontFamily:"'Syne',system-ui,sans-serif",fontSize:"clamp(32px,5vw,66px)",fontWeight:800,lineHeight:1.06,letterSpacing:"-0.02em",maxWidth:680,margin:"0 auto 20px",color:WHITE}}>
+          <h2 style={{fontFamily:"'Inter',system-ui,sans-serif",fontSize:"clamp(32px,5vw,66px)",fontWeight:800,lineHeight:1.06,letterSpacing:"-0.02em",maxWidth:680,margin:"0 auto 20px",color:WHITE}}>
             The future of building is{" "}<span style={gtext}>a sentence away.</span>
           </h2>
           <p style={{color:SUB,fontSize:18,lineHeight:1.75,maxWidth:500,margin:"0 auto 44px",fontWeight:400}}>
@@ -824,14 +819,14 @@ export default function LandingPage(){
         <div style={{...wrap,paddingTop:"clamp(48px,6vw,72px)",paddingBottom:"clamp(24px,3vw,40px)"}}>
           <div style={{display:"grid",gridTemplateColumns:isWide?"repeat(5,1fr)":"repeat(2,1fr)",gap:isWide?32:24,marginBottom:48}}>
             {[
-              {title:"Product",  links:[{l:"Features",h:"/landing#features"},{l:"Pricing",h:"/landing#pricing"},{l:"Roadmap",h:"/landing#roadmap"},{l:"Examples",h:"/landing#examples"}]},
+              {title:"Product",  links:[{l:"Features",h:"/landing#features"},{l:"Pricing",h:"/billing"},{l:"Roadmap",h:"/landing#roadmap"},{l:"Examples",h:"/landing#examples"}]},
               {title:"Resources",links:[{l:"Documentation",h:"/docs"},{l:"Changelog",h:"/changelog"},{l:"Blog",h:"/blog"},{l:"Support",h:"/support"}]},
               {title:"Company",  links:[{l:"About",h:"/about"},{l:"Contact",h:"/contact"}]},
               {title:"Legal",    links:[{l:"Privacy Policy",h:"/privacy"},{l:"Terms of Service",h:"/privacy/terms"},{l:"Refund Policy",h:"/refund"}]},
               {title:"Social",   links:[{l:"X (Twitter)",h:"https://twitter.com/kryptonai"},{l:"LinkedIn",h:"https://linkedin.com/company/kryptonai"},{l:"GitHub",h:"https://github.com/jangeersinghktm-design/Magic-Krypton-ai-"}]},
             ].map(col=>(
               <div key={col.title}>
-                <p style={{fontWeight:700,fontSize:13,marginBottom:16,fontFamily:"'Syne',sans-serif"}}><span style={gtext}>{col.title}</span></p>
+                <p style={{fontWeight:700,fontSize:13,marginBottom:16,fontFamily:"'Inter',sans-serif"}}><span style={gtext}>{col.title}</span></p>
                 {col.links.map(link=>(
                   <a key={link.l} href={link.h}
                     style={{display:"block",color:MUTED,fontSize:13,marginBottom:11,textDecoration:"none",transition:"color .2s"}}
