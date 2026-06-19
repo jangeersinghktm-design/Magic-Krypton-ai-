@@ -256,11 +256,11 @@ export default function HomePage() {
                   const timeAgo = formatTimeAgo(date);
                   const pType = p.project_type || "website";
                   const typeConfig: Record<string,{icon:string;color:string;label:string}> = {
-                    website:   {icon:"🌐", color:"#6366F1", label:"Website"},
-                    landing:   {icon:"🎯", color:"#EC4899", label:"Landing"},
-                    app:       {icon:"📱", color:"#06B6D4", label:"App"},
-                    game:      {icon:"🎮", color:"#10B981", label:"Game"},
-                    dashboard: {icon:"📊", color:"#F59E0B", label:"Dashboard"},
+                    website:   {icon:"◇", color:"#F5F5F5", label:"Website"},
+                    landing:   {icon:"◆", color:"#D9D9D9", label:"Landing"},
+                    app:       {icon:"▣", color:"#BFC5CC", label:"App"},
+                    game:      {icon:"▲", color:"#D9D9D9", label:"Game"},
+                    dashboard: {icon:"◈", color:"#F5F5F5", label:"Dashboard"},
                     ecommerce: {icon:"🛒", color:"#F97316", label:"Store"},
                     portfolio: {icon:"💼", color:"#8B5CF6", label:"Portfolio"},
                     tool:      {icon:"🔧", color:"#64748B", label:"Tool"},
