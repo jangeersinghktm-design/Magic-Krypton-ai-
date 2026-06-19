@@ -44,7 +44,7 @@ export default function BlogPage() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans',sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:rgba(245,197,66,.2);border-radius:4px;}
         .post-card:hover{border-color:rgba(245,197,66,.3)!important;transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,.5);}
@@ -56,7 +56,7 @@ export default function BlogPage() {
         <div style={{ maxWidth:1100, margin:"0 auto", padding:"14px 24px", display:"flex", alignItems:"center", gap:12 }}>
           <button onClick={()=>router.push("/")} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:14 }}>← Back</button>
           <div style={{ width:1, height:20, background:C.border }}/>
-          <span style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:16, background:C.grad, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Krypton Blog</span>
+          <span style={{ fontFamily:"'Baloo 2',sans-serif", fontWeight:800, fontSize:16, background:C.grad, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Krypton Blog</span>
           <div style={{ marginLeft:"auto" }}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search posts..."
               style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"7px 14px", color:C.text, fontSize:13, outline:"none", width:200 }}/>
@@ -70,7 +70,7 @@ export default function BlogPage() {
           <span style={{ width:6, height:6, borderRadius:"50%", background:"#00D084", display:"inline-block" }}/>
           <span style={{ background:C.grad, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Tutorials, Guides & Updates</span>
         </div>
-        <h1 style={{ fontFamily:"'Syne',sans-serif", fontSize:"clamp(32px,5vw,56px)", fontWeight:800, lineHeight:1.1, letterSpacing:"-0.02em", marginBottom:16 }}>
+        <h1 style={{ fontFamily:"'Baloo 2',sans-serif", fontSize:"clamp(32px,5vw,56px)", fontWeight:800, lineHeight:1.1, letterSpacing:"-0.02em", marginBottom:16 }}>
           Build More with <span style={{ background:C.grad, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Krypton AI</span>
         </h1>
         <p style={{ color:C.sub, fontSize:17, maxWidth:480, margin:"0 auto" }}>Tips, tutorials and product updates to help you build faster.</p>
@@ -107,7 +107,7 @@ export default function BlogPage() {
               </div>
               {/* Card body */}
               <div style={{ padding:"20px 22px" }}>
-                <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:17, fontWeight:700, lineHeight:1.35, marginBottom:10, color:C.text }}>{post.title}</h2>
+                <h2 style={{ fontFamily:"'Baloo 2',sans-serif", fontSize:17, fontWeight:700, lineHeight:1.35, marginBottom:10, color:C.text }}>{post.title}</h2>
                 <p style={{ color:C.sub, fontSize:13, lineHeight:1.7, marginBottom:16 }}>{post.desc}</p>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -127,7 +127,7 @@ export default function BlogPage() {
 
       {/* CTA */}
       <div style={{ borderTop:`1px solid ${C.border}`, padding:"60px 24px", textAlign:"center", background:"rgba(255,255,255,.015)" }}>
-        <h2 style={{ fontFamily:"'Syne',sans-serif", fontSize:"clamp(24px,4vw,40px)", fontWeight:800, marginBottom:12 }}>
+        <h2 style={{ fontFamily:"'Baloo 2',sans-serif", fontSize:"clamp(24px,4vw,40px)", fontWeight:800, marginBottom:12 }}>
           Ready to <span style={{ background:C.grad, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>start building?</span>
         </h2>
         <p style={{ color:C.sub, fontSize:15, marginBottom:28 }}>5 free generations every day. No credit card required.</p>
@@ -140,3 +140,4 @@ export default function BlogPage() {
   );
 }
 
+      
