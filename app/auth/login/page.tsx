@@ -96,7 +96,7 @@ export default function LoginPage() {
           {/* ── FORGOT PASSWORD VIEW ── */}
           {showForgot ? (
             <div>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "24px", fontWeight: 800, marginBottom: "8px", color: "#fff" }}>
+              <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "24px", fontWeight: 800, marginBottom: "8px", color: "#fff" }}>
                 Reset Password
               </h2>
               <p style={{ color: "#6B7280", fontSize: "14px", marginBottom: "24px" }}>
@@ -142,7 +142,7 @@ export default function LoginPage() {
           ) : (
             /* ── NORMAL LOGIN VIEW ── */
             <>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "28px", fontWeight: 800, marginBottom: "8px", color: "#fff" }}>Sign In</h2>
+              <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "28px", fontWeight: 800, marginBottom: "8px", color: "#fff" }}>Sign In</h2>
               <p style={{ color: "#6B7280", fontSize: "14px", marginBottom: "28px" }}>
                 Don't have an account?{" "}
                 <span onClick={() => router.push("/auth/signup")} style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", cursor: "pointer", fontWeight: 600 }}>
