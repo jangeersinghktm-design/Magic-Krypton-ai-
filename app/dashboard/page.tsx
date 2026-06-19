@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CreditsDisplay from "@/components/CreditsDisplay";
 
-const G = "linear-gradient(135deg, #F5D800 0%, #00CC44 100%)";
+const G = "linear-gradient(135deg, #F5F5F5 0%, #BFC5CC 100%)";
 const T = {
-  gold: "#F5D800", green: "#00CC44", bg: "#050505", card: "#0D0D0D",
-  border: "rgba(245,197,66,0.12)", text: "#FFFFFF", muted: "#6B7280", red: "#ef4444",
+  gold: "#D9D9D9", green: "#5FB88A", bg: "#050816", card: "#0B1020",
+  border: "rgba(255,255,255,0.08)", text: "#F5F5F5", muted: "#9AA3AF", red: "#E5736B",
 };
 
 type Project = {
@@ -26,7 +26,7 @@ function Skeleton({ w = "100%", h = 16, r = 8 }: { w?: string | number; h?: numb
   return (
     <div style={{
       width: w, height: h, borderRadius: r,
-      background: "linear-gradient(90deg, #161616 25%, #1e1e1e 50%, #161616 75%)",
+      background: "linear-gradient(90deg, #0B1020 25%, #11151F 50%, #0B1020 75%)",
       backgroundSize: "200% 100%",
       animation: "shimmer 1.5s infinite",
     }} />
@@ -35,10 +35,10 @@ function Skeleton({ w = "100%", h = 16, r = 8 }: { w?: string | number; h?: numb
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { color: string; bg: string; label: string; icon: string }> = {
-    draft:     { color: "#888",    bg: "rgba(136,136,136,0.1)", label: "Draft",     icon: "📝" },
-    building:  { color: "#F5D800", bg: "rgba(245,216,0,0.1)",   label: "Building",  icon: "⚡" },
-    completed: { color: "#00CC44", bg: "rgba(0,204,68,0.1)",    label: "Completed", icon: "✅" },
-    failed:    { color: "#ef4444", bg: "rgba(239,68,68,0.1)",   label: "Failed",    icon: "❌" },
+    draft:     { color: "#9AA3AF", bg: "rgba(154,163,175,0.1)", label: "Draft",     icon: "○" },
+    building:  { color: "#F5F5F5", bg: "rgba(245,245,245,0.1)", label: "Building",  icon: "◐" },
+    completed: { color: "#5FB88A", bg: "rgba(95,184,138,0.1)",  label: "Completed", icon: "●" },
+    failed:    { color: "#E5736B", bg: "rgba(229,115,107,0.1)", label: "Failed",    icon: "✕" },
   };
   const s = map[status] || map.draft;
   return (
@@ -117,14 +117,14 @@ function ProjectActions({ project, onDelete, onDuplicate, router }: any) {
     <div ref={ref} style={{ position: "relative" }}>
       <button onClick={() => setShowMore(!showMore)} style={{
         padding: "5px 9px", borderRadius: 7,
-        background: "#1a1a1a", border: `1px solid ${T.border}`,
+        background: "#11151F", border: `1px solid ${T.border}`,
         color: T.muted, fontSize: 14, cursor: "pointer",
       }}>•••</button>
 
       {showMore && (
         <div style={{
           position: "absolute", bottom: "calc(100% + 6px)", right: 0,
-          background: "#111", border: `1px solid ${T.border}`,
+          background: "#0B1020", border: `1px solid ${T.border}`,
           borderRadius: 12, padding: 6, minWidth: 190, zIndex: 100,
           boxShadow: "0 8px 32px rgba(0,0,0,0.8)",
           animation: "fadeIn 0.15s ease",
@@ -137,7 +137,7 @@ function ProjectActions({ project, onDelete, onDuplicate, router }: any) {
               fontSize: 12.5, cursor: "pointer", borderRadius: 8,
               display: "flex", alignItems: "center", gap: 8,
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.color = (a as any).danger ? T.red : T.text; }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#11151F"; e.currentTarget.style.color = (a as any).danger ? T.red : T.text; }}
             onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = (a as any).danger ? T.red : T.muted; }}>
               {a.icon} {a.label}
             </button>
@@ -339,7 +339,7 @@ export default function DashboardPage() {
         @keyframes dot-pulse { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1.2)} }
         .project-card { transition: all 0.2s; }
         .project-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,197,66,0.08); border-color: rgba(245,197,66,0.3) !important; }
-        .nav-btn:hover { color: #F5D800 !important; }
+        .nav-btn:hover { color: #F5F5F5 !important; }
       `}</style>
 
       <div style={{ minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "'DM Sans', sans-serif" }}>
@@ -400,7 +400,7 @@ export default function DashboardPage() {
             <div ref={notifRef} style={{ position: "relative" }}>
               <button onClick={() => setShowNotif(!showNotif)} style={{
                 width: 36, height: 36, borderRadius: "50%",
-                background: "#161616", border: `1px solid ${T.border}`,
+                background: "#0B1020", border: `1px solid ${T.border}`,
                 cursor: "pointer", display: "flex",
                 alignItems: "center", justifyContent: "center",
                 position: "relative", fontSize: 16,
@@ -410,7 +410,7 @@ export default function DashboardPage() {
                   <span style={{
                     position: "absolute", top: -2, right: -2,
                     width: 16, height: 16, borderRadius: "50%",
-                    background: "#ef4444", color: "#fff",
+                    background: "#E5736B", color: "#fff",
                     fontSize: 9, fontWeight: 700,
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>{unreadCount}</span>
@@ -420,7 +420,7 @@ export default function DashboardPage() {
               {showNotif && (
                 <div style={{
                   position: "absolute", top: "calc(100% + 8px)", right: 0,
-                  width: 320, background: "#111",
+                  width: 320, background: "#0B1020",
                   border: `1px solid ${T.border}`,
                   borderRadius: 14, padding: 0,
                   boxShadow: "0 16px 48px rgba(0,0,0,0.8)",
@@ -440,7 +440,7 @@ export default function DashboardPage() {
                         <span style={{
                           marginLeft: 8, fontSize: 10,
                           background: "rgba(239,68,68,0.15)",
-                          color: "#ef4444", padding: "1px 6px",
+                          color: "#E5736B", padding: "1px 6px",
                           borderRadius: 10, fontWeight: 700,
                         }}>{unreadCount} new</span>
                       )}
@@ -456,7 +456,7 @@ export default function DashboardPage() {
                   {/* List */}
                   <div style={{ maxHeight: 360, overflowY: "auto", scrollbarWidth: "none" }}>
                     {notifications.length === 0 ? (
-                      <div style={{ padding: "32px 16px", textAlign: "center", color: "#444", fontSize: 13 }}>
+                      <div style={{ padding: "32px 16px", textAlign: "center", color: "rgba(255,255,255,0.15)", fontSize: 13 }}>
                         <div style={{ fontSize: 32, marginBottom: 8 }}>🔔</div>
                         No notifications yet
                       </div>
@@ -472,7 +472,7 @@ export default function DashboardPage() {
                             display: "flex", alignItems: "flex-start", gap: 10,
                             transition: "background 0.15s",
                           }}
-                          onMouseEnter={e => e.currentTarget.style.background = "#161616"}
+                          onMouseEnter={e => e.currentTarget.style.background = "#0B1020"}
                           onMouseLeave={e => e.currentTarget.style.background = n.read ? "none" : "rgba(245,197,66,0.03)"}
                         >
                           <span style={{ fontSize: 18, flexShrink: 0 }}>
@@ -485,11 +485,11 @@ export default function DashboardPage() {
                             }}>{n.title}</p>
                             {n.message && (
                               <p style={{
-                                fontSize: 11.5, color: "#555", margin: "2px 0 0",
+                                fontSize: 11.5, color: "rgba(255,255,255,0.2)", margin: "2px 0 0",
                                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                               }}>{n.message}</p>
                             )}
-                            <p style={{ fontSize: 10, color: "#333", margin: "4px 0 0" }}>
+                            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.12)", margin: "4px 0 0" }}>
                               {new Date(n.created_at).toLocaleString()}
                             </p>
                           </div>
@@ -537,7 +537,7 @@ export default function DashboardPage() {
 
             {/* Quick Actions */}
             <div style={{ marginBottom: 24 }}>
-              <p style={{ fontSize: 11, color: "#444", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>QUICK ACTIONS</p>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.15)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>QUICK ACTIONS</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
                 {QUICK_ACTIONS.map(a => (
                   <button key={a.label}
@@ -628,14 +628,14 @@ export default function DashboardPage() {
                     animation: "fadeIn 0.3s ease",
                   }}>
                     {/* Preview */}
-                    <div style={{ height: 160, background: "#111", position: "relative", overflow: "hidden", cursor: "pointer" }}
+                    <div style={{ height: 160, background: "#0B1020", position: "relative", overflow: "hidden", cursor: "pointer" }}
                       onClick={() => router.push(`/create?id=${project.id}`)}>
                       {project.html_code ? (
                         <iframe srcDoc={project.html_code}
                           style={{ width: "200%", height: "200%", transform: "scale(0.5)", transformOrigin: "top left", border: "none", pointerEvents: "none" }}
                           sandbox="allow-scripts" title={project.title} />
                       ) : (
-                        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, color: "#333" }}>📄</div>
+                        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, color: "rgba(255,255,255,0.12)" }}>📄</div>
                       )}
                       <div style={{
                         position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)",
@@ -656,7 +656,7 @@ export default function DashboardPage() {
                         </h3>
                         <button onClick={() => toggleStar(project.id)} style={{
                           background: "none", border: "none", cursor: "pointer",
-                          fontSize: 16, color: project.starred ? "#FFD700" : "#444", marginLeft: 6, flexShrink: 0,
+                          fontSize: 16, color: project.starred ? "#F5F5F5" : "rgba(255,255,255,0.15)", marginLeft: 6, flexShrink: 0,
                         }}>★</button>
                       </div>
 
@@ -668,7 +668,7 @@ export default function DashboardPage() {
 
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                         <StatusBadge status={project.status || "draft"} />
-                        <span style={{ fontSize: 10.5, color: "#444" }}>{timeAgo(project.updated_at || project.created_at)}</span>
+                        <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.15)" }}>{timeAgo(project.updated_at || project.created_at)}</span>
                       </div>
 
                       <div style={{ display: "flex", gap: 4 }}>
@@ -687,7 +687,7 @@ export default function DashboardPage() {
                         <button onClick={() => router.push(`/create?id=${project.id}&tab=chat`)} style={{
                           flex: 1, padding: "5px 8px", borderRadius: 7,
                           background: "rgba(100,100,255,0.08)", border: "1px solid rgba(100,100,255,0.15)",
-                          color: "#8888ff", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                          color: "#BFC5CC", fontSize: 11, fontWeight: 600, cursor: "pointer",
                         }}>💬 AI</button>
 
                         <ProjectActions
@@ -724,7 +724,7 @@ export default function DashboardPage() {
                 }}>Top up ⚡</button>
               </div>
               <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 6, marginBottom: 10, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: pct > 30 ? G : "linear-gradient(90deg,#ef4444,#f59e0b)", borderRadius: 6, transition: "width 0.5s" }} />
+                <div style={{ height: "100%", width: `${pct}%`, background: pct > 30 ? G : "linear-gradient(90deg,#E5736B,#D9D9D9)", borderRadius: 6, transition: "width 0.5s" }} />
               </div>
               {[
                 { label: "Total Credits", value: credits.total },
@@ -737,8 +737,8 @@ export default function DashboardPage() {
                   <span style={{ fontSize: 12, fontWeight: 700, color: (row as any).color || T.text }}>{row.value}</span>
                 </div>
               ))}
-              <div style={{ marginTop: 12, padding: 10, background: "#161616", borderRadius: 8 }}>
-                <p style={{ fontSize: 10, color: "#555", marginBottom: 6, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Credit Costs</p>
+              <div style={{ marginTop: 12, padding: 10, background: "#0B1020", borderRadius: 8 }}>
+                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginBottom: 6, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Credit Costs</p>
                 {[
                   { label: "Small Edit",  cost: "1 cr" },
                   { label: "Component",   cost: "3 cr" },
@@ -774,7 +774,7 @@ export default function DashboardPage() {
             <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16 }}>
               <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>AI Activity</p>
               {activities.length === 0 ? (
-                <p style={{ color: "#444", fontSize: 12, textAlign: "center", padding: "12px 0" }}>No activity yet</p>
+                <p style={{ color: "rgba(255,255,255,0.15)", fontSize: 12, textAlign: "center", padding: "12px 0" }}>No activity yet</p>
               ) : (
                 activities.map(a => (
                   <div key={a.id}
@@ -786,15 +786,15 @@ export default function DashboardPage() {
                       cursor: a.projectId ? "pointer" : "default",
                       transition: "background .15s",
                     }}
-                    onMouseEnter={e => { if (a.projectId) e.currentTarget.style.background = "#161616"; }}
+                    onMouseEnter={e => { if (a.projectId) e.currentTarget.style.background = "#0B1020"; }}
                     onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
                   >
                     <span style={{ fontSize: 14, flexShrink: 0 }}>{a.icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 11.5, color: a.projectId ? T.text : "#666", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.text}</p>
-                      <p style={{ fontSize: 10, color: "#444", margin: "2px 0 0" }}>{a.time}{a.projectId ? " · tap to open" : ""}</p>
+                      <p style={{ fontSize: 11.5, color: a.projectId ? T.text : "#9AA3AF", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.text}</p>
+                      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.15)", margin: "2px 0 0" }}>{a.time}{a.projectId ? " · tap to open" : ""}</p>
                     </div>
-                    {a.projectId && <span style={{ fontSize: 10, color: "#333", flexShrink: 0, marginTop: 2 }}>↗</span>}
+                    {a.projectId && <span style={{ fontSize: 10, color: "rgba(255,255,255,0.12)", flexShrink: 0, marginTop: 2 }}>↗</span>}
                   </div>
                 ))
               )}
@@ -806,12 +806,12 @@ export default function DashboardPage() {
               {projects.slice(0, 4).map(p => (
                 <div key={p.id} onClick={() => router.push(`/create?id=${p.id}`)}
                   style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 8, cursor: "pointer", transition: "background 0.15s", marginBottom: 2 }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#161616"}
+                  onMouseEnter={e => e.currentTarget.style.background = "#0B1020"}
                   onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                  <div style={{ width: 28, height: 28, borderRadius: 6, background: "#161616", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>📄</div>
+                  <div style={{ width: 28, height: 28, borderRadius: 6, background: "#0B1020", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, flexShrink: 0 }}>📄</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 12, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title || "Untitled"}</p>
-                    <p style={{ fontSize: 10, color: "#444", margin: "1px 0 0" }}>{timeAgo(p.updated_at || p.created_at)}</p>
+                    <p style={{ fontSize: 10, color: "rgba(255,255,255,0.15)", margin: "1px 0 0" }}>{timeAgo(p.updated_at || p.created_at)}</p>
                   </div>
                 </div>
               ))}
@@ -827,7 +827,7 @@ export default function DashboardPage() {
             justifyContent: "center", backdropFilter: "blur(4px)",
           }}>
             <div onClick={e => e.stopPropagation()} style={{
-              background: "#0d0d0d", border: `1px solid ${T.border}`,
+              background: "#0B1020", border: `1px solid ${T.border}`,
               borderRadius: 16, padding: 28, maxWidth: 380, width: "90%", textAlign: "center",
             }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>🗑</div>
@@ -835,7 +835,7 @@ export default function DashboardPage() {
               <p style={{ color: T.muted, fontSize: 13, marginBottom: 24 }}>This cannot be undone.</p>
               <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
                 <button onClick={() => setConfirmDelete(null)} style={{
-                  padding: "10px 24px", background: "#161616",
+                  padding: "10px 24px", background: "#0B1020",
                   border: `1px solid ${T.border}`, borderRadius: 9,
                   color: T.text, fontSize: 13, cursor: "pointer", fontWeight: 600,
                 }}>Cancel</button>
