@@ -50,7 +50,7 @@ export default function SignupPage() {
           {success ? (
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "48px", marginBottom: "16px" }}>✅</div>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "24px", fontWeight: 800, marginBottom: "10px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Check your email!</h2>
+              <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "24px", fontWeight: 800, marginBottom: "10px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Check your email!</h2>
               <p style={{ color: "#B3B3B3", fontSize: "15px", lineHeight: 1.6 }}>We sent a confirmation link to <strong style={{ color: "#fff" }}>{email}</strong>. Click it to activate your account.</p>
               <button onClick={() => router.push("/auth/login")} style={{ marginTop: "24px", padding: "13px 28px", background: G, border: "none", borderRadius: "12px", color: "#050505", fontWeight: 700, fontSize: "15px", cursor: "pointer" }}>
                 Go to Login →
@@ -58,7 +58,7 @@ export default function SignupPage() {
             </div>
           ) : (
             <>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "28px", fontWeight: 800, marginBottom: "8px", color: "#fff" }}>Get Started</h2>
+              <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "28px", fontWeight: 800, marginBottom: "8px", color: "#fff" }}>Get Started</h2>
               <p style={{ color: "#6B7280", fontSize: "14px", marginBottom: "28px" }}>
                 Already have an account?{" "}
                 <span onClick={() => router.push("/auth/login")} style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", cursor: "pointer", fontWeight: 600 }}>
