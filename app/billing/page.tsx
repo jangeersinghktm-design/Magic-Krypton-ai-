@@ -205,7 +205,7 @@ export default function BillingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=Baloo+2:wght@600;700;800;900&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #050505; }
         @keyframes spin { to{transform:rotate(360deg)} }
@@ -250,7 +250,7 @@ export default function BillingPage() {
         {/* ── HEADER ── */}
         <div style={{ padding: "20px 28px", borderBottom: "1px solid rgba(245,197,66,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 22, fontWeight: 900, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "'Syne', sans-serif" }}>⚡ Krypton AI</span>
+            <span style={{ fontSize: 22, fontWeight: 900, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "'Baloo 2', sans-serif" }}>⚡ Krypton AI</span>
             <span style={{ fontSize: 11, color: "#444", padding: "3px 10px", border: "1px solid #222", borderRadius: 20 }}>Billing & Subscriptions</span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -318,7 +318,7 @@ export default function BillingPage() {
             <>
               {/* Hero */}
               <div style={{ textAlign: "center", marginBottom: 36 }}>
-                <h1 style={{ fontSize: "clamp(26px,4vw,44px)", fontWeight: 900, fontFamily: "'Syne', sans-serif", lineHeight: 1.1, marginBottom: 12 }}>
+                <h1 style={{ fontSize: "clamp(26px,4vw,44px)", fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", lineHeight: 1.1, marginBottom: 12 }}>
                   Build More,{" "}
                   <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Pay Less</span>
                 </h1>
@@ -411,7 +411,7 @@ export default function BillingPage() {
               {/* Top-ups */}
               <div style={{ marginBottom: 48 }}>
                 <div style={{ textAlign: "center", marginBottom: 24 }}>
-                  <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: "'Syne', sans-serif", marginBottom: 6 }}>
+                  <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: "'Baloo 2', sans-serif", marginBottom: 6 }}>
                     Need More <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Credits?</span>
                   </h2>
                   <p style={{ color: T.muted, fontSize: 13 }}>One-time top-up — credits never expire on paid plans</p>
