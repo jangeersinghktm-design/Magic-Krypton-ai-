@@ -4,11 +4,11 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import KryptonLogo from "@/components/branding/KryptonLogo";
 
-const GRAD = "linear-gradient(135deg,#FFD700 0%,#FFB000 50%,#FF7A00 100%)";
+const GRAD = "linear-gradient(135deg,#F5F5F5 0%,#D9D9D9 50%,#BFC5CC 100%)";
 const C = {
-  bg:"#050505", card:"#0D0D0D", border:"rgba(255,215,0,0.1)",
-  borderHi:"rgba(255,215,0,0.3)", text:"#FFFFFF", sub:"#94A3B8",
-  muted:"#4A5568", gold:"#FFD700",
+  bg:"#050816", card:"#0B1020", border:"rgba(255,255,255,0.08)",
+  borderHi:"rgba(245,245,245,0.18)", text:"#F5F5F5", sub:"#9CA3AF",
+  muted:"#5B6472", gold:"#D9D9D9",
 };
 
 const PLACEHOLDERS = [
@@ -119,14 +119,14 @@ export default function HomePage() {
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", background:C.bg, color:C.text, fontFamily:"'DM Sans',sans-serif", overflowY:"auto", minHeight:"100vh", position:"relative" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:rgba(255,215,0,.15);border-radius:4px;}
         @keyframes gm1{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(3%,-3%)scale(1.05)}}
         @keyframes gm2{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(-3%,3%)scale(1.08)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
         .proj-btn:hover{border-color:rgba(255,215,0,.35)!important;background:rgba(255,215,0,.04)!important;}
-        .proj-btn:hover .proj-arrow{color:#FFD700!important;}
+        .proj-btn:hover .proj-arrow{color:#D9D9D9!important;}
         .send-btn:hover{transform:scale(1.06);box-shadow:0 0 20px rgba(255,215,0,.4);}
       `}</style>
 
@@ -155,7 +155,7 @@ export default function HomePage() {
           {/* ── Heading ── */}
           <div style={{ textAlign:"center", marginBottom:36, animation:"fadeUp .5s ease" }}>
             <h1 style={{
-              fontFamily:"'Baloo 2',system-ui,sans-serif",
+              fontFamily:"'Syne',system-ui,sans-serif",
               fontSize:"clamp(28px,5vw,52px)",
               fontWeight:800,
               lineHeight:1.12,
@@ -275,31 +275,43 @@ export default function HomePage() {
                     onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="rgba(255,215,0,0.3)";(e.currentTarget as HTMLElement).style.transform="translateY(-3px)";(e.currentTarget as HTMLElement).style.boxShadow="0 12px 40px rgba(0,0,0,0.4)";}}
                     onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor=C.border;(e.currentTarget as HTMLElement).style.transform="";(e.currentTarget as HTMLElement).style.boxShadow="";}}
                     >
-                      {/* Thumbnail */}
+                      {/* Thumbnail — real live preview of generated site */}
                       <div style={{
-                        height:120, background:`linear-gradient(135deg,${tc.color}22,${tc.color}08)`,
-                        borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center",
-                        justifyContent:"center", position:"relative", overflow:"hidden",
+                        height:140, background:p.html_code?"#fff":`linear-gradient(135deg,${tc.color}22,${tc.color}08)`,
+                        borderBottom:`1px solid ${C.border}`, position:"relative", overflow:"hidden",
                       }}>
-                        <div style={{fontSize:40, opacity:0.4}}>{tc.icon}</div>
-                        <div style={{
-                          position:"absolute", inset:0,
-                          backgroundImage:`linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)`,
-                          backgroundSize:"20px 20px",
-                        }}/>
+                        {p.html_code ? (
+                          <div style={{
+                            width:"400%", height:"400%", transform:"scale(0.25)",
+                            transformOrigin:"top left", pointerEvents:"none",
+                          }}>
+                            <iframe
+                              srcDoc={p.html_code}
+                              style={{width:"100%", height:"100%", border:"none", display:"block"}}
+                              sandbox="allow-scripts allow-same-origin"
+                              loading="lazy"
+                              title={name}
+                            />
+                          </div>
+                        ) : (
+                          <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            <div style={{fontSize:40, opacity:0.4}}>{tc.icon}</div>
+                          </div>
+                        )}
                         {/* Type badge */}
                         <div style={{
                           position:"absolute", top:10, left:10,
-                          background:`${tc.color}33`, border:`1px solid ${tc.color}55`,
-                          color:tc.color, fontSize:10, fontWeight:700, padding:"2px 8px",
-                          borderRadius:20, letterSpacing:"0.05em",
+                          background:`${tc.color}dd`, border:`1px solid ${tc.color}`,
+                          color:"#fff", fontSize:10, fontWeight:700, padding:"2px 8px",
+                          borderRadius:20, letterSpacing:"0.05em", boxShadow:"0 2px 8px rgba(0,0,0,0.3)",
                         }}>{tc.label}</div>
                         {/* Quality score if available */}
                         {p.quality_score && (
                           <div style={{
                             position:"absolute", top:10, right:10,
-                            background:"rgba(16,185,129,0.15)", border:"1px solid rgba(16,185,129,0.3)",
-                            color:"#10B981", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20,
+                            background:"rgba(16,185,129,0.9)", border:"1px solid rgba(16,185,129,1)",
+                            color:"#fff", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20,
+                            boxShadow:"0 2px 8px rgba(0,0,0,0.3)",
                           }}>{p.quality_score}%</div>
                         )}
                       </div>
@@ -310,7 +322,12 @@ export default function HomePage() {
                       </div>
                       {/* Actions */}
                       <div style={{display:"flex", borderTop:`1px solid ${C.border}`}}>
-                        <button onClick={()=>router.push(`/create?id=${p.id}`)}
+                        <button onClick={(e)=>{
+                          e.stopPropagation();
+                          if (!p.html_code) { router.push(`/create?id=${p.id}`); return; }
+                          const win = window.open("", "_blank");
+                          if (win) { win.document.write(p.html_code); win.document.close(); }
+                        }}
                           style={{flex:1, padding:"8px 0", background:"none", border:"none", color:C.gold,
                             fontSize:12, fontWeight:600, cursor:"pointer", transition:"background 0.15s"}}
                           onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,215,0,0.06)")}
