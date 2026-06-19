@@ -119,7 +119,7 @@ export default function HomePage() {
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", background:C.bg, color:C.text, fontFamily:"'DM Sans',sans-serif", overflowY:"auto", minHeight:"100vh", position:"relative" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:rgba(255,215,0,.15);border-radius:4px;}
         @keyframes gm1{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(3%,-3%)scale(1.05)}}
@@ -155,7 +155,7 @@ export default function HomePage() {
           {/* ── Heading ── */}
           <div style={{ textAlign:"center", marginBottom:36, animation:"fadeUp .5s ease" }}>
             <h1 style={{
-              fontFamily:"'Syne',system-ui,sans-serif",
+              fontFamily:"'Baloo 2',system-ui,sans-serif",
               fontSize:"clamp(28px,5vw,52px)",
               fontWeight:800,
               lineHeight:1.12,
