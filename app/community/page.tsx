@@ -322,7 +322,7 @@ export default function CommunityPage() {
         {/* Hero */}
         <div style={{ padding: "48px 24px 32px", textAlign: "center", background: "linear-gradient(180deg,rgba(245,197,66,0.05) 0%,transparent 100%)", borderBottom: `1px solid ${T.border}` }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🌍</div>
-          <h1 style={{ fontSize: "clamp(24px,5vw,40px)", fontWeight: 800, fontFamily: "'Syne',sans-serif", marginBottom: 12, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          <h1 style={{ fontSize: "clamp(24px,5vw,40px)", fontWeight: 800, fontFamily: "'Baloo 2',sans-serif", marginBottom: 12, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             Community Showcase
           </h1>
           <p style={{ color: T.muted, fontSize: 15, marginBottom: 24, maxWidth: 500, margin: "0 auto 24px" }}>
@@ -452,4 +452,4 @@ export default function CommunityPage() {
     </>
   );
 }
-               
+   
