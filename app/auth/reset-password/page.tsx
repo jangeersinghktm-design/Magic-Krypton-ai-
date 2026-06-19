@@ -81,7 +81,7 @@ function ResetPasswordContent() {
             </div>
           ) : (
             <>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "26px", fontWeight: 800, marginBottom: "8px", color: "#fff" }}>
+              <h2 style={{ fontFamily: "'Baloo 2', sans-serif", fontSize: "26px", fontWeight: 800, marginBottom: "8px", color: "#fff" }}>
                 Set New Password
               </h2>
               <p style={{ color: "#6B7280", fontSize: "14px", marginBottom: "28px" }}>
