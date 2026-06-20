@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const C={
-  bg:"#050816",surface:"#0B1020",card:"#0D1530",border:"rgba(255,217,61,0.12)",
-  borderHi:"rgba(255,217,61,0.35)",text:"#FFFFFF",sub:"#94A3B8",muted:"#4A5568",
-  grad:"linear-gradient(135deg,#FFD93D,#FF8A00)",accent:"#FFD93D",
+  bg:"#050816",surface:"#0B1020",card:"#0B1020",border:"rgba(255,217,61,0.12)",
+  borderHi:"rgba(255,217,61,0.35)",text:"#FFFFFF",sub:"#9AA3AF",muted:"#5B6472",
+  grad:"linear-gradient(135deg,#F5F5F5,#D9D9D9)",accent:"#F5F5F5",
 };
 
 const TOOLS=[
@@ -130,7 +130,7 @@ Generate ONLY in English. Make it high-quality, professional, and ready to use.`
   return(
     <div style={{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:"'Inter',sans-serif",display:"flex",flexDirection:"column"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:rgba(255,217,61,.2);border-radius:4px;}
         textarea,select,input{font-family:'Inter',sans-serif;}
@@ -147,7 +147,7 @@ Generate ONLY in English. Make it high-quality, professional, and ready to use.`
         <div style={{width:1,height:20,background:C.border}}/>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:28,height:28,borderRadius:8,background:C.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>✍️</div>
-          <span style={{fontFamily:"'Baloo 2',sans-serif",fontWeight:800,fontSize:15,background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Content Studio</span>
+          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Content Studio</span>
         </div>
         <div style={{marginLeft:"auto",display:"flex",gap:8}}>
           <button onClick={()=>setShowHistory(v=>!v)} style={{padding:"6px 12px",background:showHistory?"rgba(255,217,61,.1)":"rgba(255,255,255,.04)",border:`1px solid ${showHistory?C.borderHi:C.border}`,borderRadius:8,color:showHistory?C.accent:C.muted,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
@@ -184,7 +184,7 @@ Generate ONLY in English. Make it high-quality, professional, and ready to use.`
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
               <span style={{fontSize:20}}>{activeTool.icon}</span>
               <div>
-                <div style={{fontWeight:700,fontSize:15,fontFamily:"'Baloo 2',sans-serif"}}>{activeTool.label}</div>
+                <div style={{fontWeight:700,fontSize:15,fontFamily:"'Syne',sans-serif"}}>{activeTool.label}</div>
                 <div style={{fontSize:12,color:C.muted}}>{activeTool.desc}</div>
               </div>
             </div>
@@ -257,7 +257,7 @@ Generate ONLY in English. Make it high-quality, professional, and ready to use.`
             <div style={{marginLeft:"auto",display:"flex",gap:6}}>
               {result&&(
                 <>
-                  <button className="action-btn" onClick={copy} style={{padding:"6px 14px",background:"rgba(255,255,255,.04)",border:`1px solid ${C.border}`,borderRadius:8,color:copied?"#10B981":C.muted,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
+                  <button className="action-btn" onClick={copy} style={{padding:"6px 14px",background:"rgba(255,255,255,.04)",border:`1px solid ${C.border}`,borderRadius:8,color:copied?"#5FB88A":C.muted,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
                     {copied?"✓ Copied!":"Copy"}
                   </button>
                   <button className="action-btn" onClick={download} style={{padding:"6px 14px",background:"rgba(255,255,255,.04)",border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:12,cursor:"pointer",transition:"all .15s"}}>
