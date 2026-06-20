@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const C = {
@@ -16,10 +16,17 @@ const MOODS=["Dramatic","Soft","Vibrant","Dark","Minimal","Ethereal"];
 
 type ImgItem={id:string;url:string;prompt:string;style:string;ts:Date};
 
-export default function ImageGenPage(){
+function ImageGenPageInner(){
   const router=useRouter();
   const supabase=createClient();
+  const searchParams=useSearchParams();
   const[prompt,setPrompt]=useState("");
+
+  // Pre-fill prompt from URL param (e.g. from Templates page "Use" button)
+  useEffect(()=>{
+    const urlPrompt=searchParams.get("prompt");
+    if(urlPrompt) setPrompt(decodeURIComponent(urlPrompt));
+  },[searchParams]);
   const[negPrompt,setNegPrompt]=useState("");
   const[style,setStyle]=useState("Realistic");
   const[ratio,setRatio]=useState(RATIOS[0]);
@@ -296,3 +303,11 @@ export default function ImageGenPage(){
     </div>
   );
  }
+
+export default function ImageGenPage(){
+  return (
+    <Suspense fallback={<div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#050816",color:"#9AA3AF"}}>Loading...</div>}>
+      <ImageGenPageInner/>
+    </Suspense>
+  );
+}
