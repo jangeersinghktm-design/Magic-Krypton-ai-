@@ -4,33 +4,33 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const G  = "linear-gradient(135deg, #F5D800 0%, #00CC44 100%)";
-const T  = { gold: "#F5D800", green: "#00CC44", border: "rgba(245,197,66,0.12)", muted: "#6B7280", card: "#0D0D0D" };
+const G  = "linear-gradient(135deg, #F5F5F5 0%, #5FB88A 100%)";
+const T  = { gold: "#F5F5F5", green: "#5FB88A", border: "rgba(245,197,66,0.12)", muted: "#5B6472", card: "#0B1020" };
 
 const PLANS = [
   {
-    id: "free", name: "Free", emoji: "🟢",
+    id: "free", name: "Free", emoji: "○",
     monthlyUsd: 0, yearlyUsd: 0, monthlyInr: 0, yearlyInr: 0,
     creditsLabel: "20 Generations / Day", cta: "Current Plan", highlight: false,
     features: ["Website Generator","App Generator","Game Generator","Live Preview","Download HTML","Community Support"],
     locked: ["Save Projects","Project History","Advanced AI Model","Team Workspace","API Access","Priority Support"],
   },
   {
-    id: "pro", name: "Pro", emoji: "🔥",
+    id: "pro", name: "Pro", emoji: "◆",
     monthlyUsd: 25, yearlyUsd: 20, monthlyInr: 2099, yearlyInr: 1679,
     creditsLabel: "100 Generations / Month", cta: "Upgrade to Pro", highlight: true, badge: "Most Popular",
     features: ["Everything in Free","Save Projects","Project History","Faster Generation","Better AI Quality","Export Source Code","Private Projects","Premium Templates","Email Support"],
     locked: ["Team Workspace","API Access"],
   },
   {
-    id: "premium", name: "Premium", emoji: "💎",
+    id: "premium", name: "Premium", emoji: "◇",
     monthlyUsd: 69, yearlyUsd: 55, monthlyInr: 5799, yearlyInr: 4639,
     creditsLabel: "300 Generations / Month", cta: "Upgrade to Premium", highlight: false,
     features: ["Everything in Pro","Fastest AI Model","Unlimited Project Saves","Version History","Team (5 Users)","Screenshot to App","AI Project Manager","Priority Support"],
     locked: ["API Access"],
   },
   {
-    id: "business", name: "Business", emoji: "🏢",
+    id: "business", name: "Business", emoji: "▣",
     monthlyUsd: 149, yearlyUsd: 119, monthlyInr: 12499, yearlyInr: 9999,
     creditsLabel: "Unlimited / Day", cta: "Contact Sales", highlight: false,
     features: ["Everything in Premium","API Access","Unlimited Team","Admin Dashboard","White Label","Custom AI Training","Business SLA","Dedicated Support"],
@@ -125,7 +125,7 @@ export default function BillingPage() {
           image: "/logo.png",
           order_id: order.orderId,
           prefill: order.prefill,
-          theme: { color: "#F5D800" },
+          theme: { color: "#F5F5F5" },
           method: {
             card: true, upi: true, netbanking: true,
             wallet: true, emi: true,
@@ -194,7 +194,7 @@ export default function BillingPage() {
   const sym        = currency === "INR" ? "₹" : "$";
 
   if (loading) return (
-    <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#050505", color: T.gold, fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#050816", color: T.gold, fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ textAlign: "center" }}>
         <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid rgba(245,197,66,0.2)", borderTopColor: T.gold, animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
         <p style={{ fontSize: 14, color: T.muted }}>Loading billing...</p>
@@ -205,19 +205,19 @@ export default function BillingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=Baloo+2:wght@600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #050505; }
+        body { background: #050816; }
         @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
         .billing-root {
-          min-height: 100vh; background: #050505; color: #fff;
+          min-height: 100vh; background: #050816; color: #fff;
           font-family: 'DM Sans', sans-serif;
           background-image: linear-gradient(rgba(245,197,66,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,66,0.025) 1px, transparent 1px);
           background-size: 40px 40px;
         }
-        .plan-card { background: #0D0D0D; border: 1px solid rgba(245,197,66,0.12); border-radius: 20px; padding: 24px 20px; transition: all 0.2s; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        .plan-card { background: #0B1020; border: 1px solid rgba(245,197,66,0.12); border-radius: 20px; padding: 24px 20px; transition: all 0.2s; position: relative; overflow: hidden; display: flex; flex-direction: column; }
         .plan-card.highlight { border-color: rgba(245,197,66,0.4); box-shadow: 0 0 40px rgba(245,197,66,0.08); }
         .plan-card:hover { border-color: rgba(245,197,66,0.3); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
         .pill-toggle { display: inline-flex; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 100px; padding: 4px; }
@@ -232,8 +232,8 @@ export default function BillingPage() {
         .cta.ghost { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #888; }
         .cta.current { background: rgba(0,204,68,0.1); border: 1px solid rgba(0,204,68,0.25); color: ${T.green}; cursor: default; }
         .badge-popular { position: absolute; top: -1px; right: 20px; background: ${G}; color: #000; font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 0 0 8px 8px; letter-spacing: 0.5px; }
-        .feature-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #B3B3B3; padding: 3px 0; }
-        .topup-card { background: #0D0D0D; border: 1px solid rgba(245,197,66,0.12); border-radius: 12px; padding: 18px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .feature-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #9AA3AF; padding: 3px 0; }
+        .topup-card { background: #0B1020; border: 1px solid rgba(245,197,66,0.12); border-radius: 12px; padding: 18px; text-align: center; cursor: pointer; transition: all 0.2s; }
         .topup-card:hover { border-color: rgba(245,197,66,0.4); transform: translateY(-2px); }
         .tab-btn { padding: 8px 18px; border-radius: 8px; border: none; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
         .tab-btn.active { background: rgba(245,197,66,0.15); color: ${T.gold}; border: 1px solid rgba(245,197,66,0.3); }
@@ -250,18 +250,18 @@ export default function BillingPage() {
         {/* ── HEADER ── */}
         <div style={{ padding: "20px 28px", borderBottom: "1px solid rgba(245,197,66,0.1)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 22, fontWeight: 900, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "'Baloo 2', sans-serif" }}>⚡ Krypton AI</span>
-            <span style={{ fontSize: 11, color: "#444", padding: "3px 10px", border: "1px solid #222", borderRadius: 20 }}>Billing & Subscriptions</span>
+            <span style={{ fontSize: 18, fontWeight: 800, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontFamily: "'Inter',sans-serif" }}>Krypton AI</span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.15)", padding: "3px 10px", border: "1px solid #222", borderRadius: 20 }}>Billing & Subscriptions</span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, overflow: "hidden" }}>
               {(["USD","INR"] as const).map(c => (
-                <button key={c} onClick={() => setCurrency(c)} style={{ padding: "5px 12px", border: "none", fontSize: 11, fontWeight: 700, background: currency === c ? "rgba(245,197,66,0.15)" : "transparent", color: currency === c ? T.gold : "#666", cursor: "pointer" }}>
+                <button key={c} onClick={() => setCurrency(c)} style={{ padding: "5px 12px", border: "none", fontSize: 11, fontWeight: 700, background: currency === c ? "rgba(245,197,66,0.15)" : "transparent", color: currency === c ? T.gold : "#9AA3AF", cursor: "pointer" }}>
                   {c === "INR" ? "₹ INR" : "$ USD"}
                 </button>
               ))}
             </div>
-            <button onClick={() => window.close()} style={{ padding: "5px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#666", fontSize: 11, cursor: "pointer" }}>✕ Close</button>
+            <button onClick={() => window.close()} style={{ padding: "5px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#9AA3AF", fontSize: 11, cursor: "pointer" }}>✕ Close</button>
           </div>
         </div>
 
@@ -273,14 +273,14 @@ export default function BillingPage() {
               <div>
                 <p style={{ fontSize: 11, color: T.muted, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Current Plan</p>
                 <p style={{ fontSize: 20, fontWeight: 800, textTransform: "capitalize" as const, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{currentPlan}</p>
-                {subscription?.cancel_at_period_end && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>⚠ Cancels at period end</p>}
+                {subscription?.cancel_at_period_end && <p style={{ fontSize: 11, color: "#E5736B", marginTop: 3 }}>⚠ Cancels at period end</p>}
               </div>
               <div>
                 <p style={{ fontSize: 11, color: T.muted, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Credits</p>
                 <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
-                  <div style={{ height: "100%", width: `${100 - usedPct}%`, background: remaining > 20 ? G : "linear-gradient(90deg,#ef4444,#f59e0b)", borderRadius: 3, transition: "width 0.5s" }} />
+                  <div style={{ height: "100%", width: `${100 - usedPct}%`, background: remaining > 20 ? G : "linear-gradient(90deg,#E5736B,#D9D9D9)", borderRadius: 3, transition: "width 0.5s" }} />
                 </div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: remaining > 20 ? T.green : "#ef4444" }}>{remaining} / {profile.total_credits} remaining</p>
+                <p style={{ fontSize: 12, fontWeight: 700, color: remaining > 20 ? T.green : "#E5736B" }}>{remaining} / {profile.total_credits} remaining</p>
               </div>
               <div>
                 <p style={{ fontSize: 11, color: T.muted, textTransform: "uppercase" as const, letterSpacing: 1, marginBottom: 4 }}>Next Renewal</p>
@@ -288,12 +288,12 @@ export default function BillingPage() {
                   {periodEnd ? periodEnd.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                 </p>
                 {daysLeft !== null && daysLeft <= 7 && (
-                  <p style={{ fontSize: 11, color: "#f59e0b", marginTop: 2 }}>⚠ {daysLeft} days left</p>
+                  <p style={{ fontSize: 11, color: "#D9D9D9", marginTop: 2 }}>⚠ {daysLeft} days left</p>
                 )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {currentPlan !== "free" && !subscription?.cancel_at_period_end && (
-                  <button onClick={handleCancel} disabled={cancelLoading} style={{ padding: "7px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, color: "#ef4444", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                  <button onClick={handleCancel} disabled={cancelLoading} style={{ padding: "7px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, color: "#E5736B", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                     {cancelLoading ? "..." : "Cancel Plan"}
                   </button>
                 )}
@@ -318,9 +318,9 @@ export default function BillingPage() {
             <>
               {/* Hero */}
               <div style={{ textAlign: "center", marginBottom: 36 }}>
-                <h1 style={{ fontSize: "clamp(26px,4vw,44px)", fontWeight: 900, fontFamily: "'Baloo 2', sans-serif", lineHeight: 1.1, marginBottom: 12 }}>
-                  Build More,{" "}
-                  <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Pay Less</span>
+                <h1 style={{ fontSize: "clamp(26px,4vw,44px)", fontWeight: 900, fontFamily: "'Inter',sans-serif", lineHeight: 1.1, marginBottom: 12 }}>
+                  Simple, Transparent{" "}
+                  <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Pricing</span>
                 </h1>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 20 }}>
                   <div className="pill-toggle">
@@ -340,7 +340,7 @@ export default function BillingPage() {
                     placeholder="Promo code"
                     style={{ padding: "8px 14px", background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, color: "#fff", fontSize: 13, outline: "none", fontFamily: "'DM Sans', sans-serif", width: 150 }} />
                   <button onClick={() => { if (promoCode) setPromoApplied(true); }}
-                    style={{ padding: "8px 14px", background: promoCode ? G : "#1a1a1a", border: "none", borderRadius: 8, color: promoCode ? "#000" : "#444", fontSize: 12, fontWeight: 700, cursor: promoCode ? "pointer" : "not-allowed" }}>
+                    style={{ padding: "8px 14px", background: promoCode ? G : "#11151F", border: "none", borderRadius: 8, color: promoCode ? "#000" : "rgba(255,255,255,0.15)", fontSize: 12, fontWeight: 700, cursor: promoCode ? "pointer" : "not-allowed" }}>
                     {promoApplied ? "✅ Applied!" : "Apply"}
                   </button>
                 </div>
@@ -361,7 +361,7 @@ export default function BillingPage() {
                       <div style={{ marginBottom: 16 }}>
                         <div style={{ fontSize: 26, marginBottom: 6 }}>{plan.emoji}</div>
                         <h2 style={{ fontSize: 19, fontWeight: 800, marginBottom: 3 }}>{plan.name}</h2>
-                        <p style={{ fontSize: 10, color: "#555", textTransform: "uppercase" as const, letterSpacing: 1 }}>{plan.creditsLabel}</p>
+                        <p style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", textTransform: "uppercase" as const, letterSpacing: 1 }}>{plan.creditsLabel}</p>
                       </div>
 
                       <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
@@ -370,9 +370,9 @@ export default function BillingPage() {
                         ) : (
                           <div>
                             <div style={{ display: "flex", alignItems: "flex-end", gap: 2 }}>
-                              <span style={{ fontSize: 13, color: "#666", marginBottom: 4 }}>{sym}</span>
+                              <span style={{ fontSize: 13, color: "#9AA3AF", marginBottom: 4 }}>{sym}</span>
                               <span style={{ fontSize: 32, fontWeight: 900, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 1 }}>{price.toLocaleString()}</span>
-                              <span style={{ fontSize: 12, color: "#555", marginBottom: 4 }}>/mo</span>
+                              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.2)", marginBottom: 4 }}>/mo</span>
                             </div>
                             {billing === "yearly" && (
                               <p style={{ fontSize: 10, color: T.green, marginTop: 3 }}>Billed {sym}{(price * 12).toLocaleString()}/yr</p>
@@ -399,7 +399,7 @@ export default function BillingPage() {
                         {plan.locked.map(f => (
                           <div key={f} className="feature-row" style={{ opacity: 0.35 }}>
                             <span style={{ fontSize: 10, flexShrink: 0 }}>🔒</span>
-                            <span style={{ color: "#555" }}>{f}</span>
+                            <span style={{ color: "rgba(255,255,255,0.2)" }}>{f}</span>
                           </div>
                         ))}
                       </div>
@@ -411,7 +411,7 @@ export default function BillingPage() {
               {/* Top-ups */}
               <div style={{ marginBottom: 48 }}>
                 <div style={{ textAlign: "center", marginBottom: 24 }}>
-                  <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: "'Baloo 2', sans-serif", marginBottom: 6 }}>
+                  <h2 style={{ fontSize: 24, fontWeight: 800, fontFamily: "'Inter',sans-serif", marginBottom: 6 }}>
                     Need More <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Credits?</span>
                   </h2>
                   <p style={{ color: T.muted, fontSize: 13 }}>One-time top-up — credits never expire on paid plans</p>
@@ -420,11 +420,11 @@ export default function BillingPage() {
                   {TOPUPS.map(topup => (
                     <div key={topup.id} className="topup-card" onClick={() => handlePayment(topup.id)}>
                       <div style={{ fontSize: 26, fontWeight: 900, background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 4 }}>+{topup.credits}</div>
-                      <div style={{ fontSize: 11, color: "#555", marginBottom: 12 }}>Credits</div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", marginBottom: 12 }}>Credits</div>
                       <div style={{ fontSize: 18, fontWeight: 700, color: T.gold, marginBottom: 3 }}>
                         {currency === "INR" ? `₹${topup.inr.toLocaleString()}` : `$${topup.usd}`}
                       </div>
-                      <div style={{ fontSize: 10, color: "#333" }}>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.1)" }}>
                         ≈ {currency === "INR" ? `₹${Math.round(topup.inr/topup.credits)}/cr` : `$${(topup.usd/topup.credits).toFixed(2)}/cr`}
                       </div>
                     </div>
@@ -451,10 +451,10 @@ export default function BillingPage() {
                         <span style={{ fontSize: 18 }}>{tx.amount > 0 ? "💳" : "⚡"}</span>
                         <div>
                           <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{tx.description || "Transaction"}</p>
-                          <p style={{ fontSize: 10, color: "#444", margin: "2px 0 0" }}>{new Date(tx.created_at).toLocaleDateString("en-IN")}</p>
+                          <p style={{ fontSize: 10, color: "rgba(255,255,255,0.15)", margin: "2px 0 0" }}>{new Date(tx.created_at).toLocaleDateString("en-IN")}</p>
                         </div>
                       </div>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: tx.amount > 0 ? T.green : "#ef4444" }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: tx.amount > 0 ? T.green : "#E5736B" }}>
                         {tx.amount > 0 ? "+" : ""}{tx.amount} cr
                       </span>
                     </div>
@@ -475,7 +475,7 @@ export default function BillingPage() {
                 </div>
               ) : (
                 <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", padding: "10px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", fontSize: 10, color: "#444", textTransform: "uppercase" as const, letterSpacing: 1 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", padding: "10px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)", fontSize: 10, color: "rgba(255,255,255,0.15)", textTransform: "uppercase" as const, letterSpacing: 1 }}>
                     <span>Invoice #</span>
                     <span>Plan</span>
                     <span>Amount</span>
@@ -488,7 +488,7 @@ export default function BillingPage() {
                       <span style={{ fontSize: 13, textTransform: "capitalize" as const }}>{inv.plan}</span>
                       <span style={{ fontSize: 13, fontWeight: 700 }}>{inv.currency === "INR" ? "₹" : "$"}{inv.total?.toLocaleString()}</span>
                       <span style={{ fontSize: 12, color: T.muted }}>{new Date(inv.created_at).toLocaleDateString("en-IN")}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: inv.status === "paid" ? "rgba(0,204,68,0.1)" : "rgba(239,68,68,0.1)", color: inv.status === "paid" ? T.green : "#ef4444" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20, background: inv.status === "paid" ? "rgba(0,204,68,0.1)" : "rgba(239,68,68,0.1)", color: inv.status === "paid" ? T.green : "#E5736B" }}>
                         {inv.status}
                       </span>
                     </div>
@@ -501,7 +501,7 @@ export default function BillingPage() {
           {/* ── FOOTER ── */}
           <div style={{ borderTop: "1px solid rgba(245,197,66,0.06)", paddingTop: 28, marginTop: 40, display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
             {[["Privacy", "/privacy"], ["Terms", "/terms"], ["Refund Policy", "/refund"], ["Contact", "/contact"]].map(([label, href]) => (
-              <a key={label} href={href} target="_blank" style={{ fontSize: 12, color: "#444", textDecoration: "none" }} onMouseEnter={e => e.currentTarget.style.color = T.gold} onMouseLeave={e => e.currentTarget.style.color = "#444"}>{label}</a>
+              <a key={label} href={href} target="_blank" style={{ fontSize: 12, color: "rgba(255,255,255,0.15)", textDecoration: "none" }} onMouseEnter={e => e.currentTarget.style.color = T.gold} onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.15)"}>{label}</a>
             ))}
           </div>
         </div>
