@@ -5,10 +5,10 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const G = "linear-gradient(135deg, #F5D800 0%, #00CC44 100%)";
+const G = "linear-gradient(135deg, #F5F5F5 0%, #5FB88A 100%)";
 const T = {
-  gold: "#F5D800", green: "#00CC44", bg: "#050505", card: "#0D0D0D",
-  border: "rgba(245,197,66,0.12)", text: "#FFFFFF", muted: "#6B7280", red: "#ef4444",
+  gold: "#F5F5F5", green: "#5FB88A", bg: "#050816", card: "#0B1020",
+  border: "rgba(245,245,245,0.12)", text: "#FFFFFF", muted: "#9AA3AF", red: "#E5736B",
 };
 
 type Role = "admin" | "editor" | "viewer";
@@ -17,7 +17,7 @@ type Team = { id: string; name: string; owner_id: string; plan: string; created_
 type Log = { id: string; user_id: string; action: string; details: any; created_at: string };
 type TeamProject = { id: string; project_id: string; added_by: string; created_at: string; projects?: { title: string; html_code: string; prompt: string } };
 
-const ROLE_COLORS: Record<Role, string> = { admin: "#F5D800", editor: "#00CC44", viewer: "#6B7280" };
+const ROLE_COLORS: Record<Role, string> = { admin: "#F5F5F5", editor: "#5FB88A", viewer: "#9AA3AF" };
 const ROLE_ICONS:  Record<Role, string> = { admin: "👑", editor: "✏️", viewer: "👁" };
 
 function TeamContent() {
@@ -218,7 +218,7 @@ function TeamContent() {
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: "28px 24px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
             {[{ icon: "👑", label: "Admin", desc: "Full access" }, { icon: "✏️", label: "Editor", desc: "Create & edit" }, { icon: "👁", label: "Viewer", desc: "View only" }, { icon: "📁", label: "Shared Projects", desc: "Collaborate" }].map(f => (
-              <div key={f.label} style={{ background: "#161616", border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px" }}>
+              <div key={f.label} style={{ background: "#0B1020", border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px" }}>
                 <div style={{ fontSize: 20, marginBottom: 4 }}>{f.icon}</div>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{f.label}</div>
                 <div style={{ fontSize: 11, color: T.muted }}>{f.desc}</div>
@@ -227,8 +227,8 @@ function TeamContent() {
           </div>
           <input value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="Team name (e.g. Acme Corp)"
             onKeyDown={e => e.key === "Enter" && createTeam()}
-            style={{ width: "100%", background: "#161616", border: `1px solid ${T.border}`, borderRadius: 9, color: T.text, padding: "12px 14px", fontSize: 14, outline: "none", marginBottom: 14, boxSizing: "border-box" as const, fontFamily: "'DM Sans', sans-serif" }} />
-          <button onClick={createTeam} disabled={!teamName.trim() || creating} style={{ width: "100%", padding: "13px", background: teamName.trim() ? G : "#1a1a1a", border: "none", borderRadius: 10, color: teamName.trim() ? "#000" : "#444", fontWeight: 700, fontSize: 15, cursor: teamName.trim() ? "pointer" : "not-allowed" }}>
+            style={{ width: "100%", background: "#0B1020", border: `1px solid ${T.border}`, borderRadius: 9, color: T.text, padding: "12px 14px", fontSize: 14, outline: "none", marginBottom: 14, boxSizing: "border-box" as const, fontFamily: "'DM Sans', sans-serif" }} />
+          <button onClick={createTeam} disabled={!teamName.trim() || creating} style={{ width: "100%", padding: "13px", background: teamName.trim() ? G : "#11151F", border: "none", borderRadius: 10, color: teamName.trim() ? "#000" : "#444", fontWeight: 700, fontSize: 15, cursor: teamName.trim() ? "pointer" : "not-allowed" }}>
             {creating ? "Creating..." : "Create Team →"}
           </button>
         </div>
@@ -261,7 +261,7 @@ function TeamContent() {
           {(["members","projects","activity","settings"] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
               padding: "7px 16px", borderRadius: 7, border: "none",
-              background: activeTab === tab ? "rgba(245,197,66,0.15)" : "none",
+              background: activeTab === tab ? "rgba(245,245,245,0.15)" : "none",
               color: activeTab === tab ? T.gold : T.muted,
               fontSize: 13, fontWeight: activeTab === tab ? 700 : 400, cursor: "pointer",
             }}>
@@ -278,14 +278,14 @@ function TeamContent() {
                 <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Invite Member</p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="colleague@company.com"
-                    style={{ flex: 1, minWidth: 200, background: "#161616", border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "'DM Sans', sans-serif" }} />
+                    style={{ flex: 1, minWidth: 200, background: "#0B1020", border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "'DM Sans', sans-serif" }} />
                   <select value={inviteRole} onChange={e => setInviteRole(e.target.value as Role)}
-                    style={{ padding: "10px 12px", background: "#161616", border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: 13, outline: "none", cursor: "pointer" }}>
+                    style={{ padding: "10px 12px", background: "#0B1020", border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, fontSize: 13, outline: "none", cursor: "pointer" }}>
                     <option value="admin">👑 Admin</option>
                     <option value="editor">✏️ Editor</option>
                     <option value="viewer">👁 Viewer</option>
                   </select>
-                  <button onClick={inviteMember} disabled={inviting || !inviteEmail.trim()} style={{ padding: "10px 18px", background: inviteEmail.trim() ? G : "#1a1a1a", border: "none", borderRadius: 8, color: inviteEmail.trim() ? "#000" : "#444", fontSize: 13, fontWeight: 700, cursor: inviteEmail.trim() ? "pointer" : "not-allowed" }}>
+                  <button onClick={inviteMember} disabled={inviting || !inviteEmail.trim()} style={{ padding: "10px 18px", background: inviteEmail.trim() ? G : "#11151F", border: "none", borderRadius: 8, color: inviteEmail.trim() ? "#000" : "#444", fontSize: 13, fontWeight: 700, cursor: inviteEmail.trim() ? "pointer" : "not-allowed" }}>
                     {inviting ? "Sending..." : "Invite →"}
                   </button>
                 </div>
@@ -310,7 +310,7 @@ function TeamContent() {
             {members.map(member => (
               <div key={member.id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 20px", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1a1a1a", border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#11151F", border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
                     {ROLE_ICONS[member.role]}
                   </div>
                   <div>
@@ -324,12 +324,12 @@ function TeamContent() {
                   {isOwner ? (
                     <>
                       <select value={member.role} onChange={e => updateRole(member.id, e.target.value as Role)}
-                        style={{ padding: "5px 10px", background: "#1a1a1a", border: `1px solid ${T.border}`, borderRadius: 7, color: ROLE_COLORS[member.role], fontSize: 12, outline: "none", cursor: "pointer" }}>
+                        style={{ padding: "5px 10px", background: "#11151F", border: `1px solid ${T.border}`, borderRadius: 7, color: ROLE_COLORS[member.role], fontSize: 12, outline: "none", cursor: "pointer" }}>
                         <option value="admin">👑 Admin</option>
                         <option value="editor">✏️ Editor</option>
                         <option value="viewer">👁 Viewer</option>
                       </select>
-                      <button onClick={() => removeMember(member.id, member.invited_email)} style={{ padding: "5px 10px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 7, color: T.red, fontSize: 12, cursor: "pointer" }}>Remove</button>
+                      <button onClick={() => removeMember(member.id, member.invited_email)} style={{ padding: "5px 10px", background: "rgba(229,115,107,0.1)", border: "1px solid rgba(229,115,107,0.2)", borderRadius: 7, color: T.red, fontSize: 12, cursor: "pointer" }}>Remove</button>
                     </>
                   ) : (
                     <span style={{ fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: "rgba(107,114,128,0.1)", color: ROLE_COLORS[member.role] }}>
@@ -372,7 +372,7 @@ function TeamContent() {
                     {myProjects.map(p => {
                       const alreadyShared = teamProjects.some(tp => tp.project_id === p.id);
                       return (
-                        <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#161616", borderRadius: 9, border: `1px solid ${T.border}` }}>
+                        <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#0B1020", borderRadius: 9, border: `1px solid ${T.border}` }}>
                           <span style={{ fontSize: 13, color: alreadyShared ? T.muted : T.text }}>{p.title || "Untitled"}</span>
                           {alreadyShared ? (
                             <span style={{ fontSize: 11, color: T.green }}>✅ Shared</span>
@@ -423,15 +423,15 @@ function TeamContent() {
                         {tp.projects?.prompt || "No description"}
                       </p>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => router.push(`/create?id=${tp.project_id}`)} style={{ flex: 1, padding: "6px", background: "rgba(245,197,66,0.1)", border: "1px solid rgba(245,197,66,0.2)", borderRadius: 7, color: T.gold, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                        <button onClick={() => router.push(`/create?id=${tp.project_id}`)} style={{ flex: 1, padding: "6px", background: "rgba(245,245,245,0.1)", border: "1px solid rgba(245,245,245,0.2)", borderRadius: 7, color: T.gold, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                           ✏️ Edit
                         </button>
                         <button onClick={() => { const w = window.open("","_blank"); if(w && tp.projects?.html_code){w.document.write(tp.projects.html_code);w.document.close();} }}
-                          style={{ flex: 1, padding: "6px", background: "rgba(0,204,68,0.08)", border: "1px solid rgba(0,204,68,0.15)", borderRadius: 7, color: T.green, fontSize: 11, cursor: "pointer" }}>
+                          style={{ flex: 1, padding: "6px", background: "rgba(95,184,138,0.08)", border: "1px solid rgba(95,184,138,0.15)", borderRadius: 7, color: T.green, fontSize: 11, cursor: "pointer" }}>
                           👁 Preview
                         </button>
                         {canEdit && (
-                          <button onClick={() => removeProjectFromTeam(tp.id)} style={{ padding: "6px 8px", background: "rgba(239,68,68,0.08)", border: "none", borderRadius: 7, color: T.red, fontSize: 11, cursor: "pointer" }}>
+                          <button onClick={() => removeProjectFromTeam(tp.id)} style={{ padding: "6px 8px", background: "rgba(229,115,107,0.08)", border: "none", borderRadius: 7, color: T.red, fontSize: 11, cursor: "pointer" }}>
                             ✕
                           </button>
                         )}
@@ -478,7 +478,7 @@ function TeamContent() {
                     <label style={{ fontSize: 11, color: T.muted, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: 1 }}>TEAM NAME</label>
                     <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                       <input id="team-name-input" defaultValue={team.name}
-                        style={{ flex: 1, background: "#161616", border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "'DM Sans', sans-serif" }} />
+                        style={{ flex: 1, background: "#0B1020", border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "'DM Sans', sans-serif" }} />
                       <button onClick={async () => {
                         const input = document.getElementById("team-name-input") as HTMLInputElement;
                         if (input?.value) {
@@ -490,20 +490,20 @@ function TeamContent() {
                   </div>
                   <div>
                     <label style={{ fontSize: 11, color: T.muted, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: 1 }}>CURRENT PLAN</label>
-                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "#161616", borderRadius: 8 }}>
+                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "#0B1020", borderRadius: 8 }}>
                       <span style={{ fontSize: 14, fontWeight: 600, textTransform: "capitalize" as const }}>{team.plan} Plan</span>
                       <button onClick={() => router.push("/settings?tab=billing")} style={{ padding: "5px 14px", background: G, border: "none", borderRadius: 7, color: "#000", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Upgrade →</button>
                     </div>
                   </div>
                 </div>
-                <div style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 14, padding: "20px 24px" }}>
+                <div style={{ background: "rgba(229,115,107,0.05)", border: "1px solid rgba(229,115,107,0.2)", borderRadius: 14, padding: "20px 24px" }}>
                   <p style={{ color: T.red, fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Danger Zone</p>
                   <p style={{ color: T.muted, fontSize: 13, marginBottom: 14 }}>Deleting team cannot be undone.</p>
                   <button onClick={async () => {
                     if (!confirm("Delete team permanently?")) return;
                     await supabase.from("teams").delete().eq("id", team.id);
                     setTeam(null); setMembers([]); setTeamProjects([]);
-                  }} style={{ padding: "8px 18px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, color: T.red, fontSize: 13, cursor: "pointer" }}>
+                  }} style={{ padding: "8px 18px", background: "rgba(229,115,107,0.1)", border: "1px solid rgba(229,115,107,0.3)", borderRadius: 8, color: T.red, fontSize: 13, cursor: "pointer" }}>
                     Delete Team
                   </button>
                 </div>
@@ -523,7 +523,7 @@ function TeamContent() {
 
 export default function TeamPage() {
   return (
-    <Suspense fallback={<div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#050505", color: "#F5D800" }}>Loading...</div>}>
+    <Suspense fallback={<div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#050816", color: "#F5F5F5" }}>Loading...</div>}>
       <TeamContent />
     </Suspense>
   );
