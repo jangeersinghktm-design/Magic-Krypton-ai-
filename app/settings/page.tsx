@@ -11,10 +11,10 @@ const REAL_PAGES = ["/", "/create", "/dashboard", "/settings", "/billing",
 type Tab = "profile" | "billing" | "apikeys" | "theme";
 
 const C = {
-  bg: "#080808", surface: "#0C0C0C", card: "#111111",
-  border: "rgba(255,255,255,0.07)", gold: "#FFD700",
-  text: "#F0F0F0", muted: "#555", sub: "#888",
-  green: "#00D084", red: "#EF4444", grad: "linear-gradient(135deg,#FFD700,#FF7A00)",
+  bg: "#050816", surface: "#0B1020", card: "#0B1020",
+  border: "rgba(255,255,255,0.07)", gold: "#F5F5F5",
+  text: "#F5F5F5", muted: "#555", sub: "#888",
+  green: "#5FB88A", red: "#E5736B", grad: "linear-gradient(135deg,#F5F5F5,#D9D9D9)",
 };
 
 function SettingsInner() {
@@ -80,11 +80,11 @@ function SettingsInner() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
-        html,body{background:#080808;color:#F0F0F0;font-family:'DM Sans',system-ui,sans-serif;}
+        html,body{background:#050816;color:#F5F5F5;font-family:'DM Sans',system-ui,sans-serif;}
         @keyframes spin{to{transform:rotate(360deg)}}
         input:focus{border-color:rgba(255,215,0,0.4)!important;outline:none;}
         .tab-btn:hover{background:rgba(255,255,255,0.05)!important;}
-        .nav-item:hover{background:#1a1a1a!important;color:#fff!important;}
+        .nav-item:hover{background:#11151F!important;color:#fff!important;}
       `}</style>
 
       <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"'DM Sans',system-ui,sans-serif" }}>
@@ -137,7 +137,7 @@ function SettingsInner() {
             <div style={{ height:1, background:C.border, margin:"12px 0" }}/>
             <button onClick={handleLogout} style={{
               width:"100%", padding:"9px 14px", borderRadius:10,
-              border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.06)",
+              border:"1px solid rgba(229,115,107,0.2)", background:"rgba(229,115,107,0.06)",
               color:C.red, fontSize:13, cursor:"pointer", textAlign:"left",
               display:"flex", alignItems:"center", gap:9,
             }}>
@@ -165,7 +165,7 @@ function SettingsInner() {
                     <div style={{ fontSize:11, color:C.muted, marginTop:5 }}>Email cannot be changed</div>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                    <button onClick={saveProfile} style={{ padding:"10px 24px", background:saved?"rgba(0,208,132,0.15)":C.grad, border:"none", borderRadius:9, color:saved?C.green:"#080808", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                    <button onClick={saveProfile} style={{ padding:"10px 24px", background:saved?"rgba(95,184,138,0.15)":C.grad, border:"none", borderRadius:9, color:saved?C.green:"#050816", fontSize:14, fontWeight:700, cursor:"pointer" }}>
                       {saved ? "✓ Saved!" : "Save Changes"}
                     </button>
                     <span style={{ fontSize:12, color:C.muted }}>{plan} Plan</span>
@@ -205,7 +205,7 @@ function SettingsInner() {
                     ⚡ Free plan: <strong style={{color:C.text}}>5 credits daily</strong>, resets at midnight.<br/>
                     Upgrade for unlimited credits and priority generation.
                   </div>
-                  <button onClick={()=>router.push("/billing")} style={{ padding:"12px 28px", background:C.grad, border:"none", borderRadius:10, color:"#080808", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                  <button onClick={()=>router.push("/billing")} style={{ padding:"12px 28px", background:C.grad, border:"none", borderRadius:10, color:"#050816", fontSize:14, fontWeight:700, cursor:"pointer" }}>
                     Upgrade to Pro →
                   </button>
                 </div>
@@ -231,7 +231,7 @@ function SettingsInner() {
                       type="password" placeholder="nfp_xxxxxxx..."
                       style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 14px", color:C.text, fontSize:13, fontFamily:"monospace" }}/>
                   </div>
-                  <button onClick={()=>{setTokenSaved(true);setTimeout(()=>setTokenSaved(false),2000);}} style={{ padding:"10px 24px", background:tokenSaved?"rgba(0,208,132,0.15)":C.grad, border:"none", borderRadius:9, color:tokenSaved?C.green:"#080808", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  <button onClick={()=>{setTokenSaved(true);setTimeout(()=>setTokenSaved(false),2000);}} style={{ padding:"10px 24px", background:tokenSaved?"rgba(95,184,138,0.15)":C.grad, border:"none", borderRadius:9, color:tokenSaved?C.green:"#050816", fontSize:13, fontWeight:700, cursor:"pointer" }}>
                     {tokenSaved ? "✓ Saved" : "Save Tokens"}
                   </button>
                   <div style={{ marginTop:16, fontSize:12, color:C.muted, padding:"10px 14px", background:"rgba(255,215,0,0.04)", borderRadius:8, border:"1px solid rgba(255,215,0,0.1)" }}>
@@ -257,7 +257,7 @@ function SettingsInner() {
                 <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:24 }}>
                   <div style={{ fontSize:13, color:C.muted, marginBottom:14 }}>Theme</div>
                   {[
-                    { id:"dark",  label:"Dark",       desc:"#080808 background", active:true },
+                    { id:"dark",  label:"Dark",       desc:"#050816 background", active:true },
                     { id:"navy",  label:"Navy Blue",   desc:"#07091A background", active:false },
                     { id:"black", label:"Pure Black",  desc:"#000000 background", active:false },
                   ].map(t=>(
@@ -283,7 +283,7 @@ function SettingsInner() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div style={{ height:"100vh", background:"#080808" }}/>}>
+    <Suspense fallback={<div style={{ height:"100vh", background:"#050816" }}/>}>
       <SettingsInner/>
     </Suspense>
   );
