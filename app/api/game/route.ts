@@ -40,7 +40,7 @@ async function callClaude(system: string, prompt: string, maxTokens: number = 81
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-sonnet-4-6",
       max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content: prompt }],
@@ -81,7 +81,7 @@ async function callOpenAI(system: string, prompt: string): Promise<string> {
 
 async function callGemini(system: string, prompt: string): Promise<string> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -301,7 +301,7 @@ const stream = new ReadableStream({
         const COMPLEX_GAME_TYPES = new Set(["platformer", "rpg", "tower-defense", "strategy", "space-shooter"]);
         const claudeMaxTokens = COMPLEX_GAME_TYPES.has(detected.gameType) ? 12000 : 8192;
 
-        const systemPromptBase = getGameSystemPrompt(detected.gameType, detected.theme, prompt, isEdit);
+        const systemPromptBase = getGameSystemPrompt(detected.gameType, detected.theme, prompt, isEdit, detected.techStack);
 
         // Product Generation Engine: Phase 2 — Blueprint Generator.
         // Build the structured project blueprint BEFORE generation —
