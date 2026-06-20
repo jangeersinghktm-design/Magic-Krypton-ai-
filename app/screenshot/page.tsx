@@ -5,10 +5,10 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const G = "linear-gradient(135deg, #F5D800 0%, #00CC44 100%)";
+const G = "linear-gradient(135deg, #F5F5F5 0%, #5FB88A 100%)";
 const T = {
-  gold: "#F5D800", green: "#00CC44", bg: "#050505", card: "#0D0D0D",
-  border: "rgba(245,197,66,0.12)", text: "#FFFFFF", muted: "#6B7280",
+  gold: "#F5F5F5", green: "#5FB88A", bg: "#050816", card: "#0B1020",
+  border: "rgba(245,245,245,0.12)", text: "#FFFFFF", muted: "#9AA3AF",
 };
 
 const CREDIT_COST = 15;
@@ -166,7 +166,7 @@ Build the COMPLETE page that matches this screenshot.`,
             <h1 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>📸 Screenshot to App</h1>
           </div>
           {credits !== null && (
-            <div style={{ fontSize: 12, color: credits >= CREDIT_COST ? T.green : "#ef4444", fontWeight: 700, padding: "4px 10px", background: credits >= CREDIT_COST ? "rgba(0,204,68,0.1)" : "rgba(239,68,68,0.1)", borderRadius: 6, border: `1px solid ${credits >= CREDIT_COST ? "rgba(0,204,68,0.3)" : "rgba(239,68,68,0.3)"}` }}>
+            <div style={{ fontSize: 12, color: credits >= CREDIT_COST ? T.green : "#E5736B", fontWeight: 700, padding: "4px 10px", background: credits >= CREDIT_COST ? "rgba(95,184,138,0.1)" : "rgba(229,115,107,0.1)", borderRadius: 6, border: `1px solid ${credits >= CREDIT_COST ? "rgba(95,184,138,0.3)" : "rgba(229,115,107,0.3)"}` }}>
               ⚡ {credits} credits
             </div>
           )}
@@ -197,10 +197,10 @@ Build the COMPLETE page that matches this screenshot.`,
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
               style={{
-                border: `2px dashed ${dragging ? T.gold : image ? "rgba(0,204,68,0.4)" : T.border}`,
+                border: `2px dashed ${dragging ? T.gold : image ? "rgba(95,184,138,0.4)" : T.border}`,
                 borderRadius: 16, padding: "32px 24px", textAlign: "center",
                 cursor: "pointer", transition: "all 0.2s",
-                background: dragging ? "rgba(245,197,66,0.04)" : image ? "rgba(0,204,68,0.03)" : T.card,
+                background: dragging ? "rgba(245,245,245,0.04)" : image ? "rgba(95,184,138,0.03)" : T.card,
                 marginBottom: 16, minHeight: 200,
                 display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column",
               }}
@@ -236,7 +236,7 @@ Build the COMPLETE page that matches this screenshot.`,
 
             {/* Error */}
             {error && (
-              <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 9, padding: "10px 14px", marginBottom: 14, color: "#ef4444", fontSize: 13 }}>
+              <div style={{ background: "rgba(229,115,107,0.08)", border: "1px solid rgba(229,115,107,0.2)", borderRadius: 9, padding: "10px 14px", marginBottom: 14, color: "#E5736B", fontSize: 13 }}>
                 ⚠ {error}
               </div>
             )}
@@ -245,7 +245,7 @@ Build the COMPLETE page that matches this screenshot.`,
             <button onClick={handleGenerate} disabled={!image || loading}
               style={{
                 width: "100%", padding: "14px",
-                background: !image || loading ? "#1a1a1a" : G,
+                background: !image || loading ? "#11151F" : G,
                 border: "none", borderRadius: 10,
                 color: !image || loading ? "#444" : "#000",
                 fontWeight: 700, fontSize: 15, cursor: !image || loading ? "not-allowed" : "pointer",
@@ -289,7 +289,7 @@ Build the COMPLETE page that matches this screenshot.`,
                 <p style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>✅ Generated App</p>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => { const w = window.open("","_blank"); if(w){w.document.write(result);w.document.close();} }}
-                    style={{ padding: "6px 12px", background: "rgba(0,204,68,0.1)", border: "1px solid rgba(0,204,68,0.2)", borderRadius: 7, color: T.green, fontSize: 12, cursor: "pointer" }}>
+                    style={{ padding: "6px 12px", background: "rgba(95,184,138,0.1)", border: "1px solid rgba(95,184,138,0.2)", borderRadius: 7, color: T.green, fontSize: 12, cursor: "pointer" }}>
                     👁 Preview
                   </button>
                   <button onClick={() => {
@@ -309,7 +309,7 @@ Build the COMPLETE page that matches this screenshot.`,
               </div>
 
               {/* Open in Create */}
-              <button onClick={handleUseResult} style={{ width: "100%", marginTop: 12, padding: "11px", background: "rgba(245,197,66,0.1)", border: `1px solid ${T.border}`, borderRadius: 9, color: T.gold, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              <button onClick={handleUseResult} style={{ width: "100%", marginTop: 12, padding: "11px", background: "rgba(245,245,245,0.1)", border: `1px solid ${T.border}`, borderRadius: 9, color: T.gold, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 ✏️ Open in Create & Edit with AI →
               </button>
             </div>
@@ -319,4 +319,4 @@ Build the COMPLETE page that matches this screenshot.`,
     </>
   );
 }
-                    
+                      
