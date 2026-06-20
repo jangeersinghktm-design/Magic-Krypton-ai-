@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import CreditsDisplay from "@/components/CreditsDisplay";
 
-const G = "linear-gradient(135deg, #F5D800 0%, #00CC44 100%)";
+const G = "linear-gradient(135deg, #F5F5F5 0%, #5FB88A 100%)";
 const T = {
-  gold: "#F5D800", green: "#00CC44", bg: "#050505", card: "#0D0D0D",
-  border: "rgba(245,197,66,0.12)", text: "#FFFFFF", muted: "#6B7280",
+  gold: "#F5F5F5", green: "#5FB88A", bg: "#050816", card: "#0B1020",
+  border: "rgba(245,245,245,0.12)", text: "#FFFFFF", muted: "#9AA3AF",
 };
 
 type Screen = { name: string; description: string; prompt: string; html?: string };
@@ -164,10 +164,10 @@ export default function AIProjectManager() {
                 placeholder="Build a food delivery app like Swiggy with restaurants, cart, orders, and tracking..."
                 rows={3}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); generatePlan(); } }}
-                style={{ flex: 1, minWidth: 300, background: "#161616", border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, padding: "12px 14px", fontSize: 14, resize: "none", outline: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" as const }}
+                style={{ flex: 1, minWidth: 300, background: "#0B1020", border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, padding: "12px 14px", fontSize: 14, resize: "none", outline: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" as const }}
               />
               <button onClick={generatePlan} disabled={!prompt.trim() || loading} style={{
-                padding: "12px 22px", background: prompt.trim() && !loading ? G : "#1a1a1a",
+                padding: "12px 22px", background: prompt.trim() && !loading ? G : "#11151F",
                 border: "none", borderRadius: 10, color: prompt.trim() && !loading ? "#000" : "#444",
                 fontWeight: 700, fontSize: 14, cursor: prompt.trim() && !loading ? "pointer" : "not-allowed",
                 display: "flex", alignItems: "center", gap: 8, alignSelf: "flex-start",
@@ -191,7 +191,7 @@ export default function AIProjectManager() {
                   "E-commerce store like Amazon",
                 ].map(ex => (
                   <button key={ex} onClick={() => setPrompt(`Build a ${ex}`)} style={{
-                    padding: "5px 12px", background: "rgba(245,197,66,0.06)",
+                    padding: "5px 12px", background: "rgba(245,245,245,0.06)",
                     border: `1px solid ${T.border}`, borderRadius: 20,
                     color: T.muted, fontSize: 11.5, cursor: "pointer",
                     transition: "all 0.15s",
@@ -207,7 +207,7 @@ export default function AIProjectManager() {
 
           {/* Error */}
           {error && (
-            <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, padding: "12px 16px", marginBottom: 20, color: "#ef4444", fontSize: 13 }}>
+            <div style={{ background: "rgba(229,115,107,0.08)", border: "1px solid rgba(229,115,107,0.2)", borderRadius: 10, padding: "12px 16px", marginBottom: 20, color: "#E5736B", fontSize: 13 }}>
               ⚠ {error}
             </div>
           )}
@@ -215,7 +215,7 @@ export default function AIProjectManager() {
           {/* Loading */}
           {loading && (
             <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid rgba(245,197,66,0.2)", borderTopColor: T.gold, animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+              <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid rgba(245,245,245,0.2)", borderTopColor: T.gold, animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
               <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>AI is planning your project...</p>
               <p style={{ fontSize: 13, color: T.muted }}>Generating roadmap, schemas, API docs and screen prompts</p>
               <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 16 }}>
@@ -231,7 +231,7 @@ export default function AIProjectManager() {
             <div style={{ animation: "fadeIn 0.4s ease" }}>
 
               {/* Project title */}
-              <div style={{ background: "rgba(245,197,66,0.04)", border: `1px solid rgba(245,197,66,0.2)`, borderRadius: 14, padding: "20px 24px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+              <div style={{ background: "rgba(245,245,245,0.04)", border: `1px solid rgba(245,245,245,0.2)`, borderRadius: 14, padding: "20px 24px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                 <div>
                   <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 4px", background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                     {plan.title}
@@ -239,7 +239,7 @@ export default function AIProjectManager() {
                   <p style={{ color: T.muted, fontSize: 13, margin: 0 }}>{plan.description}</p>
                   <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
                     {plan.techStack?.map(tech => (
-                      <span key={tech} style={{ fontSize: 11, padding: "2px 8px", background: "rgba(245,197,66,0.08)", border: `1px solid ${T.border}`, borderRadius: 20, color: T.gold }}>
+                      <span key={tech} style={{ fontSize: 11, padding: "2px 8px", background: "rgba(245,245,245,0.08)", border: `1px solid ${T.border}`, borderRadius: 20, color: T.gold }}>
                         {tech}
                       </span>
                     ))}
@@ -258,8 +258,8 @@ export default function AIProjectManager() {
                   <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}  
                     style={{
                      padding: "8px 16px", borderRadius: 9, whiteSpace: "nowrap",
-                     background: activeTab === tab.id ? "rgba(245,197,66,0.15)" : T.card,
-                     border: activeTab === tab.id ? "1px solid rgba(245,197,66,0.3)" : `1px solid ${T.border}`,
+                     background: activeTab === tab.id ? "rgba(245,245,245,0.15)" : T.card,
+                     border: activeTab === tab.id ? "1px solid rgba(245,245,245,0.3)" : `1px solid ${T.border}`,
                      color: activeTab === tab.id ? T.gold : T.muted,
                      fontSize: 13, fontWeight: activeTab === tab.id ? 700 : 400,
                      cursor: "pointer", transition: "all 0.15s",
@@ -308,7 +308,7 @@ export default function AIProjectManager() {
                           )}
                           {generatingScreen === i && (
                             <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(245,197,66,0.2)", borderTopColor: T.gold, animation: "spin 0.8s linear infinite" }} />
+                              <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(245,245,245,0.2)", borderTopColor: T.gold, animation: "spin 0.8s linear infinite" }} />
                             </div>
                           )}
                         </div>
@@ -322,7 +322,7 @@ export default function AIProjectManager() {
                             {screen.html ? (
                               <>
                                 <button onClick={() => { const w = window.open("","_blank"); if(w){w.document.write(screen.html!);w.document.close();} }}
-                                  style={{ flex: 1, padding: "6px", background: "rgba(0,204,68,0.08)", border: "1px solid rgba(0,204,68,0.15)", borderRadius: 7, color: T.green, fontSize: 11, cursor: "pointer" }}>
+                                  style={{ flex: 1, padding: "6px", background: "rgba(95,184,138,0.08)", border: "1px solid rgba(95,184,138,0.15)", borderRadius: 7, color: T.green, fontSize: 11, cursor: "pointer" }}>
                                   👁 Preview
                                 </button>
                                 <button onClick={() => openInCreate(screen)}
@@ -332,7 +332,7 @@ export default function AIProjectManager() {
                               </>
                             ) : (
                               <button onClick={() => generateScreen(screen, i)} disabled={generatingScreen !== null}
-                                style={{ width: "100%", padding: "8px", background: generatingScreen === null ? G : "#1a1a1a", border: "none", borderRadius: 7, color: generatingScreen === null ? "#000" : "#444", fontSize: 12, fontWeight: 700, cursor: generatingScreen === null ? "pointer" : "not-allowed" }}>
+                                style={{ width: "100%", padding: "8px", background: generatingScreen === null ? G : "#11151F", border: "none", borderRadius: 7, color: generatingScreen === null ? "#000" : "#444", fontSize: 12, fontWeight: 700, cursor: generatingScreen === null ? "pointer" : "not-allowed" }}>
                                 {generatingScreen === i ? "Generating..." : "⚡ Generate Screen"}
                               </button>
                             )}
@@ -349,11 +349,11 @@ export default function AIProjectManager() {
                 <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                     <p style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>🗄 Database Schema</p>
-                    <button onClick={() => navigator.clipboard.writeText(plan.dbSchema)} style={{ padding: "6px 14px", background: "rgba(245,197,66,0.1)", border: `1px solid ${T.border}`, borderRadius: 7, color: T.gold, fontSize: 12, cursor: "pointer" }}>
+                    <button onClick={() => navigator.clipboard.writeText(plan.dbSchema)} style={{ padding: "6px 14px", background: "rgba(245,245,245,0.1)", border: `1px solid ${T.border}`, borderRadius: 7, color: T.gold, fontSize: 12, cursor: "pointer" }}>
                       📋 Copy SQL
                     </button>
                   </div>
-                  <pre style={{ background: "#0a0a0a", border: `1px solid ${T.border}`, borderRadius: 10, padding: "16px", fontSize: 12, color: "#e8e8e8", fontFamily: "monospace", overflowX: "auto", lineHeight: 1.7 }}>
+                  <pre style={{ background: "#050816", border: `1px solid ${T.border}`, borderRadius: 10, padding: "16px", fontSize: 12, color: "#F5F5F5", fontFamily: "monospace", overflowX: "auto", lineHeight: 1.7 }}>
                     {plan.dbSchema}
                   </pre>
                 </div>
@@ -364,11 +364,11 @@ export default function AIProjectManager() {
                 <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                     <p style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>🔌 API Documentation</p>
-                    <button onClick={() => navigator.clipboard.writeText(plan.apiDocs)} style={{ padding: "6px 14px", background: "rgba(245,197,66,0.1)", border: `1px solid ${T.border}`, borderRadius: 7, color: T.gold, fontSize: 12, cursor: "pointer" }}>
+                    <button onClick={() => navigator.clipboard.writeText(plan.apiDocs)} style={{ padding: "6px 14px", background: "rgba(245,245,245,0.1)", border: `1px solid ${T.border}`, borderRadius: 7, color: T.gold, fontSize: 12, cursor: "pointer" }}>
                       📋 Copy
                     </button>
                   </div>
-                  <div style={{ background: "#0a0a0a", border: `1px solid ${T.border}`, borderRadius: 10, padding: "16px", fontSize: 13, color: "#e8e8e8", lineHeight: 1.8, whiteSpace: "pre-wrap" as any }}>
+                  <div style={{ background: "#050816", border: `1px solid ${T.border}`, borderRadius: 10, padding: "16px", fontSize: 13, color: "#F5F5F5", lineHeight: 1.8, whiteSpace: "pre-wrap" as any }}>
                     {plan.apiDocs}
                   </div>
                 </div>
