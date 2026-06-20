@@ -1,15 +1,35 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="512" height="512" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="g" x1="128" y1="51" x2="410" y2="461" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#FFD700"/>
-      <stop offset="55%"  stop-color="#FFB000"/>
-      <stop offset="100%" stop-color="#FF7A00"/>
+    <linearGradient id="g" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#F5F5F5"/>
+      <stop offset="55%"  stop-color="#D9D9D9"/>
+      <stop offset="100%" stop-color="#BFC5CC"/>
     </linearGradient>
+    <radialGradient id="core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#D9D9D9"/>
+    </radialGradient>
   </defs>
-  <!-- Vertical stem -->
-  <line x1="128" y1="51"  x2="128" y2="461" stroke="url(#g)" stroke-width="44" stroke-linecap="square"/>
-  <!-- Upper arm -->
-  <line x1="128" y1="256" x2="410" y2="51"  stroke="url(#g)" stroke-width="44" stroke-linecap="square"/>
-  <!-- Lower arm -->
-  <line x1="128" y1="256" x2="410" y2="461" stroke="url(#g)" stroke-width="44" stroke-linecap="square"/>
+
+  <!-- Background -->
+  <rect width="40" height="40" rx="9" fill="#050816"/>
+
+  <!-- Connection edges -->
+  <line x1="20" y1="20" x2="9"  y2="9"  stroke="url(#g)" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+  <line x1="20" y1="20" x2="31" y2="9"  stroke="url(#g)" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+  <line x1="20" y1="20" x2="9"  y2="31" stroke="url(#g)" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+  <line x1="20" y1="20" x2="31" y2="31" stroke="url(#g)" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- Outer precision ring -->
+  <circle cx="20" cy="20" r="17.5" stroke="url(#g)" stroke-width="1" opacity="0.18" fill="none"/>
+
+  <!-- Four outer nodes -->
+  <circle cx="9"  cy="9"  r="2.6" fill="url(#g)"/>
+  <circle cx="31" cy="9"  r="2.6" fill="url(#g)"/>
+  <circle cx="9"  cy="31" r="2.6" fill="url(#g)"/>
+  <circle cx="31" cy="31" r="2.6" fill="url(#g)"/>
+
+  <!-- Core node -->
+  <circle cx="20" cy="20" r="5" fill="url(#core)"/>
+  <circle cx="20" cy="20" r="5" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.6"/>
 </svg>
