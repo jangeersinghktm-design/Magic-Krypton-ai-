@@ -1,11 +1,11 @@
 {
   "name": "Krypton AI",
   "short_name": "Krypton",
-  "description": "AI Operating System — Build websites, apps and games with AI",
+  "description": "AI Operating System \u2014 Build websites, apps and games with AI",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#050505",
-  "theme_color": "#07091A",
+  "background_color": "#050816",
+  "theme_color": "#050816",
   "orientation": "portrait",
   "icons": [
     {
@@ -25,7 +25,11 @@
       "type": "image/png"
     }
   ],
-  "categories": ["productivity", "developer tools", "utilities"],
+  "categories": [
+    "productivity",
+    "developer tools",
+    "utilities"
+  ],
   "screenshots": [
     {
       "src": "/screenshots/desktop.png",
@@ -48,14 +52,24 @@
       "short_name": "New",
       "description": "Create a new AI project",
       "url": "/create",
-      "icons": [{ "src": "/logo.svg", "sizes": "any" }]
+      "icons": [
+        {
+          "src": "/logo.svg",
+          "sizes": "any"
+        }
+      ]
     },
     {
       "name": "Dashboard",
       "short_name": "Projects",
       "description": "View all projects",
       "url": "/dashboard",
-      "icons": [{ "src": "/logo.svg", "sizes": "any" }]
+      "icons": [
+        {
+          "src": "/logo.svg",
+          "sizes": "any"
+        }
+      ]
     }
   ]
 }
