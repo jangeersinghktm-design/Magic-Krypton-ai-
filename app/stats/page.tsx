@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const G = "linear-gradient(135deg, #F5D800 0%, #00CC44 100%)";
+const G = "linear-gradient(135deg, #F5F5F5 0%, #5FB88A 100%)";
 const T = {
-  gold: "#F5D800", green: "#00CC44", bg: "#050505", card: "#0D0D0D",
-  border: "rgba(245,197,66,0.12)", text: "#FFFFFF", muted: "#6B7280",
+  gold: "#F5F5F5", green: "#5FB88A", bg: "#050816", card: "#0B1020",
+  border: "rgba(245,245,245,0.12)", text: "#FFFFFF", muted: "#9AA3AF",
 };
 
 // ── Mini Bar Chart ─────────────────────────────────────────────
@@ -162,9 +162,9 @@ export default function AnalyticsPage() {
           }}>
             <StatCard icon="📁" label="Total Projects" value={projects.length} sub="All time" color={T.gold} />
             <StatCard icon="✅" label="Completed" value={completedProjects} sub="Successfully built" color={T.green} />
-            <StatCard icon="📅" label="This Week" value={thisWeekProjects} sub="New projects" color="#8B5CF6" />
+            <StatCard icon="📅" label="This Week" value={thisWeekProjects} sub="New projects" color="#D9D9D9" />
             <StatCard icon="⚡" label="Generations" value={totalGens} sub="This week" color={T.gold} />
-            <StatCard icon="💳" label="Credits Left" value={remaining} sub={`of ${credits?.total_credits || 100} total`} color={remaining > 20 ? T.green : "#ef4444"} />
+            <StatCard icon="💳" label="Credits Left" value={remaining} sub={`of ${credits?.total_credits || 100} total`} color={remaining > 20 ? T.green : "#E5736B"} />
             <StatCard icon="📈" label="Credits Used" value={totalCreditsUsed} sub="This week" color={T.muted} />
           </div>
 
@@ -199,11 +199,11 @@ export default function AnalyticsPage() {
                 <div style={{
                   height: "100%",
                   width: `${Math.max(5, ((credits?.used_credits || 0) / (credits?.total_credits || 100)) * 100)}%`,
-                  background: remaining > 30 ? G : "linear-gradient(90deg,#ef4444,#f59e0b)",
+                  background: remaining > 30 ? G : "linear-gradient(90deg,#E5736B,#D9D9D9)",
                   borderRadius: 6, transition: "width 0.5s",
                 }} />
               </div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: remaining > 20 ? T.green : "#ef4444", flexShrink: 0 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: remaining > 20 ? T.green : "#E5736B", flexShrink: 0 }}>
                 {remaining} left
               </span>
             </div>
@@ -211,10 +211,10 @@ export default function AnalyticsPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
               {[
                 { label: "Plan",      value: credits?.plan?.charAt(0).toUpperCase() + credits?.plan?.slice(1) || "Free", color: T.gold },
-                { label: "Used",      value: credits?.used_credits || 0, color: "#ef4444" },
+                { label: "Used",      value: credits?.used_credits || 0, color: "#E5736B" },
                 { label: "Resets",    value: credits?.credits_reset_date ? new Date(credits.credits_reset_date).toLocaleDateString() : "N/A", color: T.muted },
               ].map(stat => (
-                <div key={stat.label} style={{ background: "#161616", borderRadius: 10, padding: "12px 14px" }}>
+                <div key={stat.label} style={{ background: "#0B1020", borderRadius: 10, padding: "12px 14px" }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: stat.color }}>{stat.value}</div>
                   <div style={{ fontSize: 11, color: T.muted, marginTop: 3 }}>{stat.label}</div>
                 </div>
@@ -254,13 +254,13 @@ export default function AnalyticsPage() {
                     transition: "background 0.15s",
                     marginBottom: 2,
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#161616"}
+                  onMouseEnter={e => e.currentTarget.style.background = "#0B1020"}
                   onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "none"}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{
                       width: 32, height: 32, borderRadius: 8,
-                      background: "linear-gradient(135deg,rgba(245,197,66,0.2),rgba(0,204,68,0.1))",
+                      background: "linear-gradient(135deg,rgba(245,245,245,0.2),rgba(95,184,138,0.1))",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 14, flexShrink: 0,
                     }}>📄</div>
@@ -272,7 +272,7 @@ export default function AnalyticsPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{
                       fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
-                      background: p.status === "completed" ? "rgba(0,204,68,0.1)" : "rgba(136,136,136,0.1)",
+                      background: p.status === "completed" ? "rgba(95,184,138,0.1)" : "rgba(136,136,136,0.1)",
                       color: p.status === "completed" ? T.green : "#888",
                     }}>
                       {p.status === "completed" ? "✅" : "📝"} {p.status || "draft"}
@@ -309,7 +309,7 @@ export default function AnalyticsPage() {
                   </div>
                   <span style={{
                     fontSize: 13, fontWeight: 700,
-                    color: tx.amount > 0 ? T.green : "#ef4444",
+                    color: tx.amount > 0 ? T.green : "#E5736B",
                   }}>
                     {tx.amount > 0 ? "+" : ""}{tx.amount} cr
                   </span>
@@ -321,5 +321,5 @@ export default function AnalyticsPage() {
       </div>
     </>
   );
-      }
-
+}
+                  
