@@ -362,7 +362,14 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [mobMenu, setMobMenu] = useState(false);
   const [activeTab, setActiveTab] = useState("website");
+  const [heroPrompt, setHeroPrompt] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const submitHeroPrompt = useCallback(() => {
+    const p = heroPrompt.trim();
+    if (!p) { router.push("/auth/signup"); return; }
+    router.push(`/auth/signup?prompt=${encodeURIComponent(p)}`);
+  }, [heroPrompt, router]);
 
   useEffect(() => {
     const check = () => setIsWide(window.innerWidth >= 860);
@@ -485,15 +492,29 @@ export default function LandingPage() {
               The Operating System For<br /><span style={gtext}>AI Product Creation</span>
             </h1>
 
-            <p style={{ fontSize: "clamp(15px,1.6vw,18px)", color: SUB, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 40px", animation: "fadeUp .6s .2s ease both" }}>
+            <p style={{ fontSize: "clamp(15px,1.6vw,18px)", color: SUB, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 32px", animation: "fadeUp .6s .2s ease both" }}>
               Describe what you want to build. Krypton AI plans the architecture, writes the code, and ships a working website, dashboard, app, or game — in real time, in your browser.
             </p>
 
+            {/* Primary conversion element — prompt input */}
+            <div className="glass-card" style={{ maxWidth: 640, margin: "0 auto 16px", padding: 8, display: "flex", alignItems: "center", gap: 8, animation: "fadeUp .6s .25s ease both" }}>
+              <input
+                value={heroPrompt}
+                onChange={e => setHeroPrompt(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") submitHeroPrompt(); }}
+                placeholder="Describe what you want to build..."
+                style={{ flex: 1, background: "none", border: "none", outline: "none", color: WHITE, fontSize: 14, padding: "10px 12px", fontFamily: "'Inter',sans-serif" }}
+              />
+              <button onClick={submitHeroPrompt} className="btn-primary" style={{ padding: "11px 22px", fontSize: 13.5, flexShrink: 0 }}>
+                Build it →
+              </button>
+            </div>
+
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 56, animation: "fadeUp .6s .3s ease both" }}>
-              <button onClick={() => router.push("/auth/signup")} className="btn-primary" style={{ padding: "14px 30px", fontSize: 15 }}>
+              <button onClick={() => router.push("/auth/signup")} className="btn-secondary" style={{ padding: "11px 24px", fontSize: 13.5 }}>
                 Start Building
               </button>
-              <button onClick={() => goto("product")} className="btn-secondary" style={{ padding: "14px 30px", fontSize: 15 }}>
+              <button onClick={() => goto("product")} className="btn-secondary" style={{ padding: "11px 24px", fontSize: 13.5 }}>
                 View Examples
               </button>
             </div>
@@ -608,15 +629,47 @@ export default function LandingPage() {
           </Reveal>
         </section>
 
-        <footer style={{ padding: "48px clamp(20px,4vw,48px) 32px", borderTop: `1px solid ${BORDER}` }}>
-          <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", flexDirection: isWide ? "row" : "column", justifyContent: "space-between", alignItems: isWide ? "center" : "flex-start", gap: 24 }}>
-            <KryptonLogo size={26} showText animated={false} />
-            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-              <button onClick={() => goto("features")} className="nav-link">Features</button>
-              <button onClick={() => router.push("/billing")} className="nav-link">Pricing</button>
-              <button onClick={() => router.push("/faq")} className="nav-link">FAQ</button>
+        <footer style={{ padding: "56px clamp(20px,4vw,48px) 32px", borderTop: `1px solid ${BORDER}` }}>
+          <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+            <div style={{ display: "flex", flexDirection: isWide ? "row" : "column", justifyContent: "space-between", gap: 32, marginBottom: 32, paddingBottom: 32, borderBottom: `1px solid ${BORDER}` }}>
+              <div style={{ maxWidth: 280 }}>
+                <KryptonLogo size={26} showText animated={false} />
+                <p style={{ fontSize: 12.5, color: MUTED, marginTop: 12, lineHeight: 1.6 }}>The operating system for AI product creation.</p>
+              </div>
+
+              <div style={{ display: "flex", gap: isWide ? 56 : 32, flexWrap: "wrap" }}>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 14 }}>Product</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <button onClick={() => goto("features")} className="nav-link" style={{ padding: 0 }}>Features</button>
+                    <button onClick={() => router.push("/billing")} className="nav-link" style={{ padding: 0 }}>Pricing</button>
+                    <button onClick={() => router.push("/faq")} className="nav-link" style={{ padding: 0 }}>FAQ</button>
+                  </div>
+                </div>
+
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 14 }}>Legal</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <button onClick={() => router.push("/legal/privacy")} className="nav-link" style={{ padding: 0 }}>Privacy Policy</button>
+                    <button onClick={() => router.push("/legal/terms")} className="nav-link" style={{ padding: 0 }}>Terms & Conditions</button>
+                    <button onClick={() => router.push("/legal/refund")} className="nav-link" style={{ padding: 0 }}>Refund Policy</button>
+                  </div>
+                </div>
+
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 14 }}>Support</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <a href="mailto:support@kryptonai.tech" className="nav-link" style={{ padding: 0, textDecoration: "none" }}>support@kryptonai.tech</a>
+                    <button onClick={() => router.push("/faq")} className="nav-link" style={{ padding: 0 }}>Help Center</button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p style={{ fontSize: 12, color: MUTED }}>© 2026 Krypton AI. All rights reserved.</p>
+
+            <div style={{ display: "flex", flexDirection: isWide ? "row" : "column", justifyContent: "space-between", alignItems: isWide ? "center" : "flex-start", gap: 12 }}>
+              <p style={{ fontSize: 12, color: MUTED }}>© 2026 Krypton AI. All rights reserved.</p>
+              <a href="mailto:contact@kryptonai.tech" style={{ fontSize: 12, color: MUTED, textDecoration: "none" }}>contact@kryptonai.tech</a>
+            </div>
           </div>
         </footer>
       </main>
