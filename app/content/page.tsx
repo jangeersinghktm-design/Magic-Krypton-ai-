@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const C={
@@ -46,11 +46,23 @@ const TOOLS=[
 
 type HistoryItem={id:string;tool:string;topic:string;content:string;ts:Date};
 
-export default function ContentPage(){
+function ContentPageInner(){
   const router=useRouter();
+  const searchParams=useSearchParams();
   const supabase=createClient();
   const[activeTool,setActiveTool]=useState(TOOLS[0]);
   const[topic,setTopic]=useState("");
+
+  // Pre-select tool + topic from URL params (e.g. from Templates page "Use" button)
+  useEffect(()=>{
+    const toolId=searchParams.get("tool");
+    const urlTopic=searchParams.get("topic");
+    if(toolId){
+      const match=TOOLS.find(t=>t.id===toolId);
+      if(match) setActiveTool(match);
+    }
+    if(urlTopic) setTopic(decodeURIComponent(urlTopic));
+  },[searchParams]);
   const[option,setOption]=useState(0);
   const[tone,setTone]=useState("Professional");
   const[result,setResult]=useState("");
@@ -330,3 +342,11 @@ Generate ONLY in English. Make it high-quality, professional, and ready to use.`
     </div>
   );
 }
+
+export default function ContentPage(){
+  return (
+    <Suspense fallback={<div style={{height:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#050816",color:"#9AA3AF"}}>Loading...</div>}>
+      <ContentPageInner/>
+    </Suspense>
+  );
+                                                                        }
