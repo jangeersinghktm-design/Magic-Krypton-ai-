@@ -91,8 +91,8 @@ function ScoreRing({ score, color }: { score: number; color: string }) {
 }
 
 // ── Priority colors ───────────────────────────────────────────────
-const priColor = { high: "#ef4444", medium: "#F5C542", low: "#00D084" };
-const sevColor = { error: "#ef4444", warning: "#F5C542", info: "#00D084" };
+const priColor = { high: "#E5736B", medium: "#F5F5F5", low: "#5FB88A" };
+const sevColor = { error: "#E5736B", warning: "#F5F5F5", info: "#5FB88A" };
 const sevIcon  = { error: "✖", warning: "⚠", info: "ℹ" };
 
 // ── API Call ──────────────────────────────────────────────────────
@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #050505; color: #e8e8e8; font-family: 'DM Sans', sans-serif; }
+        body { background: #050816; color: #F5F5F5; font-family: 'DM Sans', sans-serif; }
 
         /* ── Page ── */
         .ap { padding: 40px 48px; max-width: 1060px; }
@@ -221,15 +221,15 @@ export default function AnalyticsPage() {
         .ap-badge {
           display: inline-flex; align-items: center; gap: 6px;
           font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase;
-          color: #F5C542; font-weight: 700; margin-bottom: 14px;
-          background: rgba(245,197,66,0.08); border: 1px solid rgba(245,197,66,0.2);
+          color: #F5F5F5; font-weight: 700; margin-bottom: 14px;
+          background: rgba(245,245,245,0.08); border: 1px solid rgba(245,245,245,0.2);
           padding: 5px 12px; border-radius: 20px;
         }
         .ap-title {
           font-size: 36px; font-weight: 800; color: #fff; line-height: 1.15; margin-bottom: 8px;
         }
         .ap-title span {
-          background: linear-gradient(135deg, #F5C542, #00D084);
+          background: linear-gradient(135deg, #F5F5F5, #5FB88A);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .ap-sub { font-size: 14px; color: #555; margin-bottom: 34px; }
@@ -247,23 +247,23 @@ export default function AnalyticsPage() {
           cursor: pointer; transition: all 0.18s;
           display: flex; align-items: center; gap: 7px; white-space: nowrap;
         }
-        .ap-tab:hover { color: #e8e8e8; }
+        .ap-tab:hover { color: #F5F5F5; }
         .ap-tab.active {
-          background: linear-gradient(135deg, rgba(245,197,66,0.18), rgba(0,208,132,0.10));
-          color: #F5C542;
-          box-shadow: 0 2px 12px rgba(245,197,66,0.1);
+          background: linear-gradient(135deg, rgba(245,245,245,0.18), rgba(95,184,138,0.10));
+          color: #F5F5F5;
+          box-shadow: 0 2px 12px rgba(245,245,245,0.1);
         }
 
         /* ── Input zone ── */
         .ap-input-zone {
-          background: #0d0d0d;
+          background: #0B1020;
           border: 1px solid rgba(255,255,255,0.07);
           border-radius: 14px; overflow: hidden; margin-bottom: 14px;
           transition: border-color 0.25s, box-shadow 0.25s;
         }
         .ap-input-zone:focus-within {
-          border-color: rgba(245,197,66,0.35);
-          box-shadow: 0 0 0 3px rgba(245,197,66,0.06);
+          border-color: rgba(245,245,245,0.35);
+          box-shadow: 0 0 0 3px rgba(245,245,245,0.06);
         }
         .ap-input-header {
           display: flex; align-items: center; justify-content: space-between;
@@ -295,17 +295,17 @@ export default function AnalyticsPage() {
         /* ── Analyze button ── */
         .ap-analyze-btn {
           width: 100%; padding: 15px 0;
-          background: linear-gradient(135deg, #F5C542 0%, #e8a800 40%, #00D084 100%);
+          background: linear-gradient(135deg, #F5F5F5 0%, #D9D9D9 40%, #5FB88A 100%);
           border: none; border-radius: 12px;
           color: #000; font-size: 15px; font-weight: 800;
           cursor: pointer; letter-spacing: 0.2px;
           transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
           display: flex; align-items: center; justify-content: center; gap: 9px;
-          box-shadow: 0 4px 24px rgba(245,197,66,0.2);
+          box-shadow: 0 4px 24px rgba(245,245,245,0.2);
         }
         .ap-analyze-btn:hover:not(:disabled) {
           opacity: 0.9; transform: translateY(-1px);
-          box-shadow: 0 8px 32px rgba(245,197,66,0.3);
+          box-shadow: 0 8px 32px rgba(245,245,245,0.3);
         }
         .ap-analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
@@ -316,8 +316,8 @@ export default function AnalyticsPage() {
         }
         .ap-spinner {
           width: 38px; height: 38px; border-radius: 50%;
-          border: 3px solid rgba(245,197,66,0.12);
-          border-top-color: #F5C542;
+          border: 3px solid rgba(245,245,245,0.12);
+          border-top-color: #F5F5F5;
           animation: spin 0.85s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -331,8 +331,8 @@ export default function AnalyticsPage() {
         /* ── Error ── */
         .ap-error {
           margin-top: 20px; padding: 16px 20px;
-          background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.25);
-          border-radius: 12px; color: #ef4444; font-size: 13.5px;
+          background: rgba(229,115,107,0.07); border: 1px solid rgba(229,115,107,0.25);
+          border-radius: 12px; color: #E5736B; font-size: 13.5px;
           display: flex; align-items: center; gap: 10px;
         }
 
@@ -345,7 +345,7 @@ export default function AnalyticsPage() {
           margin-bottom: 22px;
         }
         .ap-results-title { font-size: 19px; font-weight: 700; color: #fff; }
-        .ap-results-time { font-size: 11.5px; color: #3a3a3a; }
+        .ap-results-time { font-size: 11.5px; color: rgba(255,255,255,0.15); }
 
         /* ── Score card ── */
         .ap-score-card {
@@ -358,7 +358,7 @@ export default function AnalyticsPage() {
         }
         .ap-score-card::before {
           content: ''; position: absolute; inset: 0;
-          background: radial-gradient(ellipse at 0% 50%, rgba(245,197,66,0.04) 0%, transparent 60%);
+          background: radial-gradient(ellipse at 0% 50%, rgba(245,245,245,0.04) 0%, transparent 60%);
           pointer-events: none;
         }
         .ap-score-label {
@@ -371,7 +371,7 @@ export default function AnalyticsPage() {
         /* ── Section header ── */
         .ap-section-hdr {
           font-size: 10.5px; font-weight: 700; letter-spacing: 1.2px;
-          text-transform: uppercase; color: #3a3a3a; margin-bottom: 12px;
+          text-transform: uppercase; color: rgba(255,255,255,0.15); margin-bottom: 12px;
         }
 
         /* ── Metrics ── */
@@ -380,7 +380,7 @@ export default function AnalyticsPage() {
           gap: 11px; margin-bottom: 22px;
         }
         .ap-metric {
-          background: #0d0d0d; border: 1px solid rgba(255,255,255,0.06);
+          background: #0B1020; border: 1px solid rgba(255,255,255,0.06);
           border-radius: 13px; padding: 16px 18px;
           transition: transform 0.15s, border-color 0.15s;
         }
@@ -399,7 +399,7 @@ export default function AnalyticsPage() {
         .ap-issues { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
         .ap-issue {
           display: flex; align-items: flex-start; gap: 12px;
-          background: #0d0d0d; border-radius: 10px; padding: 13px 16px;
+          background: #0B1020; border-radius: 10px; padding: 13px 16px;
           border-left: 3px solid; transition: background 0.15s;
         }
         .ap-issue:hover { background: rgba(255,255,255,0.02); }
@@ -409,7 +409,7 @@ export default function AnalyticsPage() {
         /* ── Suggestions ── */
         .ap-suggestions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
         .ap-suggestion {
-          background: #0d0d0d; border: 1px solid rgba(255,255,255,0.06);
+          background: #0B1020; border: 1px solid rgba(255,255,255,0.06);
           border-radius: 12px; padding: 16px 18px;
           display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start;
         }
@@ -418,7 +418,7 @@ export default function AnalyticsPage() {
           text-transform: uppercase; padding: 3px 8px; border-radius: 5px;
           white-space: nowrap; margin-top: 1px;
         }
-        .ap-sug-title { font-size: 13.5px; font-weight: 700; color: #e8e8e8; margin-bottom: 4px; }
+        .ap-sug-title { font-size: 13.5px; font-weight: 700; color: #F5F5F5; margin-bottom: 4px; }
         .ap-sug-detail { font-size: 12.5px; color: #666; line-height: 1.65; }
 
         /* ── Export ── */
@@ -433,8 +433,8 @@ export default function AnalyticsPage() {
           cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif;
           font-weight: 500;
         }
-        .ap-export-btn:hover { background: rgba(255,255,255,0.05); color: #e8e8e8; }
-        .ap-export-btn.copied { color: #00D084; border-color: rgba(0,208,132,0.3); }
+        .ap-export-btn:hover { background: rgba(255,255,255,0.05); color: #F5F5F5; }
+        .ap-export-btn.copied { color: #5FB88A; border-color: rgba(95,184,138,0.3); }
       `}</style>
 
       <main className="ap">
@@ -479,7 +479,7 @@ export default function AnalyticsPage() {
             spellCheck={false}
           />
           <div className="ap-char-bar">
-            <span style={{ color: input.length > 10000 ? "#ef4444" : "#3a3a3a" }}>
+            <span style={{ color: input.length > 10000 ? "#E5736B" : "rgba(255,255,255,0.15)" }}>
               {input.length.toLocaleString()} / 12,000
             </span>
           </div>
@@ -510,7 +510,7 @@ export default function AnalyticsPage() {
           <div className="ap-loading">
             <div className="ap-spinner" />
             <div key={loadMsg} className="ap-load-msg">{loadMsg}</div>
-            <div style={{ fontSize: 11, color: "#2a2a2a", marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.1)", marginTop: 4 }}>
               Claude AI is analyzing your input...
             </div>
           </div>
@@ -564,16 +564,16 @@ export default function AnalyticsPage() {
                     <div className="ap-metric" key={m.label}
                       style={{
                         borderColor: m.good
-                          ? "rgba(0,208,132,0.18)"
-                          : "rgba(239,68,68,0.15)",
+                          ? "rgba(95,184,138,0.18)"
+                          : "rgba(229,115,107,0.15)",
                       }}>
                       <div className="ap-metric-lbl">{m.label}</div>
                       <div className="ap-metric-val"
-                        style={{ color: m.good ? "#00D084" : "#ef4444" }}>
+                        style={{ color: m.good ? "#5FB88A" : "#E5736B" }}>
                         {m.value}
                         <span
                           className="ap-metric-dot"
-                          style={{ background: m.good ? "#00D084" : "#ef4444" }}
+                          style={{ background: m.good ? "#5FB88A" : "#E5736B" }}
                         />
                       </div>
                     </div>
