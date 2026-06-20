@@ -1207,7 +1207,7 @@ ${plan}`;
     return BASE;
   }
 
-  return BASE + getNicheWebsitePrompt(niche, userPrompt);
+  return BASE + getNicheWebsitePrompt(niche, userPrompt, realImages);
 }
 
 // hexToRgb -> use hexToRgbValues()
@@ -1460,7 +1460,7 @@ function getTrustEngineBlueprint(niche: NicheProfile): string {
 }
 
 // ── UPGRADED: getNicheWebsitePrompt ──────────────────────────────
-function getNicheWebsitePrompt(niche: NicheProfile, userPrompt: string): string {
+function getNicheWebsitePrompt(niche: NicheProfile, userPrompt: string, realImages?: Record<string,string[]>): string {
   const dl = getDesignLanguage(niche);
   const v = niche.brandVoice;
   const p = niche.palette;
