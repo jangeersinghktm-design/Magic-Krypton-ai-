@@ -146,7 +146,7 @@ export default function KryptonSidebar() {
   const sidebarContent = (
     <aside ref={sidebarRef} style={{
       width: 240, minHeight: "100vh",
-      background: "#0d0d0d",
+      background: "#0B1020",
       borderRight: "1px solid rgba(245,197,66,0.12)",
       display: "flex", flexDirection: "column",
       position: "fixed", left: isMobile ? (mobileOpen ? 0 : -240) : 0,
@@ -171,7 +171,7 @@ export default function KryptonSidebar() {
       <nav style={{ flex: 1, padding: "12px 10px" }}>
         <div style={{
           fontSize: 10, fontWeight: 600, letterSpacing: 1,
-          textTransform: "uppercase", color: "#444",
+          textTransform: "uppercase", color: "rgba(255,255,255,0.15)",
           padding: "6px 12px 4px",
         }}>Navigation</div>
 
@@ -188,7 +188,7 @@ export default function KryptonSidebar() {
                   justifyContent: "space-between",
                   padding: "9px 12px", borderRadius: 10,
                   cursor: "pointer",
-                  color: active ? "#F5C542" : "#666",
+                  color: active ? "#F5F5F5" : "#9AA3AF",
                   background: active
                     ? "linear-gradient(135deg,rgba(245,197,66,0.15),rgba(0,208,132,0.08))"
                     : "transparent",
@@ -204,7 +204,7 @@ export default function KryptonSidebar() {
                   <span style={{
                     transition: "transform 0.22s",
                     transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
-                    color: "#555",
+                    color: "rgba(255,255,255,0.18)",
                   }}>{icons.chevron}</span>
                 </div>
               ) : (
@@ -213,7 +213,7 @@ export default function KryptonSidebar() {
                   justifyContent: "space-between",
                   padding: "9px 12px", borderRadius: 10,
                   textDecoration: "none",
-                  color: active ? "#F5C542" : "#666",
+                  color: active ? "#F5F5F5" : "#9AA3AF",
                   background: active
                     ? "linear-gradient(135deg,rgba(245,197,66,0.15),rgba(0,208,132,0.08))"
                     : "transparent",
@@ -240,7 +240,7 @@ export default function KryptonSidebar() {
                       display: "flex", alignItems: "center", gap: 9,
                       padding: "7px 10px", borderRadius: 8,
                       textDecoration: "none", fontSize: 12.5,
-                      color: isActive(child.href) ? "#00D084" : "#666",
+                      color: isActive(child.href) ? "#5FB88A" : "#9AA3AF",
                       background: isActive(child.href)
                         ? "rgba(0,208,132,0.1)"
                         : "transparent",
@@ -264,11 +264,11 @@ export default function KryptonSidebar() {
         borderRadius: 10, padding: "10px 14px",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-          <span style={{ fontSize: 11, color: "#666" }}>Credits Used</span>
+          <span style={{ fontSize: 11, color: "#9AA3AF" }}>Credits Used</span>
           <button
             onClick={() => router.push("/settings?tab=billing")}
             style={{
-              fontSize: 10, color: "#F5C542",
+              fontSize: 10, color: "#F5F5F5",
               background: "none",
               border: "1px solid rgba(245,197,66,0.3)",
               borderRadius: 4, padding: "1px 7px",
@@ -288,20 +288,20 @@ export default function KryptonSidebar() {
             height: "100%",
             width: `${remainingPct}%`,
             background: remaining > 20
-              ? "linear-gradient(90deg,#F5C542,#00D084)"
-              : "linear-gradient(90deg,#ef4444,#f59e0b)",
+              ? "linear-gradient(90deg,#F5F5F5,#5FB88A)"
+              : "linear-gradient(90deg,#E5736B,#D9D9D9)",
             borderRadius: 4,
             transition: "width 0.5s ease",
           }} />
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 10.5, color: "#555" }}>
+          <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.18)" }}>
             Used: {usedCredits}
           </span>
           <span style={{
             fontSize: 10.5, fontWeight: 700,
-            color: remaining > 20 ? "#00D084" : "#ef4444",
+            color: remaining > 20 ? "#5FB88A" : "#E5736B",
           }}>
             {remaining} / {totalCredits}
           </span>
@@ -316,7 +316,7 @@ export default function KryptonSidebar() {
       }}>
         <div style={{
           width: 32, height: 32, borderRadius: "50%",
-          background: "linear-gradient(135deg,#F5C542,#00D084)",
+          background: "linear-gradient(135deg,#F5F5F5,#5FB88A)",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 13, fontWeight: 700, color: "#000", flexShrink: 0,
         }}>
@@ -324,12 +324,12 @@ export default function KryptonSidebar() {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontSize: 12.5, fontWeight: 600, color: "#e8e8e8",
+            fontSize: 12.5, fontWeight: 600, color: "#F5F5F5",
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           }}>
             {displayName}
           </div>
-          <div style={{ fontSize: 10.5, color: "#00D084", fontWeight: 500 }}>
+          <div style={{ fontSize: 10.5, color: "#5FB88A", fontWeight: 500 }}>
             {planLabel} Plan
           </div>
         </div>
@@ -343,12 +343,12 @@ export default function KryptonSidebar() {
       {isMobile && (
         <button onClick={() => setMobileOpen(!mobileOpen)} style={{
           position: "fixed", top: 12, left: 12, zIndex: 300,
-          background: "#0d0d0d",
+          background: "#0B1020",
           border: "1px solid rgba(245,197,66,0.2)",
           borderRadius: 8, width: 36, height: 36,
           cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#F5C542",
+          color: "#F5F5F5",
         }}>
           <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             {mobileOpen
@@ -371,5 +371,4 @@ export default function KryptonSidebar() {
       {sidebarContent}
     </>
   );
-                                             }
-
+}
