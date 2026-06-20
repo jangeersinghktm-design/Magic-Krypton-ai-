@@ -155,16 +155,20 @@ export default function HomePage() {
           {/* ── Heading ── */}
           <div style={{ textAlign:"center", marginBottom:36, animation:"fadeUp .5s ease" }}>
             <h1 style={{
-              fontFamily:"'Syne',system-ui,sans-serif",
-              fontSize:"clamp(28px,5vw,52px)",
+              fontFamily:"'Inter',system-ui,sans-serif",
+              fontSize:"clamp(22px,5.5vw,48px)",
               fontWeight:800,
-              lineHeight:1.12,
+              lineHeight:1.2,
               letterSpacing:"-0.02em",
               marginBottom:10,
               color:C.text,
+              maxWidth:"100%",
+              overflowWrap:"break-word",
+              wordBreak:"break-word",
+              padding:"0 8px",
             }}>
               Got an idea,{" "}
-              <span style={{ background:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+              <span style={{ background:GRAD, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", overflowWrap:"break-word", wordBreak:"break-word" }}>
                 {firstName}?
               </span>
             </h1>
@@ -174,7 +178,7 @@ export default function HomePage() {
           </div>
 
           {/* ── Prompt Box ── */}
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:18, padding:"16px 18px", boxShadow:"0 0 48px rgba(255,215,0,.05)", marginBottom:28, animation:"fadeUp .5s .1s ease both" }}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:18, padding:"16px 18px", boxShadow:"0 0 48px rgba(245,245,245,.04)", marginBottom:56, animation:"fadeUp .5s .1s ease both" }}>
             <textarea
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
