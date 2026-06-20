@@ -1,513 +1,621 @@
 /**
- * KRYPTON AI — Dedicated Game Generation API
- * New module — does NOT modify website builder
- * Uses SSE for real-time game building workflow
+ * KRYPTON AI — Game Builder Engine
+ * Detects game type, builds system prompt, manages game memory
+ * Does NOT modify website builder pipeline
  */
-import { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import {
-  detectGameType,
-  buildGameMemory,
-  getGameSystemPrompt,
-  formatGameMemoryForAI,
-  GAME_WORKFLOW_PHASES,
-  type GameProjectMemory,
-} from "@/lib/game-builder";
-import {
-  runProductionGate,
-  buildRepairInstructions,
-  generateGameBlueprint,
-  buildBlueprintPrompt,
-  type ProductionGateResult,
-  type ProjectBlueprint,
-} from "@/lib/completion-engine";
 
-export const runtime    = "edge";
-export const maxDuration = 120;
+// ── Product Completion Engine (quality audit + auto-expansion) ────
+export {
+  auditGameHTML,
+  getRequiredFeatures,
+  buildFeatureChecklistPrompt,
+  type FeatureCheck,
+  type AuditResult,
+} from "./quality-audit";
+import { buildFeatureChecklistPrompt } from "./quality-audit";
+import { getGameTemplate, hasGameTemplate } from "@/lib/completion-engine/templates";
+import type { ProjectBlueprint } from "@/lib/completion-engine/blueprint";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-// ── AI Providers ────────────────────────────────────────────────────
-async function callClaude(system: string, prompt: string, maxTokens: number = 8192): Promise<string> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY!,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: "user", content: prompt }],
-    }),
-    signal: AbortSignal.timeout(50000),
-  });
-  const d = await res.json();
-  const text = d.content?.[0]?.text || "";
-  // Fix: detect truncation — Claude returns stop_reason "max_tokens" if cut off
-  if (d.stop_reason === "max_tokens") {
-    return text + "\n<!--TRUNCATED-->";
-  }
-  return text;
+// ── Game Memory System ─────────────────────────────────────────────
+export interface GameProjectMemory {
+  gameType:      string;   // "racing" | "platformer" | "shooter" etc
+  theme:         string;   // "cyberpunk" | "space" | "fantasy" etc
+  genre:         string;   // "arcade" | "rpg" | "strategy" etc
+  artStyle:      string;   // "pixel" | "neon" | "realistic" | "cartoon"
+  controls:      string;   // "keyboard" | "touch" | "both"
+  techStack:     string;   // "html5" | "phaser" | "threejs"
+  players:       number;   // 1 | 2
+  levels:        number;
+  characters:    string[];
+  enemies:       string[];
+  weapons:       string[];
+  powerups:      string[];
+  scoringSystem: string;
+  gameRules:     string;
+  uiTheme:       string;
+  audioEnabled:  boolean;
+  physicsEngine: string;
+  editHistory:   string[];
+  lastPrompt:    string;
+  features:      string[];
+  // Phase 7 — Memory Engine: store the project blueprint so edits
+  // modify against it instead of re-deriving context each time.
+  blueprint?:    ProjectBlueprint;
 }
 
-async function callOpenAI(system: string, prompt: string): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o",
-      max_tokens: 16000,
-      messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
-    }),
-    signal: AbortSignal.timeout(50000),
-  });
-  const d = await res.json();
-  const text = d.choices?.[0]?.message?.content || "";
-  // Fix: detect truncation
-  if (d.choices?.[0]?.finish_reason === "length") {
-    return text + "\n<!--TRUNCATED-->";
-  }
-  return text;
+// ── Game Type Detection ────────────────────────────────────────────
+export function detectGameType(prompt: string): {
+  isGame: boolean;
+  gameType: string;
+  genre: string;
+  theme: string;
+  techStack: string;
+} {
+  const p = prompt.toLowerCase();
+
+  // Is it a game request?
+  const gameWords = [
+    'game', 'gaming', 'arcade', 'score', 'player',
+    'snake game', 'tetris', 'mario', 'pacman', 'flappy', 'dino game', 'pong',
+    'chess game', 'checkers game', 'sudoku', 'wordle game', 'crossword game',
+    'shooter game', 'fps game', 'rpg game', 'platformer game', 'endless runner',
+    'racing game', 'drift game', 'car game', 'kart game',
+    'zombie game', 'battle royale', 'tower defense',
+    'fighting game', 'boxing game',
+    'match-3', 'block game', 'merge game',
+    'tycoon game', 'city builder game', 'minecraft like',
+    'space game', 'alien game', 'asteroid game',
+    'dungeon game', 'adventure game',
+    'multiplayer game',
+    'flappy bird', 'angry birds', 'candy crush',
+    'make a game', 'create a game', 'build a game',
+  ];
+  const isGame = gameWords.some(w => p.includes(w));
+
+  if (!isGame) return { isGame: false, gameType: 'website', genre: '', theme: '', techStack: 'html5' };
+
+  // Detect specific game type
+  let gameType = 'arcade';
+  if (/snake|worm/.test(p))                           gameType = 'snake';
+  else if (/tetris|block.*fall|falling.*block/.test(p)) gameType = 'tetris';
+  else if (/mario|platformer|jump.*run|super.*platform/.test(p)) gameType = 'platformer';
+  else if (/pacman|pac.man|dot.*eat/.test(p))          gameType = 'pacman';
+  else if (/racing|car.*race|drift|kart|formula|speed/.test(p)) gameType = 'racing';
+  else if (/shooter|shoot|bullet|gun|fps|space.*invader/.test(p)) gameType = 'shooter';
+  else if (/zombie|undead|survival|apocalypse/.test(p)) gameType = 'survival';
+  else if (/flappy|bird.*fly|tap.*fly/.test(p))        gameType = 'flappy';
+  else if (/chess|checkers/.test(p))                   gameType = 'chess';
+  else if (/puzzle|match.3|block.*merge|slide/.test(p)) gameType = 'puzzle';
+  else if (/rpg|dungeon|quest|adventure.*role/.test(p)) gameType = 'rpg';
+  else if (/tower.*defense|td.*game|defend.*base/.test(p)) gameType = 'tower-defense';
+  else if (/cricket|football|soccer|basketball|sport/.test(p)) gameType = 'sports';
+  else if (/gta|open.world|sandbox|city.*crime/.test(p)) gameType = 'openworld';
+  else if (/space|galaxy|asteroid|alien.*shoot/.test(p)) gameType = 'space-shooter';
+  else if (/runner|endless.*run|dino|infinite.*run/.test(p)) gameType = 'runner';
+  else if (/fighting|brawl|boxing|combat/.test(p))     gameType = 'fighting';
+  else if (/strategy|rts|city.*build|tycoon|sim/.test(p)) gameType = 'strategy';
+  else if (/pong|ping.pong|ball.*paddle/.test(p))      gameType = 'pong';
+  else if (/breakout|brick.*break|arkanoid/.test(p))   gameType = 'breakout';
+  else if (/clicker|idle|tap.*earn|cookie/.test(p))    gameType = 'clicker';
+
+  // Detect genre
+  let genre = 'arcade';
+  if (['platformer','runner','flappy','mario'].includes(gameType)) genre = 'platformer';
+  else if (['shooter','space-shooter','survival'].includes(gameType)) genre = 'action';
+  else if (['rpg','openworld'].includes(gameType)) genre = 'rpg';
+  else if (['chess','puzzle','sudoku'].includes(gameType)) genre = 'puzzle';
+  else if (['racing'].includes(gameType)) genre = 'racing';
+  else if (['sports','cricket','football'].includes(gameType)) genre = 'sports';
+  else if (['strategy','tower-defense'].includes(gameType)) genre = 'strategy';
+  else if (['clicker'].includes(gameType)) genre = 'idle';
+
+  // Detect theme
+  let theme = 'dark';
+  if (/neon|cyber|cyberpunk|futur/.test(p))            theme = 'neon-cyberpunk';
+  else if (/space|galaxy|cosmic|star.*war/.test(p))    theme = 'space';
+  else if (/fantasy|magic|wizard|dragon|medieval/.test(p)) theme = 'fantasy';
+  else if (/pixel|retro|8.bit|arcade/.test(p))         theme = 'retro-pixel';
+  else if (/zombie|horror|dark|gothic/.test(p))        theme = 'dark-horror';
+  else if (/cartoon|colorful|cute|kawaii/.test(p))     theme = 'cartoon';
+  else if (/nature|jungle|forest|underwater/.test(p))  theme = 'nature';
+  else if (/city|urban|street|gta/.test(p))            theme = 'urban';
+
+  // Choose tech stack
+  let techStack = 'html5';
+  if (['rpg','openworld','strategy'].includes(gameType))   techStack = 'phaser';
+  else if (/3d|three\.?js|first.*person/.test(p))          techStack = 'threejs';
+
+  return { isGame: true, gameType, genre, theme, techStack };
 }
 
-async function callGemini(system: string, prompt: string): Promise<string> {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: `${system}\n\n${prompt}` }] }],
-        generationConfig: { maxOutputTokens: 8192 },
-      }),
-      signal: AbortSignal.timeout(50000),
-    }
-  );
-  const d = await res.json();
-  const text = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  // Fix: detect truncation
-  if (d.candidates?.[0]?.finishReason === "MAX_TOKENS") {
-    return text + "\n<!--TRUNCATED-->";
-  }
-  return text;
-}
-
-// Fix 2: Strip markdown code fences (handles ```html, ```, leading/trailing)
-function stripMarkdownFences(text: string): string {
-  let t = text.trim();
-  // Remove leading ```html or ``` 
-  t = t.replace(/^```(?:html|HTML)?\s*\n?/, "");
-  // Remove trailing ```
-  t = t.replace(/\n?```\s*$/, "");
-  return t.trim();
-}
-
-// Fix 2: Validate that HTML is complete and playable — not truncated/broken
-function isValidGameHTML(html: string): boolean {
-  if (!html || html.length < 500) return false;
-  if (html.includes("<!--TRUNCATED-->")) return false;          // explicit truncation flag
-  if (!html.trim().startsWith("<!DOCTYPE")) return false;        // must start correctly
-  if (!/<\/html>\s*$/i.test(html.trim())) return false;          // must end with </html>
-  if (!html.includes("<canvas")) return false;                   // must have canvas
-  if (!html.includes("</script>")) return false;                 // script must be closed
-  // Check for nested/duplicate doctype (sign of double-wrapping)
-  const doctypeCount = (html.match(/<!DOCTYPE/gi) || []).length;
-  if (doctypeCount > 1) return false;
-  // Check for stray markdown fences anywhere in content
-  if (html.includes("```")) return false;
-  return true;
-}
-
-async function generateGame(system: string, prompt: string, claudeMaxTokens: number = 8192): Promise<{ html: string; provider: string }> {
-  const attempts: { provider: string; reason: string }[] = [];
-
-  for (const [fn, name] of [[callClaude, "claude"], [callOpenAI, "openai"], [callGemini, "gemini"]] as const) {
-    try {
-      // Fix 6 — complex game types get a higher Claude token budget
-      // (reduces truncation for skeleton+logic-heavy outputs). OpenAI/
-      // Gemini keep their existing limits unchanged.
-      const rawText = name === "claude"
-        ? await callClaude(system, prompt, claudeMaxTokens)
-        : await (fn as Function)(system, prompt);
-      if (!rawText?.trim()) {
-        attempts.push({ provider: name, reason: "empty response" });
-        continue;
-      }
-
-      // Strip markdown fences first
-      let cleaned = stripMarkdownFences(rawText);
-
-      // Extract HTML document if not already clean
-      if (!cleaned.startsWith("<!DOCTYPE")) {
-        const match = cleaned.match(/<!DOCTYPE[\s\S]*?<\/html>/i);
-        if (match) cleaned = stripMarkdownFences(match[0]);
-      }
-
-      // Reject truncated/incomplete output — try next provider instead of returning broken HTML
-      if (!isValidGameHTML(cleaned)) {
-        attempts.push({
-          provider: name,
-          reason: cleaned.includes("<!--TRUNCATED-->") ? "truncated (hit token limit)" : "incomplete/invalid HTML",
-        });
-        continue;
-      }
-
-      return { html: cleaned, provider: name };
-    } catch (err: any) {
-      attempts.push({ provider: name, reason: err?.message || "request failed" });
-      continue;
-    }
-  }
-
-  throw new Error(
-    `All AI providers failed to generate a complete game. (${attempts.map(a => `${a.provider}: ${a.reason}`).join("; ")})`
-  );
-}
-
-// ── Self-Healing Pass (Product Completion Engine) ─────────────────
-// Takes a valid-but-incomplete game and asks the AI to add ONLY the
-// missing features, without breaking what already works.
-// Budget-aware: caller passes remaining ms; if too little time is
-// left, this is skipped entirely and the original result is kept.
-// ── Repair pass (Product Completion Engine — Auto Repair Loop) ────
-// Generalized: takes the FULL repair instruction block from the
-// Production Gate (missing features, syntax errors, mobile/visual
-// issues), not just missing features. Returns null if budget is
-// too low or the repair attempt itself produces invalid HTML.
-async function repairGame(
+// ── Build Game Project Memory ──────────────────────────────────────
+export function buildGameMemory(
   html: string,
-  repairInstructions: string,
-  systemPrompt: string,
-  remainingMs: number,
-  maxTokens: number = 8192
-): Promise<{ html: string; provider: string } | null> {
-  // Need at least 20s of budget to attempt a repair pass safely
-  if (remainingMs < 20000 || !repairInstructions.trim()) return null;
+  prompt: string,
+  detected: ReturnType<typeof detectGameType>,
+  prev?: GameProjectMemory | null,
+  blueprint?: ProjectBlueprint
+): GameProjectMemory {
+  const editHistory = prev?.editHistory || [];
+  if (prompt && !editHistory.includes(prompt)) editHistory.push(prompt);
 
-  const fixPrompt = `The game below has the following issues that MUST be fixed:
-
-${repairInstructions}
-
-Fix ALL of the above WITHOUT removing or breaking any feature that
-already works. Keep the same game type, controls, and visual style.
-If there are SYNTAX ERRORS listed, fixing those is the highest priority
-— a syntax error means the whole game is broken/blank. Return the
-COMPLETE updated HTML file (starting with <!DOCTYPE html> and ending
-with </html>).
-
-EXISTING GAME CODE:
-${html}`;
-
-  // Try Claude first only (bounded to one provider to respect time budget)
-  try {
-    const raw = await callClaude(systemPrompt, fixPrompt, maxTokens);
-    if (raw?.trim()) {
-      let cleaned = stripMarkdownFences(raw);
-      if (!cleaned.startsWith("<!DOCTYPE")) {
-        const m = cleaned.match(/<!DOCTYPE[\s\S]*?<\/html>/i);
-        if (m) cleaned = stripMarkdownFences(m[0]);
-      }
-      if (isValidGameHTML(cleaned)) return { html: cleaned, provider: "claude (repair)" };
-    }
-  } catch { /* fall through */ }
-
-  return null;
+  return {
+    gameType:      detected.gameType,
+    theme:         detected.theme,
+    genre:         detected.genre,
+    artStyle:      /pixel|retro/i.test(html) ? 'pixel' : 'smooth',
+    controls:      'keyboard+touch',
+    techStack:     detected.techStack,
+    players:       /multiplayer|2.*player/i.test(prompt) ? 2 : 1,
+    levels:        parseInt(html.match(/level.*?(\d+)/i)?.[1] || '0') || 5,
+    characters:    [],
+    enemies:       [],
+    weapons:       [],
+    powerups:      (html.match(/powerup|power.up|boost/gi) || []).slice(0, 5),
+    scoringSystem: html.includes('localStorage') ? 'persistent' : 'session',
+    gameRules:     `${detected.gameType} game — ${detected.theme} theme`,
+    uiTheme:       detected.theme,
+    audioEnabled:  html.includes('AudioContext') || html.includes('new Audio'),
+    physicsEngine: html.includes('gravity') ? 'custom' : 'none',
+    editHistory:   editHistory.slice(-10),
+    lastPrompt:    prompt,
+    features:      extractGameFeatures(html),
+    // Preserve existing blueprint on edits unless a new one is provided
+    blueprint:     blueprint || prev?.blueprint,
+  };
 }
 
-// ── Route Handler ────────────────────────────────────────────────────
-export async function POST(req: NextRequest) {
-  const encoder = new TextEncoder();
-
-  // Fix 6: Per-user generation lock
-const activeGenerations = new Set<string>();
-
-const stream = new ReadableStream({
-    async start(controller) {
-      const startTime = Date.now(); // Product Completion Engine: time budget for self-heal
-      const send = (event: string, data: object) => {
-        try {
-          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
-        } catch {}
-      };
-      const finish = () => { try { controller.close(); } catch {} };
-
-      let authedUserId = "";  // declared outside try so finally can access it
-
-      try {
-        const { prompt, userId, accessToken, gameMemory: prevMemory } = await req.json();
-        if (!prompt?.trim()) { send("error", { message: "No prompt provided" }); finish(); return; }
-
-        // ── Auth ────────────────────────────────────────────────────
-        authedUserId = userId || "";
-        if (accessToken) {
-          const { data: { user } } = await supabase.auth.getUser(accessToken);
-          authedUserId = user?.id || userId || "";
-        }
-
-        // Fix 6: Per-user generation lock (after auth so authedUserId is set)
-        if (authedUserId && activeGenerations.has(authedUserId)) {
-          send("error", { message: "A generation is already running. Please wait.", code: "DUPLICATE_GEN" });
-          finish(); return;
-        }
-        if (authedUserId) activeGenerations.add(authedUserId);
-
-        // ── Credits ─────────────────────────────────────────────────
-
-        if (authedUserId) {
-          const { data: pc } = await supabase
-            .from("profiles")
-            .select("total_credits, used_credits, plan, daily_reset_date")
-            .eq("id", authedUserId).single();
-
-          if (pc) {
-            const today = new Date().toISOString().split("T")[0];
-            if (pc.plan === "free" && pc.daily_reset_date !== today) {
-              await supabase.from("profiles").update({
-                used_credits: 0, daily_reset_date: today,
-              }).eq("id", authedUserId);
-              pc.used_credits = 0;
-            }
-            const rem = (pc.total_credits || 5) - (pc.used_credits || 0);
-            if (rem < 1) {
-              send("error", { message: "No credits remaining. Free plan resets daily at midnight.", code: "NO_CREDITS" });
-              finish(); return;
-            }
-          }
-        }
-
-        // ── Detect Game Type ────────────────────────────────────────
-        send("phase", { ...GAME_WORKFLOW_PHASES[0], action: "Reading game request..." });
-        const detected = detectGameType(prompt);
-
-        send("phase", { ...GAME_WORKFLOW_PHASES[1], action: `Detected: ${detected.gameType} game (${detected.theme} theme)`, done: true });
-        send("phase", { ...GAME_WORKFLOW_PHASES[2], action: `Designing ${detected.genre} game architecture...` });
-
-        // Fix 5 — edit-mode protection: skip generic skeleton injection
-        // when editing an existing (already-customized) game.
-        const isEdit = !!prevMemory;
-
-        // Fix 6 — complex game types get a higher Claude token budget
-        // to reduce truncation (skeleton + checklist + full game logic
-        // all need to fit in one response for these types).
-        const COMPLEX_GAME_TYPES = new Set(["platformer", "rpg", "tower-defense", "strategy", "space-shooter"]);
-        const claudeMaxTokens = COMPLEX_GAME_TYPES.has(detected.gameType) ? 12000 : 8192;
-
-        const systemPromptBase = getGameSystemPrompt(detected.gameType, detected.theme, prompt, isEdit, detected.techStack);
-
-        // Product Generation Engine: Phase 2 — Blueprint Generator.
-        // Build the structured project blueprint BEFORE generation —
-        // the AI extends this rather than starting from a blank prompt.
-        const blueprint: ProjectBlueprint = generateGameBlueprint(detected.gameType, detected.theme, prompt);
-        const systemPrompt = systemPromptBase + `\n\n${buildBlueprintPrompt(blueprint)}`;
-
-        // Include previous game memory if editing
-        const memCtx = prevMemory ? formatGameMemoryForAI(prevMemory) : "";
-        const fullPrompt = memCtx
-          ? `${memCtx}\n\nNEW REQUEST: ${prompt}\nPreserve all existing game mechanics. Only add/change what was requested.`
-          : prompt;
-
-        send("phase", { ...GAME_WORKFLOW_PHASES[2], done: true });
-        send("phase", { ...GAME_WORKFLOW_PHASES[3], action: `Building ${detected.gameType} game engine...` });
-
-        // ── Generate Game ────────────────────────────────────────────
-        // generateGame() now validates output internally and rejects
-        // truncated/broken HTML, trying the next provider automatically.
-        let html: string;
-        let provider: string;
-        try {
-          const result = await generateGame(systemPrompt, fullPrompt, claudeMaxTokens);
-          html = result.html;
-          provider = result.provider;
-        } catch (genErr: any) {
-          // All 3 providers failed validation — release lock and report clearly
-          if (authedUserId) activeGenerations.delete(authedUserId);
-          send("error", {
-            message: "Game generation failed — the AI response was incomplete. Please try again, or try a simpler game description.",
-            code: "GENERATION_INCOMPLETE",
-            detail: genErr?.message,
-          });
-          finish(); return;
-        }
-
-        send("phase", { ...GAME_WORKFLOW_PHASES[3], action: `Game built via ${provider}`, done: true });
-        send("phase", { ...GAME_WORKFLOW_PHASES[4], action: "Validating gameplay..." });
-
-        // Ensure full-screen canvas (html already validated as complete)
-        if (!html.includes("innerWidth") || !html.includes("innerHeight")) {
-          html = html.replace(
-            /canvas\.width\s*=\s*\d+/g,
-            "canvas.width = window.innerWidth"
-          ).replace(
-            /canvas\.height\s*=\s*\d+/g,
-            "canvas.height = window.innerHeight"
-          );
-        }
-
-        send("phase", { ...GAME_WORKFLOW_PHASES[4], action: "Validation passed", done: true });
-
-        // ── Product Completion Engine: Production Gate + Auto Repair Loop ──
-        send("phase", { ...GAME_WORKFLOW_PHASES[4], agent: "Validating", icon: "🧪", action: "Running production gate audit...", pct: 80 });
-
-        let gate: ProductionGateResult = runProductionGate(html, "game", detected.gameType);
-        let repairAttempts = 0;
-        const MAX_REPAIR_ATTEMPTS = 2;
-
-        while (!gate.overallPass && repairAttempts < MAX_REPAIR_ATTEMPTS) {
-          const elapsed = Date.now() - startTime;
-          const remainingMs = 115000 - elapsed; // edge maxDuration=120s, leave 5s buffer
-          if (remainingMs < 20000) break; // out of time budget — stop repairing
-
-          const reasons: string[] = [];
-          if (!gate.buildPass)      reasons.push("build issues");
-          if (!gate.runtimePass)    reasons.push("syntax errors");
-          if (!gate.mobilePass)     reasons.push("mobile gaps");
-          if (!gate.validationPass) reasons.push(`score ${gate.score}/100`);
-          else if (gate.score < 95) reasons.push(`score ${gate.score}/95`);
-
-          send("phase", {
-            agent: "Validating", icon: "🧪",
-            action: `Repair pass ${repairAttempts + 1}: fixing ${reasons.join(", ")}...`,
-            pct: 82 + repairAttempts * 2,
-          });
-
-          const instructions = buildRepairInstructions(gate);
-          const repaired = await repairGame(html, instructions, systemPrompt, remainingMs, claudeMaxTokens);
-          repairAttempts++;
-
-          if (!repaired) break; // repair call failed/timed out — keep current result
-
-          const repairedGate = runProductionGate(repaired.html, "game", detected.gameType);
-          // Keep whichever scores higher (never regress)
-          if (repairedGate.score > gate.score) {
-            html = repaired.html;
-            gate = repairedGate;
-            provider = `${provider} → ${repaired.provider}`;
-            if (!html.includes("innerWidth") || !html.includes("innerHeight")) {
-              html = html.replace(/canvas\.width\s*=\s*\d+/g, "canvas.width = window.innerWidth")
-                         .replace(/canvas\.height\s*=\s*\d+/g, "canvas.height = window.innerHeight");
-            }
-          }
-        }
-
-        send("phase", {
-          agent: "Validating", icon: "🧪",
-          action: `Production Gate: ${gate.score}/100${gate.overallPass ? " ✅ all gates passed" : repairAttempts > 0 ? ` (after ${repairAttempts} repair pass${repairAttempts>1?"es":""})` : ""}`,
-          pct: 86, done: true,
-        });
-
-        send("phase", { ...GAME_WORKFLOW_PHASES[5], action: "Optimizing game performance..." });
-
-        // ── Save to DB ──────────────────────────────────────────────
-        let savedProjectId: string | null = null;
-        let creditCost = 2;
-
-        if (authedUserId) {
-          // Profile lookup — for credit accounting only. A failure here
-          // (missing profiles row, bad column name, etc.) must NOT block
-          // project persistence below — that's the "Total Projects = 0"
-          // bug. Logging the error surfaces the EXACT cause (e.g. a
-          // missing column name) in server logs on the next generation.
-          const { data: profile, error: profileError } = await supabase.from("profiles")
-            .select("total_credits, used_credits, plan, daily_reset_date")
-            .eq("id", authedUserId).single();
-
-          if (profileError) {
-            console.error(`[game/route] profiles lookup failed for user ${authedUserId}:`, profileError.message || profileError);
-          }
-
-          if (profile) {
-            const remaining = (profile.total_credits || 5) - (profile.used_credits || 0);
-            creditCost = Math.min(remaining, 2);
-          }
-
-          // Project persistence — ALWAYS attempted, independent of the
-          // profile lookup above and its result.
-          const { data: proj, error: projError } = await supabase.from("projects").insert({
-            user_id:    authedUserId,
-            title:      prompt.slice(0, 60),
-            name:       prompt.slice(0, 60),
-            prompt,
-            html_content: html,
-            type: "game",
-            status:     "completed",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }).select().single();
-
-          if (projError) {
-            console.error(`[game/route] projects insert FAILED for user ${authedUserId}:`, projError.message || projError);
-          }
-          savedProjectId = proj?.id || null;
-
-          // Credit deduction — separate concern, only when profile lookup
-          // succeeded. Its own failure is logged but doesn't affect the
-          // project that was already saved above.
-          if (profile) {
-            const today = new Date().toISOString().split("T")[0];
-            const { error: updateError } = await supabase.from("profiles").update({
-              used_credits: (profile.used_credits || 0) + creditCost,
-              daily_reset_date: today,
-            }).eq("id", authedUserId);
-            if (updateError) {
-              console.error(`[game/route] profiles credit update failed for user ${authedUserId}:`, updateError.message || updateError);
-            }
-          }
-        }
-
-        // ── Build Game Memory ───────────────────────────────────────
-        const gameMemory = buildGameMemory(html, prompt, detected, prevMemory);
-
-        send("phase", { ...GAME_WORKFLOW_PHASES[5], done: true });
-        send("phase", { ...GAME_WORKFLOW_PHASES[6], action: "Game ready!", done: true });
-
-        send("complete", {
-          html,
-          projectId:  savedProjectId,
-          creditCost,
-          provider,
-          gameType:   detected.gameType,
-          genre:      detected.genre,
-          theme:      detected.theme,
-          techStack:  detected.techStack,
-          gameMemory,
-          blueprint,
-          // Product Completion Engine — Production Gate
-          completenessScore:     gate.score,
-          dimensions:            gate.dimensions,
-          buildPass:             gate.buildPass,
-          validationPass:        gate.validationPass,
-          runtimePass:           gate.runtimePass,
-          mobilePass:            gate.mobilePass,
-          overallPass:           gate.overallPass,
-          auditFailed:           gate.failedFeatures.map(f => f.label),
-          belowQualityThreshold: gate.score < 90,
-          repairAttempts,
-        });
-      } catch (err: any) {
-        send("error", { message: err.message || "Game generation failed. Try again.", code: "GENERATION_ERROR" });
-      } finally {
-        // Fix 6: Always release lock
-        if (authedUserId) activeGenerations.delete(authedUserId);
-      }
-      finish();
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type":  "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection:      "keep-alive",
-      "X-Accel-Buffering": "no",
-    },
-  });
+function extractGameFeatures(html: string): string[] {
+  const feats: string[] = [];
+  if (html.includes('localStorage'))     feats.push('highscore');
+  if (html.includes('AudioContext'))     feats.push('sound');
+  if (html.includes('touchstart'))       feats.push('mobile-controls');
+  if (html.includes('particle'))         feats.push('particles');
+  if (html.includes('powerup') || html.includes('power-up')) feats.push('powerups');
+  if (html.includes('level'))            feats.push('levels');
+  if (html.includes('lives') || html.includes('life')) feats.push('lives');
+  if (html.includes('achievement'))      feats.push('achievements');
+  if (html.includes('requestAnimationFrame')) feats.push('smooth-animation');
+  return feats;
 }
+
+// ── Format Game Memory for AI ──────────────────────────────────────
+export function formatGameMemoryForAI(mem: GameProjectMemory): string {
+  const blueprintLine = mem.blueprint
+    ? `║ Pages/States: ${mem.blueprint.pages.join(', ')}\n║ Components:   ${mem.blueprint.components.join(', ')}\n`
+    : '';
+  return `╔═ KRYPTON GAME MEMORY ═══════════════════════╗
+║ Game Type:    ${mem.gameType}
+║ Genre:        ${mem.genre}
+║ Theme:        ${mem.theme}
+║ Art Style:    ${mem.artStyle}
+║ Tech Stack:   ${mem.techStack}
+║ Players:      ${mem.players}
+║ Controls:     ${mem.controls}
+║ Features:     ${mem.features.join(', ')}
+║ Audio:        ${mem.audioEnabled ? 'enabled' : 'disabled'}
+${blueprintLine}╠═ PRESERVE THESE EXACTLY ════════════════════╣
+║ Game type, controls, scoring, lives system
+║ Only add/change what user requested
+╠═ EDIT HISTORY ══════════════════════════════╣
+${mem.editHistory.map((e, i) => `║ ${i + 1}. ${e.slice(0, 65)}`).join('\n') || '║ First edit'}
+╚══════════════════════════════════════════════╝`;
+}
+
+// ── Get Game System Prompt by Type ────────────────────────────────
+export function getGameSystemPrompt(gameType: string, theme: string, userPrompt: string, isEdit: boolean = false, techStack: string = 'html5'): string {
+  const BASE = `You are Krypton Game Engine — world's best browser game developer.
+
+OUTPUT RULES (ABSOLUTE — HIGHEST PRIORITY):
+1. Output ONLY raw HTML starting with <!DOCTYPE html> ending with </html>
+2. No markdown, no backticks, no explanations — raw HTML only
+3. ALL CSS in <style> in <head>
+4. ALL JavaScript in <script> before </body>
+5. Game must be FULLY PLAYABLE immediately — not just a menu screen
+6. CRITICAL: The </html> closing tag MUST be the very last thing you output.
+   You have a token budget — write CONCISE, working code over verbose code.
+   Prefer compact code (minified-style, short variable names if needed) over
+   comments and whitespace. A complete 400-line working game beats an
+   incomplete 900-line broken one. NEVER stop mid-function.
+7. canvas.width = window.innerWidth; canvas.height = window.innerHeight; (ALWAYS full screen)
+8. requestAnimationFrame game loop running on page load
+9. SOUND DESIGN — use Web Audio API (AudioContext), build a tiny sound
+   engine with oscillator-based synth tones (no external audio files needed):
+   - Collect/coin: short high-pitch blip (sine, 800-1200Hz, ~0.1s, quick decay)
+   - Jump: rising pitch sweep (square/sine, 300→600Hz, ~0.15s)
+   - Hit/damage: harsh short noise burst (sawtooth, 150Hz, ~0.2s)
+   - Death: descending pitch sweep (sawtooth, 400→80Hz, ~0.5s)
+   - Level-up/powerup: ascending 3-note arpeggio (sine, ~0.3s total)
+   - Background: optional simple looping bass pulse (very low volume, sine
+     60-100Hz) for tension in action/survival games only
+   - Master gain node so all sounds can be globally muted (mute button, top-right)
+10. localStorage for high score persistence
+11. If running low on token budget, prioritize in this order: (1) working game
+    loop + controls + collision, (2) HUD + scoring, (3) sound, (4) particles/
+    polish. Always finish with a valid </html>.
+
+UNIVERSAL GAME REQUIREMENTS:
+- Full-screen canvas (100vw × 100vh)
+- HUD always visible: Score (top-left), Level (top-center), Lives as hearts (top-right)
+- Particle system for: collect, kill, death, level-up
+- 3 lives system — player respawns, shows death animation
+- High score in localStorage — persists across sessions
+- BOTH keyboard (arrows/WASD/space) AND mobile touch controls
+- Mobile: virtual D-pad bottom-left, action buttons bottom-right
+- Game states: menu → playing → paused → gameover
+- Pause: press P or ESC
+- Restart: press R or click Restart button
+- Level progression — difficulty increases each level
+- Game Over screen with final score, high score, Restart button
+- Premium dark theme — colors: #0a0a0a bg, neon accent based on game type
+
+USER REQUEST: ${userPrompt}
+GAME TYPE: ${gameType}
+THEME: ${theme}` +
+  (techStack === 'threejs' ? `
+
+═══════════════════════════════════════════════════════════
+3D GAME — BABYLON.JS REQUIRED (NOT plain canvas, NOT Three.js)
+═══════════════════════════════════════════════════════════
+Why Babylon.js: built-in PBR materials, physics engine, and post-
+processing — produces noticeably more premium results than raw
+Three.js for a single-file AI-generated game.
+
+LOAD VIA CDN (put in <head>):
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+
+MANDATORY SETUP:
+1. <canvas id="renderCanvas"></canvas> full-screen (100vw x 100vh)
+2. BABYLON.Engine + BABYLON.Scene, scene.render() inside engine.runRenderLoop
+3. ArcRotateCamera or UniversalCamera depending on game type (third vs first person)
+4. At least 2 lights: HemisphericLight (ambient) + DirectionalLight (key light + shadows)
+5. scene.enablePhysics() with BABYLON.CannonJSPlugin if the game needs collisions/gravity
+
+MANDATORY VISUAL QUALITY (this is what makes it look premium, not flat/cheap):
+- DefaultRenderingPipeline with:
+  • bloomEnabled = true (glow on bright/emissive objects)
+  • Image processing: contrast ~1.1, exposure ~1.0, tone mapping ACES
+  • FXAA or SMAA anti-aliasing enabled
+- SSAO2RenderingPipeline for ambient occlusion (realistic contact shadows)
+- shadowGenerator (BABYLON.ShadowGenerator) on the directional light, useBlurExponentialShadowMap
+- PBRMaterial (not StandardMaterial) on key objects — set metallic/roughness for realistic light response
+- Skybox: BABYLON.CubeTexture or a simple gradient-shader sky — never leave background pure black/flat
+- Fog (scene.fogMode = BABYLON.Scene.FOGMODE_EXP2) for depth on outdoor/large scenes
+
+GEOMETRY APPROACH (since hand-sculpted models aren't possible in one file):
+- Build the world from Babylon primitives (Box, Sphere, Cylinder, Ground, Torus) combined
+  into compound shapes — this is "low-poly/stylized", a legitimate, good-looking style
+  (think: Monument Valley, Risk of Rain, early Crossy Road), NOT an attempt at photorealism
+- Use CSG (Constructive Solid Geometry) or simple parenting/grouping for more complex shapes
+- Procedural color/material variation (don't reuse one flat gray on everything)
+- For characters: simple capsule + sphere head + box limbs, animated via
+  scene.registerBeforeRender for basic procedural walk-cycle (bob + limb swing)
+
+PERFORMANCE GUARDRAILS:
+- freezeWorldMatrix() on static meshes
+- Limit total active meshes to ~50-150 for smooth 60fps on mid-range mobile
+- mesh.isPickable = false on decorative objects (only interactive ones need picking)
+
+CONTROLS: WASD/arrows + mouse-look (pointer lock) for desktop; on-screen
+virtual joystick (left) + look-drag area (right) for mobile — same dual-control
+requirement as 2D games applies here.` : '');
+
+  const GAME_SPECIFICS: Record<string, string> = {
+    snake: `
+SNAKE GAME REQUIREMENTS:
+- Grid-based movement (20x20 cell grid)
+- Snake grows when eating food — increases score
+- Speed increases every 5 foods eaten
+- Multiple food types: normal (+10), golden (+50, rare), power (+30 with effect)
+- Power-ups: speed boost, invincibility shield, score multiplier
+- Walls kill snake — or wall-wrap mode (toggle option)
+- Smooth direction input buffering (queue next direction)
+- Color: neon green snake #39FF14, red food #FF3939, gold food #FFD700
+- Background grid: subtle dark lines on #0a0a0a`,
+
+    tetris: `
+TETRIS GAME REQUIREMENTS:
+- 7 classic tetrominoes (I,O,T,S,Z,J,L) with proper colors
+- Ghost piece showing where piece will land
+- Hold piece (press C to hold)
+- Next piece preview (show next 3 pieces)
+- Hard drop (Space), soft drop (down arrow), rotate (up/Z/X)
+- Line clear: 1=100, 2=300, 3=500, 4=800 (Tetris) × level multiplier
+- Level up every 10 lines — speed increases
+- T-spin detection bonus
+- Lock delay — piece locks 0.5s after landing
+- Color: each piece unique neon color on dark bg`,
+
+    platformer: `
+PLATFORMER GAME REQUIREMENTS:
+- Gravity: 0.5, Jump velocity: -14, Max fall: 15
+- Player: 40×50px with smooth acceleration/deceleration
+- Multiple platform types: solid, moving (horizontal/vertical), breakable
+- Enemies: walk left-right, bounce at edges, player stomps to kill
+- Coins scattered on platforms — collect for score
+- Checkpoints — respawn here after death
+- Power-ups: double-jump, speed boost, invincibility star
+- Camera follows player horizontally with dead zone
+- Parallax background layers (2-3 layers)
+- Level: 3000px wide, scrolling horizontally
+- Flag/door at end triggers level complete`,
+
+    racing: `
+RACING GAME REQUIREMENTS:
+- Top-down racing perspective
+- Player car: smooth steering with momentum physics
+- Track: winding road rendered with bezier curves OR tile-based
+- 3-5 AI opponent cars with pathfinding
+- Nitro boost mechanic (N key or button)
+- Drift mechanics (hold brake + steer)
+- Lap counter — 3 laps to finish
+- Position display (1st, 2nd, 3rd...)
+- Speed-o-meter on HUD
+- Tyre marks/skid marks when drifting
+- Start countdown: 3-2-1-GO with sound`,
+
+    'space-shooter': `
+SPACE SHOOTER REQUIREMENTS:
+- Vertical scrolling starfield background (parallax, 3 layers)
+- Player ship at bottom — move left/right — auto-fire or space/click to shoot
+- Enemy waves: formation patterns (V, line, spiral, random)
+- Boss every 5 levels: large enemy with multiple phases and attack patterns
+- Bullet patterns: straight, spread shot, laser beam
+- Power-ups falling: rapid fire, spread shot, shield, bomb
+- Shield: absorbs 3 hits before breaking
+- Screen-clearing bomb (B key, limited uses)
+- Enemy drops: score pickups, rare power-ups
+- Explosion animations with particles`,
+
+    survival: `
+ZOMBIE SURVIVAL REQUIREMENTS:
+- Top-down shooter perspective
+- Player moves with WASD — mouse/joystick aims and shoots
+- Waves of zombies — wave number on HUD
+- Multiple zombie types: slow/fast/tank/exploder
+- Weapons: pistol (infinite), shotgun, SMG, grenade (limited)
+- Weapon pickup system — find ammo boxes
+- Health bar — medkits scattered or dropped by zombies
+- XP system — kill zombies for XP — level up unlocks upgrades
+- Upgrades: speed, damage, fire rate, max health
+- Barricades: wooden walls player can place (limited)
+- Day counter — survive days`,
+
+    rpg: `
+RPG GAME REQUIREMENTS:
+- Top-down tile-based world (32px tiles)
+- Player with animated sprites (walking 4 directions)
+- NPC characters with dialog bubbles
+- Turn-based OR action combat system
+- Stats: HP, MP, Attack, Defense, Speed
+- Inventory: 6 slots for items/weapons/armor
+- Quest system: main quest + 2 side quests in HUD
+- Shop NPC: buy/sell items with gold currency
+- Level up: gain XP from kills, stat increases shown
+- Multiple areas: town, dungeon, boss room
+- Simple dialog system: click NPC to talk`,
+
+    'tower-defense': `
+TOWER DEFENSE REQUIREMENTS:
+- Grid-based map with a path for enemies to follow
+- Enemy waves: 5 enemy types with different HP/speed
+- Tower types: Basic (cheap), Sniper (range), Splash (area), Slow, Laser
+- Tower placement: click empty grid cell to place
+- Tower upgrade: click placed tower, spend gold
+- Gold: starts at 200, earn from kills
+- Lives: 20 starting lives, lose one per enemy that reaches end
+- Wave counter and Next Wave button
+- Tower range shown on hover
+- Sell tower for 50% refund
+- Special abilities: lightning strike, freeze all`,
+
+    openworld: `
+OPEN WORLD / GTA-STYLE REQUIREMENTS:
+- Large scrolling 2D world (3000×3000px virtual map)
+- Mini-map in corner showing player position and key locations
+- Player car (or on foot) — switch with F key
+- Multiple vehicles to steal/enter
+- NPCs walking around (simple path following)
+- Buildings: interactive doors, shops, safe house
+- Police system: 3 wanted stars
+- Objectives/missions: markers on map (★)
+- Day/night cycle (every 3 minutes)
+- Money system: earn from missions, spend at shops
+- Weapons: pickup from ground or buy`,
+
+    flappy: `
+FLAPPY BIRD REQUIREMENTS:
+- Gravity constantly pulls player down
+- Tap/click/space = upward flap with velocity
+- Pipes spawn from right with random gap height
+- Gap gets smaller every 10 points
+- Parallax background: sky, mountains, ground layers
+- Score increments when passing each pipe pair
+- Medal system: Bronze 10, Silver 20, Gold 40, Platinum 60
+- Best score saved to localStorage
+- Satisfying flap sound, hit sound, score sound
+- Pipe colors: neon green, collision flash red`,
+
+    sports: `
+SPORTS GAME REQUIREMENTS:
+- Cricket: batting (time swing), bowling (aim+power), fielding AI
+- Football/Soccer: top-down, dribble+pass+shoot, goalkeeper AI
+- Basketball: aim arc, power bar, 3-point line bonus
+- Responsive controls — keyboard + mobile touch buttons
+- Score board: Team vs Team, time remaining
+- AI opponent — adjusts difficulty per level
+- Crowd cheer sound on score
+- Replay effect on goals/boundaries
+- Tournament mode: 5 matches to win championship`,
+
+    puzzle: `
+PUZZLE GAME REQUIREMENTS:
+- 5×5 or larger grid (type-dependent)
+- Match-3: swap adjacent tiles, match 3+ removes, gravity fills gaps
+- Sokoban: push boxes to targets with undo (U) feature
+- Sliding puzzle: 15-puzzle with shuffle
+- Move counter + Timer on HUD
+- Undo button (U key or button)
+- Hint button — briefly shows a valid move
+- Level complete animation — star rating (1-3 stars based on moves)
+- 20+ levels of increasing difficulty
+- Color scheme: colorful on dark background`,
+
+    clicker: `
+IDLE CLICKER REQUIREMENTS:
+- Main click target in center — satisfying animation on click
+- Click counter displayed large
+- Passive income system: buy upgrades that auto-click
+- 8+ upgrade types: each has name, cost, income rate, icon
+- Prestige system after reaching 1M clicks
+- Achievement badges: milestones at 100, 1K, 10K clicks
+- Animated numbers flying up on click (+1, +5, etc)
+- Dark theme with golden accent colors
+- Auto-save to localStorage every 30 seconds`,
+
+    pong: `
+PONG REQUIREMENTS:
+- Classic 2-player (W/S vs Up/Down) OR 1-player vs AI
+- Ball physics: angle depends on where it hits paddle
+- Speed increases after every 5 hits
+- Score first to 10 wins
+- AI difficulty: tracks ball with slight delay for fairness
+- Particle trail behind ball
+- Screen flash on point scored
+- Serve: press space to launch ball`,
+
+    breakout: `
+BREAKOUT / ARKANOID REQUIREMENTS:
+- Paddle at bottom (mouse or left/right arrows)
+- Ball bounces off walls, ceiling, paddle, bricks
+- Brick grid: multiple colors, different HP (1-3 hits)
+- Power-ups falling from destroyed bricks: extra life, wide paddle, multi-ball, laser
+- Multiple balls possible (up to 3 with multi-ball)
+- 10+ levels with different brick patterns
+- Indestructible (gold) bricks for obstacles
+- Boss brick: large brick requiring many hits`,
+
+    chess: `
+CHESS / BOARD GAME REQUIREMENTS:
+- Full 8×8 chessboard with proper colors
+- All 12 piece types with Unicode chess symbols (♔♕♖♗♘♙♚♛♜♝♞♟)
+- Legal move validation: each piece moves correctly
+- Highlight: selected piece (blue), valid moves (green dots)
+- Check detection and checkmate detection
+- Simple AI: random legal moves OR minimax depth-2
+- Turn indicator on HUD
+- Move history list (algebraic notation)
+- Captured pieces displayed
+- Undo last move button`,
+
+    fighting: `
+FIGHTING GAME REQUIREMENTS:
+- 2 characters facing each other (P1 left, P2/AI right)
+- Health bars at top for each player
+- Moves: Walk (left/right), Jump (up), Crouch (down), Punch (A), Kick (S), Block (D)
+- Special moves: charge + attack combos
+- Hit detection with damage values
+- Stun animation when hit
+- Round system: first to win 2 rounds
+- Combo counter displayed when multi-hit
+- Character select screen (2+ characters)
+- Screen shake on heavy hit`,
+
+    pacman: `
+PACMAN-STYLE GAME REQUIREMENTS:
+- Maze grid (tile-based, walls block movement)
+- Player moves with arrows/WASD — smooth grid-aligned movement
+- Dots scattered through maze — collect all to win
+- 3-4 ghosts with simple chase AI (move toward player with some randomness)
+- Power pellets: eating one lets player eat ghosts for ~8 seconds (ghosts flee/blue)
+- Lives: 3, lose one when caught by ghost (not powered up)
+- Score: dots = 10pts, power pellet = 50pts, ghost eaten = 200pts
+- Win condition: all dots collected — show victory screen, then next maze
+- Tunnel wrap-around on maze edges (optional but classic)`,
+
+    shooter: `
+SHOOTER GAME REQUIREMENTS (top-down or side-view):
+- Player character with shoot mechanic (Space/click = fire bullet)
+- Bullets travel in straight line, despawn off-screen
+- Enemy waves: enemies spawn from top/sides, move toward/past player
+- Bullet-enemy collision: destroy enemy + particle effect + score
+- Enemy-player collision: lose health/life, brief invincibility flash
+- Health or lives system (3 lives or 100 HP bar)
+- Power-ups: rapid fire, spread shot, shield — fall from destroyed enemies
+- Wave counter — difficulty increases each wave (more enemies, faster)
+- Game over when health/lives reach 0 — show final score + restart`,
+
+    runner: `
+ENDLESS RUNNER REQUIREMENTS:
+- Player auto-runs forward (or world scrolls toward player) at constant then increasing speed
+- Jump (Space/Up/tap) and duck/slide (Down/swipe-down) mechanics with proper physics
+- Obstacles spawn at randomized intervals — variety of types (low, high, wide)
+- Collision with obstacle = game over (or lose a life if lives system used)
+- Score increases continuously based on distance traveled
+- Speed increases gradually over time/distance — visible difficulty ramp
+- Collectibles (coins/gems) along the path add to score
+- High score saved to localStorage, game over screen with restart`,
+
+    strategy: `
+STRATEGY GAME REQUIREMENTS:
+- Grid or zone-based map for placing units/buildings
+- Resource system (e.g. gold/wood) that accumulates over time or from actions
+- Build/place units or structures by spending resources (click grid cell)
+- Enemy AI: opposing units/base that attacks or expands over time
+- Combat resolution when units meet (simple HP-based combat)
+- Win condition: destroy enemy base / survive N turns / accumulate target resources
+- Lose condition: own base destroyed or resources depleted
+- UI: resource counters, unit selection, simple turn or real-time indicator`,
+
+    arcade: `
+ARCADE GAME REQUIREMENTS (general):
+- Clear core loop: player acts, world reacts, score updates
+- Enemies or obstacles that move and can be avoided/destroyed/collected
+- Collision detection between player and all interactive objects
+- Score system visible on HUD, increments on player actions
+- Level/wave progression — difficulty visibly increases over time
+- Power-ups that temporarily change player abilities
+- Lives or health, game over screen with final score + restart button
+- Clear win or "survive as long as possible" framing communicated to player`,
+  };
+
+  const specific = GAME_SPECIFICS[gameType] || GAME_SPECIFICS['arcade'];
+
+  // Auto-expand simple prompts into a full professional spec via the
+  // weighted feature checklist (Product Completion Engine).
+  const checklist = buildFeatureChecklistPrompt(gameType);
+
+  // Template Engine: for covered game types, give the AI a structural
+  // skeleton to EXTEND rather than generating the whole document from
+  // scratch. This guarantees HUD/overlays/mobile controls/audio init
+  // are always present (they satisfy several checklist items by default).
+  //
+  // Edit-mode protection: skip this on edits. An edit's prompt already
+  // includes the EXISTING (customized) game via GameProjectMemory —
+  // injecting the generic skeleton on top of that conflicts with "here's
+  // the current game, make this specific change" and can pull the AI
+  // back toward generic skeleton structure, overwriting customizations.
+  let templateBlock = "";
+  if (!isEdit && hasGameTemplate(gameType)) {
+    templateBlock = `
+
+BASE STRUCTURE TO EXTEND (do not remove existing IDs/elements — add your
+game logic inside the marked section and flesh out update()/render()):
+
+${getGameTemplate(gameType)}`;
+  }
+
+  return `${BASE}\n${specific}\n\n${checklist}${templateBlock}`;
+}
+
+// ── Game Workflow Phases ───────────────────────────────────────────
+export const GAME_WORKFLOW_PHASES = [
+  { agent:"Reading",      icon:"🔍", action:"Analyzing game request",    pct:10 },
+  { agent:"Understanding",icon:"🎮", action:"Understanding game type",   pct:18 },
+  { agent:"Planning",     icon:"🎨", action:"Designing game architecture",pct:28 },
+  { agent:"Building",     icon:"⚙️", action:"Building game engine",      pct:55 },
+  { agent:"Validating",   icon:"🧪", action:"Testing gameplay",          pct:72 },
+  { agent:"Optimizing",   icon:"🚀", action:"Optimizing performance",    pct:85 },
+  { agent:"Finalizing",   icon:"✅", action:"Finalizing game",           pct:100 },
+];
