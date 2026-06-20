@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const C = {
-  bg:"#050816",surface:"#0B1020",card:"#0D1530",border:"rgba(255,217,61,0.12)",
-  borderHi:"rgba(255,217,61,0.35)",text:"#FFFFFF",sub:"#94A3B8",muted:"#4A5568",
-  grad:"linear-gradient(135deg,#FFD93D,#FF8A00)",accent:"#FFD93D",danger:"#EF4444",
+  bg:"#050816",surface:"#0B1020",card:"#0B1020",border:"rgba(255,217,61,0.12)",
+  borderHi:"rgba(255,217,61,0.35)",text:"#FFFFFF",sub:"#9AA3AF",muted:"#5B6472",
+  grad:"linear-gradient(135deg,#F5F5F5,#D9D9D9)",accent:"#F5F5F5",danger:"#E5736B",
 };
 
 const STYLES=["Realistic","Anime","Digital Art","Oil Painting","Watercolor","3D Render","Pixel Art","Cinematic","Sketch","Fantasy"];
@@ -74,7 +74,7 @@ export default function ImageGenPage(){
   return(
     <div style={{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:"'Inter',sans-serif",display:"flex",flexDirection:"column"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:rgba(255,217,61,.2);border-radius:4px;}
         textarea,select,input{font-family:'Inter',sans-serif;}
@@ -94,7 +94,7 @@ export default function ImageGenPage(){
         <div style={{width:1,height:20,background:C.border}}/>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{width:28,height:28,borderRadius:8,background:C.grad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🎨</div>
-          <span style={{fontFamily:"'Baloo 2',sans-serif",fontWeight:800,fontSize:15,background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Image Studio</span>
+          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:15,background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Image Studio</span>
         </div>
         <div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}>
           <span style={{fontSize:11,color:C.muted,background:C.card,border:`1px solid ${C.border}`,padding:"4px 10px",borderRadius:20}}>{images.length} Generated</span>
@@ -226,7 +226,7 @@ export default function ImageGenPage(){
             </div>
           )}
 
-          {error&&<div style={{padding:12,background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",borderRadius:10,color:"#EF4444",fontSize:13}}>{error}</div>}
+          {error&&<div style={{padding:12,background:"rgba(229,115,107,.08)",border:"1px solid rgba(229,115,107,.2)",borderRadius:10,color:"#E5736B",fontSize:13}}>{error}</div>}
         </div>
 
         {/* RIGHT — Preview + Gallery */}
