@@ -92,24 +92,54 @@ const templates: Template[] = [
 
 const categories = ["all", "chatbot", "content", "code", "image", "analytics"];
 
+// ── Real destination router — sends "Use" to the actual working tool ───────
+function getUseRoute(template: Template): string {
+  const map: Record<string, string> = {
+    "ai-chatbot":   "/chatbot",
+    "seo-writer":   `/content?tool=blog&topic=${encodeURIComponent(template.demoPrompt)}`,
+    "email-writer": `/content?tool=email&topic=${encodeURIComponent(template.demoPrompt)}`,
+    "image-gen":    `/image-gen?prompt=${encodeURIComponent(template.demoPrompt)}`,
+    "data-analyst": "/analytics",
+    "code-gen":     `/create?prompt=${encodeURIComponent("Build a tool: " + template.demoPrompt)}`,
+  };
+  return map[template.id] || `/create?prompt=${encodeURIComponent(template.demoPrompt)}`;
+}
+
 // ── Preview Modal ──────────────────────────────────────────────────────────
 function PreviewModal({ template, onClose }: { template: Template; onClose: () => void }) {
   const [demoRunning, setDemoRunning] = useState(false);
   const [demoOutput, setDemoOutput] = useState("");
-  const [typed, setTyped] = useState(0);
+  const [demoPrompt, setDemoPrompt] = useState(template.demoPrompt);
+  const [demoError, setDemoError] = useState("");
 
-  const runDemo = () => {
+  // Real AI call — replaces old hardcoded typewriter-fake text
+  const runDemo = async () => {
+    if (!demoPrompt.trim() || demoRunning) return;
     setDemoRunning(true);
     setDemoOutput("");
-    setTyped(0);
-    const text = template.demoResponse;
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      setDemoOutput(text.slice(0, i));
-      setTyped(i);
-      if (i >= text.length) clearInterval(interval);
-    }, 18);
+    setDemoError("");
+    try {
+      const res = await fetch("/api/template-demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId: template.id, prompt: demoPrompt.trim() }),
+        signal: AbortSignal.timeout(25000),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.output) throw new Error(data.error || "Demo failed");
+
+      // Type out the REAL AI response (animation only — content is genuine)
+      const text = data.output as string;
+      let i = 0;
+      const interval = setInterval(() => {
+        i++;
+        setDemoOutput(text.slice(0, i));
+        if (i >= text.length) { clearInterval(interval); setDemoRunning(false); }
+      }, 12);
+    } catch (e: any) {
+      setDemoError("Demo generation failed. Please try again.");
+      setDemoRunning(false);
+    }
   };
 
   return (
@@ -159,32 +189,37 @@ function PreviewModal({ template, onClose }: { template: Template; onClose: () =
           <div style={{
             fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase",
             color: "#444", marginBottom: 12,
-          }}>Live Demo Preview</div>
+          }}>Live Demo — Real AI Output</div>
 
-          {/* User message */}
-          <div style={{
-            background: "rgba(245,245,245,0.08)", border: "1px solid rgba(245,245,245,0.15)",
-            borderRadius: "10px 10px 2px 10px", padding: "10px 14px",
-            fontSize: 13.5, color: "#F5F5F5", marginBottom: 12, width: "fit-content",
-            maxWidth: "80%", marginLeft: "auto",
-          }}>
-            {template.demoPrompt}
-          </div>
+          {/* Editable prompt input */}
+          <textarea
+            value={demoPrompt}
+            onChange={e => setDemoPrompt(e.target.value)}
+            rows={2}
+            placeholder="Edit the prompt or try your own..."
+            style={{
+              width: "100%", background: "rgba(245,245,245,0.06)", border: "1px solid rgba(245,245,245,0.15)",
+              borderRadius: "10px", padding: "10px 14px", fontSize: 13.5, color: "#F5F5F5",
+              marginBottom: 12, resize: "none", outline: "none", fontFamily: "inherit",
+            }}
+          />
 
-          {/* AI response */}
+          {/* AI response — REAL output from Claude/GPT-4o/Gemini */}
           <div style={{
             background: "#111", border: "1px solid rgba(95,184,138,0.12)",
-            borderRadius: "2px 10px 10px 10px", padding: "12px 16px",
+            borderRadius: "10px", padding: "12px 16px",
             fontSize: 13, color: "#ccc", lineHeight: 1.7,
             minHeight: 80, whiteSpace: "pre-wrap", fontFamily: "monospace",
             position: "relative",
           }}>
-            {demoOutput || (
+            {demoError ? (
+              <span style={{ color: "#E5736B", fontFamily: "sans-serif" }}>{demoError}</span>
+            ) : demoOutput || (
               <span style={{ color: "#444", fontStyle: "italic", fontFamily: "sans-serif" }}>
-                Click "Run Demo" to see a live preview ↓
+                {demoRunning ? "Generating real AI response..." : "Click \"Run Demo\" for a real, live AI response ↓"}
               </span>
             )}
-            {demoRunning && typed < template.demoResponse.length && (
+            {demoRunning && (
               <span style={{
                 display: "inline-block", width: 2, height: 14,
                 background: "#5FB88A", animation: "blink 0.7s infinite",
@@ -205,15 +240,17 @@ function PreviewModal({ template, onClose }: { template: Template; onClose: () =
 
           {/* Action Buttons */}
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-            <button onClick={runDemo} style={{
+            <button onClick={runDemo} disabled={demoRunning || !demoPrompt.trim()} style={{
               flex: 1, padding: "11px 0",
-              background: "rgba(95,184,138,0.1)", border: "1px solid rgba(95,184,138,0.3)",
+              background: demoRunning ? "rgba(95,184,138,0.05)" : "rgba(95,184,138,0.1)",
+              border: "1px solid rgba(95,184,138,0.3)",
               borderRadius: 10, color: "#5FB88A", fontWeight: 600, fontSize: 13.5,
-              cursor: "pointer", transition: "all 0.2s",
+              cursor: demoRunning ? "default" : "pointer", transition: "all 0.2s",
+              opacity: demoRunning ? 0.6 : 1,
             }}>
-              ▶ Run Demo
+              {demoRunning ? "Generating..." : "▶ Run Demo"}
             </button>
-            <Link href={`/create?template=${template.id}`} style={{
+            <Link href={getUseRoute(template)} style={{
               flex: 1, padding: "11px 0",
               background: "linear-gradient(135deg,#F5F5F5,#5FB88A)",
               border: "none", borderRadius: 10,
@@ -405,7 +442,7 @@ export default function TemplatesPage() {
                   <button className="tp-btn-demo" onClick={() => setPreview(t)}>
                     ▶ Demo
                   </button>
-                  <Link href={`/create?template=${t.id}`} className="tp-btn-use">
+                  <Link href={getUseRoute(t)} className="tp-btn-use">
                     Use →
                   </Link>
                 </div>
