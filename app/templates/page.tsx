@@ -26,7 +26,7 @@ const templates: Template[] = [
     description: "Intelligent chatbot for 24/7 customer support with context-awareness.",
     tags: ["NLP", "Support", "Automation"],
     icon: "💬",
-    gradient: "linear-gradient(135deg,#F5C542,#f0a500)",
+    gradient: "linear-gradient(135deg,#F5F5F5,#D9D9D9)",
     demoPrompt: "How do I reset my password?",
     demoResponse: "Sure! To reset your password:\n1. Click 'Forgot Password' on the login page.\n2. Enter your registered email.\n3. Check your inbox for the reset link.\n4. Set a new strong password.\n\nLet me know if you need further help! 😊",
     popular: true,
@@ -38,7 +38,7 @@ const templates: Template[] = [
     description: "Generate SEO-optimized blog posts, meta descriptions, and landing copy.",
     tags: ["SEO", "Writing", "Marketing"],
     icon: "✍️",
-    gradient: "linear-gradient(135deg,#00D084,#00a86b)",
+    gradient: "linear-gradient(135deg,#5FB88A,#5FB88A)",
     demoPrompt: "Write a meta description for an AI SaaS tool.",
     demoResponse: "Supercharge your workflow with our AI-powered SaaS platform. Automate tasks, generate content, and analyze data — all in one place. Start free today and experience the future of productivity.",
     popular: true,
@@ -50,7 +50,7 @@ const templates: Template[] = [
     description: "Generate, debug, and refactor code in 20+ programming languages.",
     tags: ["Python", "JS", "React", "API"],
     icon: "⚡",
-    gradient: "linear-gradient(135deg,#7C3AED,#5B21B6)",
+    gradient: "linear-gradient(135deg,#BFC5CC,#5B21B6)",
     demoPrompt: "Create a React useLocalStorage hook.",
     demoResponse: "```tsx\nfunction useLocalStorage<T>(key: string, init: T) {\n  const [val, setVal] = useState<T>(() => {\n    try {\n      const item = localStorage.getItem(key);\n      return item ? JSON.parse(item) : init;\n    } catch { return init; }\n  });\n  const set = (v: T) => { setVal(v); localStorage.setItem(key, JSON.stringify(v)); };\n  return [val, set] as const;\n}\n```",
   },
@@ -61,7 +61,7 @@ const templates: Template[] = [
     description: "Generate stunning images from text prompts for any use case.",
     tags: ["DALL-E", "Stable Diffusion", "Creative"],
     icon: "🎨",
-    gradient: "linear-gradient(135deg,#F59E0B,#EF4444)",
+    gradient: "linear-gradient(135deg,#D9D9D9,#E5736B)",
     demoPrompt: "A futuristic city at night, neon lights, rain.",
     demoResponse: "🖼️ Generating image...\n\nPrompt optimized: 'Cyberpunk metropolis at night, neon-lit skyscrapers, rain-slicked streets, holographic billboards, cinematic composition, 8K, hyperrealistic'\n\n✅ Image ready — 1024×1024px",
   },
@@ -83,7 +83,7 @@ const templates: Template[] = [
     description: "Analyze datasets, generate insights, and create visual summaries.",
     tags: ["CSV", "Charts", "Insights"],
     icon: "📊",
-    gradient: "linear-gradient(135deg,#10B981,#059669)",
+    gradient: "linear-gradient(135deg,#5FB88A,#059669)",
     demoPrompt: "Analyze monthly revenue trend: 12k,14k,13k,17k,22k,28k",
     demoResponse: "📈 Revenue Analysis:\n• Growth Rate: +133% over 6 months\n• Best Month: Month 6 (+$6k / +27%)\n• Trend: Accelerating upward\n• Projection: ~$35k Month 7\n• Anomaly: Month 3 dip (-7%) — investigate marketing spend.",
     popular: true,
@@ -120,10 +120,10 @@ function PreviewModal({ template, onClose }: { template: Template; onClose: () =
       padding: "20px",
     }}>
       <div style={{
-        background: "#0d0d0d", border: "1px solid rgba(245,197,66,0.2)",
+        background: "#0B1020", border: "1px solid rgba(245,245,245,0.2)",
         borderRadius: "20px", width: "100%", maxWidth: "680px",
         maxHeight: "90vh", overflow: "auto",
-        boxShadow: "0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px rgba(245,197,66,0.05)",
+        boxShadow: "0 40px 120px rgba(0,0,0,0.8), 0 0 0 1px rgba(245,245,245,0.05)",
       }}>
         {/* Header */}
         <div style={{
@@ -163,9 +163,9 @@ function PreviewModal({ template, onClose }: { template: Template; onClose: () =
 
           {/* User message */}
           <div style={{
-            background: "rgba(245,197,66,0.08)", border: "1px solid rgba(245,197,66,0.15)",
+            background: "rgba(245,245,245,0.08)", border: "1px solid rgba(245,245,245,0.15)",
             borderRadius: "10px 10px 2px 10px", padding: "10px 14px",
-            fontSize: 13.5, color: "#e8e8e8", marginBottom: 12, width: "fit-content",
+            fontSize: 13.5, color: "#F5F5F5", marginBottom: 12, width: "fit-content",
             maxWidth: "80%", marginLeft: "auto",
           }}>
             {template.demoPrompt}
@@ -173,7 +173,7 @@ function PreviewModal({ template, onClose }: { template: Template; onClose: () =
 
           {/* AI response */}
           <div style={{
-            background: "#111", border: "1px solid rgba(0,208,132,0.12)",
+            background: "#111", border: "1px solid rgba(95,184,138,0.12)",
             borderRadius: "2px 10px 10px 10px", padding: "12px 16px",
             fontSize: 13, color: "#ccc", lineHeight: 1.7,
             minHeight: 80, whiteSpace: "pre-wrap", fontFamily: "monospace",
@@ -187,7 +187,7 @@ function PreviewModal({ template, onClose }: { template: Template; onClose: () =
             {demoRunning && typed < template.demoResponse.length && (
               <span style={{
                 display: "inline-block", width: 2, height: 14,
-                background: "#00D084", animation: "blink 0.7s infinite",
+                background: "#5FB88A", animation: "blink 0.7s infinite",
                 marginLeft: 2, verticalAlign: "middle",
               }} />
             )}
@@ -207,15 +207,15 @@ function PreviewModal({ template, onClose }: { template: Template; onClose: () =
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
             <button onClick={runDemo} style={{
               flex: 1, padding: "11px 0",
-              background: "rgba(0,208,132,0.1)", border: "1px solid rgba(0,208,132,0.3)",
-              borderRadius: 10, color: "#00D084", fontWeight: 600, fontSize: 13.5,
+              background: "rgba(95,184,138,0.1)", border: "1px solid rgba(95,184,138,0.3)",
+              borderRadius: 10, color: "#5FB88A", fontWeight: 600, fontSize: 13.5,
               cursor: "pointer", transition: "all 0.2s",
             }}>
               ▶ Run Demo
             </button>
             <Link href={`/create?template=${template.id}`} style={{
               flex: 1, padding: "11px 0",
-              background: "linear-gradient(135deg,#F5C542,#00D084)",
+              background: "linear-gradient(135deg,#F5F5F5,#5FB88A)",
               border: "none", borderRadius: 10,
               color: "#000", fontWeight: 700, fontSize: 13.5,
               cursor: "pointer", textDecoration: "none",
@@ -250,18 +250,18 @@ export default function TemplatesPage() {
     <>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #050505; color: #e8e8e8; font-family: 'DM Sans', sans-serif; }
+        body { background: #050816; color: #F5F5F5; font-family: 'DM Sans', sans-serif; }
         .tp-page { padding: 40px 48px; max-width: 1200px; }
 
         /* Header */
         .tp-header { margin-bottom: 36px; }
         .tp-label {
           font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
-          color: #F5C542; font-weight: 600; margin-bottom: 10px;
+          color: #F5F5F5; font-weight: 600; margin-bottom: 10px;
         }
         .tp-title { font-size: 36px; font-weight: 800; color: #fff; line-height: 1.15; }
         .tp-title span {
-          background: linear-gradient(135deg,#F5C542,#00D084);
+          background: linear-gradient(135deg,#F5F5F5,#5FB88A);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .tp-sub { font-size: 15px; color: #555; margin-top: 10px; }
@@ -270,11 +270,11 @@ export default function TemplatesPage() {
         .tp-search-wrap { position: relative; max-width: 380px; margin-top: 24px; }
         .tp-search {
           width: 100%; padding: 11px 16px 11px 40px;
-          background: #0d0d0d; border: 1px solid rgba(245,197,66,0.18);
-          border-radius: 10px; color: #e8e8e8; font-size: 14px; outline: none;
+          background: #0B1020; border: 1px solid rgba(245,245,245,0.18);
+          border-radius: 10px; color: #F5F5F5; font-size: 14px; outline: none;
           transition: border-color 0.2s;
         }
-        .tp-search:focus { border-color: rgba(245,197,66,0.45); }
+        .tp-search:focus { border-color: rgba(245,245,245,0.45); }
         .tp-search-icon {
           position: absolute; left: 12px; top: 50%;
           transform: translateY(-50%); color: #555;
@@ -287,10 +287,10 @@ export default function TemplatesPage() {
           background: transparent; color: #666; font-size: 12.5px; font-weight: 500;
           cursor: pointer; text-transform: capitalize; transition: all 0.18s;
         }
-        .tp-filter:hover { background: rgba(245,197,66,0.07); color: #e8e8e8; }
+        .tp-filter:hover { background: rgba(245,245,245,0.07); color: #F5F5F5; }
         .tp-filter.active {
-          background: rgba(245,197,66,0.12); color: #F5C542;
-          border-color: rgba(245,197,66,0.3);
+          background: rgba(245,245,245,0.12); color: #F5F5F5;
+          border-color: rgba(245,245,245,0.3);
         }
 
         /* Grid */
@@ -302,12 +302,12 @@ export default function TemplatesPage() {
 
         /* Card */
         .tp-card {
-          background: #0d0d0d; border: 1px solid rgba(255,255,255,0.06);
+          background: #0B1020; border: 1px solid rgba(255,255,255,0.06);
           border-radius: 16px; overflow: hidden;
           transition: all 0.22s ease; cursor: pointer; position: relative;
         }
         .tp-card:hover {
-          border-color: rgba(245,197,66,0.25);
+          border-color: rgba(245,245,245,0.25);
           transform: translateY(-2px);
           box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
@@ -317,7 +317,7 @@ export default function TemplatesPage() {
         }
         .tp-popular {
           position: absolute; top: 10px; right: 10px;
-          background: rgba(245,197,66,0.9); color: #000;
+          background: rgba(245,245,245,0.9); color: #000;
           font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px;
           letter-spacing: 0.5px;
         }
@@ -331,14 +331,14 @@ export default function TemplatesPage() {
         }
         .tp-card-actions { display: flex; gap: 8px; }
         .tp-btn-demo {
-          flex: 1; padding: 9px 0; border: 1px solid rgba(0,208,132,0.3);
-          background: rgba(0,208,132,0.07); color: #00D084; border-radius: 8px;
+          flex: 1; padding: 9px 0; border: 1px solid rgba(95,184,138,0.3);
+          background: rgba(95,184,138,0.07); color: #5FB88A; border-radius: 8px;
           font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.18s;
         }
-        .tp-btn-demo:hover { background: rgba(0,208,132,0.15); }
+        .tp-btn-demo:hover { background: rgba(95,184,138,0.15); }
         .tp-btn-use {
           flex: 1; padding: 9px 0;
-          background: linear-gradient(135deg,#F5C542,#00D084);
+          background: linear-gradient(135deg,#F5F5F5,#5FB88A);
           border: none; border-radius: 8px;
           color: #000; font-size: 12.5px; font-weight: 700; cursor: pointer;
           text-decoration: none; display: flex; align-items: center; justify-content: center;
