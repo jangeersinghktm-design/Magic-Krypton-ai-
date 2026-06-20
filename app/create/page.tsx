@@ -267,6 +267,8 @@ function CreatePageInner() {
   const [rightTab, setRightTab] = useState<RightTab>("preview");
   const [device, setDevice]     = useState<Device>("desktop");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Smart resize: "chat" = 50/50, "preview" = 35/65 default
+  const [panelFocus, setPanelFocus] = useState<"chat"|"preview">("preview");
   const [forceType, setForceType] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"chat"|"preview">("chat");
@@ -694,7 +696,51 @@ function CreatePageInner() {
     setPrompt(""); promptRef.current="";
     if(!result) runFlow(p); else runEdit(p);
   };
-  const handleVoice=()=>{ const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition; if(!SR)return; if(listening){setListening(false);return;} const r=new SR(); r.continuous=false;r.interimResults=false;r.lang="en-US"; r.onstart=()=>setListening(true); r.onresult=(e:any)=>{const t=e.results[0]?.[0]?.transcript||"";if(t.trim())setPrompt(prev=>prev?prev+" "+t:t);}; r.onerror=()=>setListening(false); r.onend=()=>setListening(false); r.start(); };
+  const recognitionRef = useRef<any>(null);
+  const handleVoice=()=>{
+    const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition;
+    if(!SR){ addMsg({role:"ai",type:"error",content:"Voice input isn't supported in this browser. Try Chrome or Edge."}); return; }
+    if(listening){ recognitionRef.current?.stop(); setListening(false); return; }
+    const r=new SR();
+    // Upgraded recognition settings — continuous, interim results for real-time feedback,
+    // higher alternative count for better accuracy, auto-detect Hindi-English mixed speech.
+    r.continuous=true;
+    r.interimResults=true;
+    r.maxAlternatives=3;
+    r.lang="en-IN"; // en-IN handles Hindi-English (Hinglish) code-switching far better than en-US
+    let finalTranscript="";
+    let silenceTimer:any=null;
+
+    r.onstart=()=>setListening(true);
+    r.onresult=(e:any)=>{
+      let interim="";
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const transcript=e.results[i][0].transcript;
+        if(e.results[i].isFinal){
+          // Basic punctuation cleanup: capitalize first letter, ensure single trailing period
+          let clean=transcript.trim();
+          if(clean) clean=clean.charAt(0).toUpperCase()+clean.slice(1);
+          finalTranscript+=(finalTranscript?" ":"")+clean;
+        } else {
+          interim=transcript;
+        }
+      }
+      const combined=(finalTranscript+(interim?" "+interim:"")).trim();
+      if(combined) setPrompt(combined);
+
+      // Auto-stop after 2.5s of silence (no new results) — avoids endless listening
+      if(silenceTimer) clearTimeout(silenceTimer);
+      silenceTimer=setTimeout(()=>{ r.stop(); }, 2500);
+    };
+    r.onerror=(e:any)=>{
+      setListening(false);
+      if(e.error==="no-speech") return; // silent timeout, not a real error
+      addMsg({role:"ai",type:"error",content:"Voice recognition error. Please try again."});
+    };
+    r.onend=()=>{ setListening(false); if(silenceTimer) clearTimeout(silenceTimer); };
+    recognitionRef.current=r;
+    r.start();
+  };
   const restoreVersion=async(v:Version)=>{ const code=v.code_snapshot?.["index.html"];if(!code)return;await saveVersion(result,`Before restore`);setResult(code);(async()=>{try{await saveProject(code,projectName);}catch{}})();addMsg({role:"ai",type:"text",content:`✓ Restored to v${v.version_number}`}); };
 
   // ── Render ─────────────────────────────────────────────────────
@@ -717,6 +763,7 @@ function CreatePageInner() {
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+        .kr-preview-bg{background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:32px 32px;}
         .msg-in{animation:fadeUp .22s ease both;}
         .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 0 20px rgba(245,245,245,0.45);}
         .tab-icon:hover{background:rgba(255,255,255,0.07)!important;color:#fff!important;}
@@ -734,7 +781,7 @@ function CreatePageInner() {
         <div style={{position:"fixed",inset:0,zIndex:9999,background:"#fff",display:"flex",flexDirection:"column"}}>
           <div style={{height:44,background:"#0a0a0a",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",flexShrink:0}}>
             <div style={{display:"flex",gap:6}}>
-              {[{id:"desktop",icon:"🖥️"},{id:"tablet",icon:"⬜"},{id:"mobile",icon:"📱"}].map(d=>(
+              {[{id:"desktop",icon:"🖥️"},{id:"tablet",icon:"📲"},{id:"mobile",icon:"📱"}].map(d=>(
                 <button key={d.id} onClick={()=>setDevice(d.id as any)}
                   style={{height:28,padding:"0 10px",borderRadius:6,border:`1px solid ${device===d.id?"rgba(245,245,245,0.5)":"rgba(255,255,255,0.08)"}`,background:device===d.id?"rgba(245,245,245,0.15)":"none",color:device===d.id?"#D9D9D9":"#666",fontSize:12,fontWeight:device===d.id?700:400,cursor:"pointer"}}>
                   {d.icon}
@@ -746,11 +793,11 @@ function CreatePageInner() {
               Exit Fullscreen ✕
             </button>
           </div>
-          <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"center",justifyContent:"center",background:device==="desktop"?"#fff":"#050816",overflow:"auto"}}>
+          <div className="kr-preview-bg" style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"center",justifyContent:"center",background:"#050816",overflow:"auto"}}>
             <iframe srcDoc={result}
-              style={{border:"none",width:device==="desktop"?"100%":device==="tablet"?"768px":"390px",height:"100%",minHeight:"100%",background:"#fff",
-                boxShadow:device!=="desktop"?"0 0 0 12px #11151F,0 20px 60px rgba(0,0,0,0.8)":"none",
-                borderRadius:device==="mobile"?"40px":device==="tablet"?"16px":"0",flexShrink:0}}
+              style={{border:"none",width:device==="desktop"?"100%":device==="tablet"?"min(768px,92vw)":"min(390px,88vw)",height:device==="desktop"?"100%":"min(100%,84vh)",minHeight:device==="desktop"?"100%":undefined,background:"#fff",
+                boxShadow:device!=="desktop"?"0 0 0 10px #11151F,0 20px 60px rgba(0,0,0,0.8)":"none",
+                borderRadius:device==="mobile"?"36px":device==="tablet"?"16px":"0",flexShrink:0,margin:device!=="desktop"?"16px 0":0}}
               sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" title="Fullscreen Preview"/>
           </div>
         </div>
@@ -793,7 +840,8 @@ function CreatePageInner() {
         <div style={{flex:1,display:"flex",overflow:"hidden"}}>
 
           {/* ── LEFT: CHAT ── */}
-          <div style={{width:isMobile?"100%":"340px",minWidth:isMobile?"100%":"280px",maxWidth:isMobile?"100%":"380px",display:isMobile?(mobilePanel==="chat"?"flex":"none"):"flex",flexDirection:"column",borderRight:isMobile?"none":`1px solid ${C.border}`,background:C.surface,overflow:"hidden",flexShrink:0}}>
+          <div onClick={()=>!isMobile&&setPanelFocus("chat")}
+          style={{width:isMobile?"100%":(panelFocus==="chat"?"50%":"35%"),display:isMobile?(mobilePanel==="chat"?"flex":"none"):"flex",flexDirection:"column",borderRight:isMobile?"none":`1px solid ${C.border}`,background:C.surface,overflow:"hidden",flexShrink:0,transition:isMobile?"none":"width .35s cubic-bezier(0.16,1,0.3,1)"}}>
             {/* Loading indicator */}
             {loading&&<div style={{padding:"6px 16px",borderBottom:`1px solid ${C.border}`,background:"rgba(245,245,245,0.04)",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
               <div style={{display:"flex",gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:C.purple,animation:`pulse 1.2s ${i*.2}s ease-in-out infinite`}}/>)}</div>
@@ -878,16 +926,12 @@ function CreatePageInner() {
 
             {/* Input */}
             <div style={{padding:"10px 14px 12px",borderTop:`1px solid ${C.border}`,background:`rgba(7,9,26,0.95)`,flexShrink:0}}>
-              {/* Competitor URL input */}
-              {!result && (
-                <div style={{marginBottom:8}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:"rgba(255,255,255,0.02)",borderRadius:8,border:`1px solid ${C.border}`}}>
-                    <span style={{fontSize:13,flexShrink:0}}>🔗</span>
-                    <input type="url" value={competitorUrl} onChange={e=>setCompetitorUrl(e.target.value)}
-                      placeholder="Competitor URL (optional): https://stripe.com"
-                      style={{flex:1,background:"none",border:"none",outline:"none",color:"#9AA3AF",fontSize:12,fontFamily:"inherit"}}/>
-                    {competitorUrl.trim()&&<button onClick={()=>setCompetitorUrl("")} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:12}}>✕</button>}
-                  </div>
+              {/* Detected URL chip — auto-extracted from prompt text, no separate input field */}
+              {!result && competitorUrl.trim() && (
+                <div style={{marginBottom:8,display:"flex",alignItems:"center",gap:6,padding:"5px 10px",background:"rgba(245,245,245,0.04)",borderRadius:20,border:`1px solid ${C.border}`,width:"fit-content"}}>
+                  <span style={{fontSize:11}}>🔗</span>
+                  <span style={{fontSize:11,color:"#9AA3AF",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{competitorUrl}</span>
+                  <button onClick={()=>setCompetitorUrl("")} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:11,padding:0}}>✕</button>
                 </div>
               )}
               {/* Quick engineering actions — show only when project exists */}
@@ -910,7 +954,11 @@ function CreatePageInner() {
                 </div>
               )}
               <div style={{background:C.card,border:`1px solid ${loading?"rgba(245,245,245,0.25)":C.border}`,borderRadius:14,padding:"10px 12px",transition:"border-color .2s"}}>
-                <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!loading){e.preventDefault();handleSend();}}}
+                <textarea value={prompt} onChange={e=>{
+                    const v=e.target.value; setPrompt(v);
+                    const urlMatch=v.match(/https?:\/\/[^\s]+/);
+                    if(urlMatch) setCompetitorUrl(urlMatch[0]); else if(competitorUrl) setCompetitorUrl("");
+                  }} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!loading){e.preventDefault();handleSend();}}}
                   placeholder={loading?"Working on it…":result?"Describe a change to make…":"Describe what you want to build…"}
                   rows={2} disabled={loading}
                   style={{width:"100%",background:"none",border:"none",color:loading?"#161B26":C.text,fontSize:14,resize:"none",outline:"none",lineHeight:1.65,maxHeight:130,overflowY:"auto"}}
@@ -936,7 +984,7 @@ function CreatePageInner() {
           </div>
 
           {/* ── RIGHT: PREVIEW / FILES / DEPLOY / HISTORY ── */}
-          <div style={{flex:1,display:isMobile?(mobilePanel==="preview"?"flex":"none"):"flex",flexDirection:"column",overflow:"hidden",position:"relative"}}>
+          <div onClick={()=>!isMobile&&setPanelFocus("preview")} style={{flex:1,display:isMobile?(mobilePanel==="preview"?"flex":"none"):"flex",flexDirection:"column",overflow:"hidden",position:"relative",transition:isMobile?"none":"all .35s cubic-bezier(0.16,1,0.3,1)"}}>
             {/* Icon tab bar */}
             <div style={{display:"flex",alignItems:"center",padding:"0 8px",borderBottom:`1px solid ${C.border}`,background:C.surface,flexShrink:0,height:44}}>
               {RIGHT_TABS.map(t=>(
@@ -948,7 +996,7 @@ function CreatePageInner() {
               {/* Device buttons (preview only) */}
               {rightTab==="preview"&&result&&(
                 <div style={{display:"flex",gap:3,marginLeft:"auto",alignItems:"center"}}>
-                  {([{id:"desktop",icon:"🖥"},{id:"tablet",icon:"📱"},{id:"mobile",icon:"📲"}] as const).map(d=>(
+                  {([{id:"desktop",icon:"🖥️"},{id:"tablet",icon:"📲"},{id:"mobile",icon:"📱"}] as const).map(d=>(
                     <button key={d.id} onClick={()=>setDevice(d.id)} style={{width:26,height:26,borderRadius:7,border:`1px solid ${device===d.id?"rgba(245,245,245,0.35)":C.border}`,background:device===d.id?"rgba(245,245,245,0.12)":"none",color:device===d.id?C.purple:C.muted,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{d.icon}</button>
                   ))}
                   <button onClick={()=>{if(!result)return;const b=new Blob([result],{type:"text/html"});window.open(URL.createObjectURL(b),"_blank");}} style={{width:26,height:26,borderRadius:7,border:`1px solid ${C.border}`,background:"none",color:C.muted,fontSize:11,cursor:"pointer",marginLeft:3}}>↗</button>
@@ -965,17 +1013,18 @@ function CreatePageInner() {
 
             {/* Preview */}
             {rightTab==="preview"&&(
-              <div style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#fff":device==="tablet"?"#0B1020":"#050816",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto"}}>
+              <div className="kr-preview-bg" style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#050816":device==="tablet"?"#0B1020":"#050816",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto"}}>
                 {result
                   ? <iframe key={`${result.length}-${device}`} srcDoc={result} style={{
                       border:"none",
-                      width:device==="desktop"?"100%":device==="tablet"?"768px":"390px",
-                      height:device==="desktop"?"100%":"100%",
-                      minHeight:"100%",
+                      width:device==="desktop"?"100%":device==="tablet"?"min(768px,100%)":"min(390px,100%)",
+                      height:device==="desktop"?"100%":"auto",
+                      minHeight:device==="desktop"?"100%":"600px",
+                      maxHeight:device!=="desktop"?"82vh":undefined,
                       display:"block",
                       background:"#fff",
-                      boxShadow:device!=="desktop"?"0 0 0 12px #11151F,0 0 0 14px #1A1F2B,0 20px 60px rgba(0,0,0,0.8)":"none",
-                      borderRadius:device==="mobile"?"40px":device==="tablet"?"16px":"0",
+                      boxShadow:device!=="desktop"?"0 0 0 10px #11151F,0 0 0 12px #1A1F2B,0 20px 60px rgba(0,0,0,0.8)":"none",
+                      borderRadius:device==="mobile"?"36px":device==="tablet"?"16px":"0",
                       transition:"width .3s cubic-bezier(0.16,1,0.3,1),border-radius .3s ease",
                       flexShrink:0,
                     }} sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" title="Live Preview"/>
