@@ -39,7 +39,7 @@ export default function KryptonLogo({
   const hasText = showText || variant === "full";
 
   const GAP_W  = 14;
-  const TEXT_W = 168;
+  const TEXT_W = 118;
   const vbW    = 40 + (hasText ? GAP_W + TEXT_W : 0);
   const totalW = (size / 40) * vbW;
 
@@ -132,7 +132,7 @@ export default function KryptonLogo({
       {hasText && (
         <g>
           <text
-            x="54" y="23"
+            x="54" y="25"
             fontFamily="'Inter', system-ui, sans-serif"
             fontSize="15"
             fontWeight="700"
@@ -141,27 +141,6 @@ export default function KryptonLogo({
           >
             KRYPTON AI
           </text>
-
-          <text
-            x="54" y="33"
-            fontFamily="'Inter', system-ui, sans-serif"
-            fontSize="7"
-            fontWeight="500"
-            letterSpacing="2.6"
-            fill="rgba(255,255,255,0.36)"
-          >
-            ARTIFICIAL INTELLIGENCE
-          </text>
-
-          {/* Static precision underline — no animation, restrained */}
-          <rect
-            x="54" y="36.5"
-            width="120"
-            height="0.6"
-            rx="0.3"
-            fill={`url(#${uid}_t)`}
-            opacity="0.3"
-          />
         </g>
       )}
     </svg>
