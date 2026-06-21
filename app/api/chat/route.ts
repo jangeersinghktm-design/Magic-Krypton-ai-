@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120; // raised from 60s — edits now use 24k max_tokens (was 8k)
 
 // ── System Prompt ────────────────────────────────────────────────
 const CHAT_SYSTEM = `You are Krypton AI — an elite senior software engineer with 20 years of experience.
@@ -74,11 +74,11 @@ async function callClaude(messages: any[], system: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-6",
-      max_tokens: 8000,
+      max_tokens: 24000,
       system,
       messages,
     }),
-    signal: AbortSignal.timeout(55000),
+    signal: AbortSignal.timeout(95000),
   });
 
   if (!res.ok) throw new Error(`Claude ${res.status}`);
@@ -100,10 +100,10 @@ async function callOpenAI(messages: any[], system: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "gpt-4o",
-      max_tokens: 8000,
+      max_tokens: 24000,
       messages: [{ role: "system", content: system }, ...messages],
     }),
-    signal: AbortSignal.timeout(55000),
+    signal: AbortSignal.timeout(95000),
   });
 
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
@@ -129,9 +129,9 @@ async function callGemini(messages: any[], system: string): Promise<string> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: combined,
-        generationConfig: { maxOutputTokens: 8000, temperature: 0.5 },
+        generationConfig: { maxOutputTokens: 24000, temperature: 0.5 },
       }),
-      signal: AbortSignal.timeout(55000),
+      signal: AbortSignal.timeout(95000),
     }
   );
 
@@ -229,11 +229,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // Build code context (max 8000 chars to save tokens)
+    // Build code context — full file content, no artificial truncation.
+    // PREVIOUS BUG: this was capped at 5000 chars/file + 8000 chars total.
+    // Generated sites are now routinely 25,000-50,000+ chars (Component
+    // Library output is richer than before). The AI was editing while
+    // BLIND to most of the actual file, then returning a "complete updated
+    // file" that hallucinated the unseen portions — causing the Build/
+    // Validation/Runtime/Mobile gates to all fail after nearly every edit.
     const codeContext = Object.entries(currentCode as Record<string, string>)
-      .map(([file, code]) => `### ${file}\n\`\`\`\n${code.slice(0, 5000)}\n\`\`\``)
+      .map(([file, code]) => `### ${file}\n\`\`\`\n${code.slice(0, 60000)}\n\`\`\``)
       .join("\n")
-      .slice(0, 8000);
+      .slice(0, 100000);
 
     // Build conversation history
     const historyMessages = history.slice(-8).map((m: any) => ({
@@ -331,4 +337,3 @@ ${isGameEdit ? "GAME EDIT REQUEST" : "Edit Request"}: ${actualMessage}`
     });
   }
 }
-        
