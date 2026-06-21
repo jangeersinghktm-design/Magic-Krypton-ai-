@@ -241,6 +241,191 @@ export interface PerformanceResult {
   issues: string[];
 }
 
+// ── Smart Quality Gate 2.0 — Advanced structural/visual checks ──────
+// Pure regex/string heuristics, Edge-compatible, zero extra AI calls.
+// Detects the 10 most common "looks broken" failure classes that the
+// original checklist-based audit doesn't catch on its own.
+export interface AdvancedQualityResult {
+  pass: boolean;
+  issues: string[];
+  autoFixable: string[]; // subset of `issues` that applyAutoRepairs() can fix mechanically
+}
+
+// WCAG relative luminance + contrast ratio (standard formula)
+function hexToLuminance(hex: string): number | null {
+  const m = hex.replace("#", "").match(/^([0-9a-f]{6}|[0-9a-f]{3})$/i);
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+function contrastRatio(hex1: string, hex2: string): number | null {
+  const l1 = hexToLuminance(hex1), l2 = hexToLuminance(hex2);
+  if (l1 === null || l2 === null) return null;
+  const [lighter, darker] = l1 > l2 ? [l1, l2] : [l2, l1];
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+export function checkAdvancedQuality(html: string): AdvancedQualityResult {
+  const issues: string[] = [];
+  const autoFixable: string[] = [];
+
+  // 1. Missing footer (hard check — website-checklist only weights this lightly)
+  if (!/<footer\b/i.test(html)) {
+    issues.push("Missing footer"); autoFixable.push("Missing footer");
+  }
+
+  // 2. Missing CTA (universal — not just landing-type pages)
+  const ctaPattern = /get started|sign ?up|buy now|book now|contact us|subscribe|shop now|join free|schedule|request demo|try.*free|learn more|add to cart|download/i;
+  if (!ctaPattern.test(html)) {
+    issues.push("Missing call-to-action button"); autoFixable.push("Missing call-to-action button");
+  }
+
+  // 3. Mobile text overflow risk — fixed px width wider than mobile viewport, no max-width cap
+  const fixedWideWidths = [...html.matchAll(/width:\s*(\d{3,})px/gi)].filter(m => parseInt(m[1], 10) > 420);
+  const hasOverflowGuard = /overflow-x:\s*hidden/i.test(html) || /max-width:\s*100%/i.test(html);
+  if (fixedWideWidths.length > 0 && !hasOverflowGuard) {
+    issues.push(`${fixedWideWidths.length} element(s) with fixed width >420px and no overflow-x guard (mobile horizontal scroll risk)`);
+  }
+
+  // 4. Cropped headings — fixed px font-size on h1/h2/h3 (clamp() required for mobile safety)
+  const fixedHeadingFonts = [...html.matchAll(/\bh[123][^{]*\{[^}]*?font-size:\s*(\d+)px/gi)].filter(m => parseInt(m[1], 10) >= 28);
+  if (fixedHeadingFonts.length > 0) {
+    issues.push(`${fixedHeadingFonts.length} heading(s) use fixed px font-size instead of clamp() — risk of word-per-line wrapping on mobile`);
+    autoFixable.push("Cropped/fixed-px headings");
+  }
+
+  // 5. Poor spacing/padding — sections with zero or near-zero padding
+  const sectionBlocks = [...html.matchAll(/<section\b[^>]*style=["']([^"']*)["']/gi)];
+  const tightSections = sectionBlocks.filter(m => /padding:\s*0(?:px)?\s*[;"]/.test(m[1]) || /padding:\s*[0-4]px\s*[;"]/.test(m[1]));
+  if (sectionBlocks.length > 0 && tightSections.length > 0) {
+    issues.push(`${tightSections.length} section(s) have near-zero padding (cramped layout)`);
+    autoFixable.push("Poor section spacing");
+  }
+
+  // 6. Broken navigation links — specifically inside <nav>...</nav>
+  const navBlock = html.match(/<nav\b[^>]*>([\s\S]*?)<\/nav>/i);
+  if (navBlock) {
+    const navLinks = [...navBlock[1].matchAll(/<a[^>]*href=["']#([\w-]*)["']/gi)];
+    let brokenNavLinks = 0;
+    for (const m of navLinks) {
+      const target = m[1];
+      if (target && !new RegExp(`id=["']${target}["']`, "i").test(html)) brokenNavLinks++;
+    }
+    if (brokenNavLinks > 0) {
+      issues.push(`${brokenNavLinks} navbar link(s) point to a missing section anchor`);
+    }
+  }
+
+  // 7. Missing responsive breakpoints — must include an actual mobile-range breakpoint,
+  // not just any @media rule (e.g. a print-only query shouldn't count)
+  const mobileBreakpoint = /@media[^{]*\(\s*max-width:\s*(?:[1-9]\d{2}|[1-6]\d{2})px\s*\)/i.test(html);
+  if (!mobileBreakpoint) {
+    issues.push("No mobile-range @media breakpoint found (max-width: ~480-768px)");
+    autoFixable.push("Missing responsive breakpoint");
+  }
+
+  // 8. Invisible buttons — text color matches background color (exact or near-exact hex match)
+  const buttonStyles = [...html.matchAll(/<(?:button|a)[^>]*class=["'][^"']*btn[^"']*["'][^>]*style=["']([^"']*)["']/gi)];
+  let invisibleButtons = 0;
+  for (const m of buttonStyles) {
+    const style = m[1];
+    const color = style.match(/(?:^|;)\s*color:\s*(#[0-9a-f]{3,6})/i)?.[1];
+    const bg = style.match(/background(?:-color)?:\s*(#[0-9a-f]{3,6})/i)?.[1];
+    if (color && bg && color.toLowerCase() === bg.toLowerCase()) invisibleButtons++;
+  }
+  if (invisibleButtons > 0) {
+    issues.push(`${invisibleButtons} button(s) have identical text and background color (invisible)`);
+    autoFixable.push("Invisible buttons");
+  }
+
+  // 9. Low contrast text — scan :root CSS variables for text-vs-background pairs (WCAG AA = 4.5)
+  const rootBlock = html.match(/:root\s*\{([^}]*)\}/i);
+  if (rootBlock) {
+    const vars: Record<string, string> = {};
+    for (const m of rootBlock[1].matchAll(/--([\w-]+):\s*(#[0-9a-f]{3,6})/gi)) vars[m[1]] = m[2];
+    const textVar = vars["text"] || vars["text-2"];
+    const bgVar = vars["bg"] || vars["background"];
+    if (textVar && bgVar) {
+      const ratio = contrastRatio(textVar, bgVar);
+      if (ratio !== null && ratio < 4.5) {
+        issues.push(`Low contrast: --text vs --bg ratio is ${ratio.toFixed(1)}:1 (WCAG AA needs 4.5:1)`);
+      }
+    }
+  }
+
+  // 10. Empty sections — per-section near-zero text content (not just whole-body check)
+  const allSections = [...html.matchAll(/<section\b[^>]*>([\s\S]*?)<\/section>/gi)];
+  let emptySections = 0;
+  for (const m of allSections) {
+    const text = m[1].replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, "").trim();
+    if (text.length < 15) emptySections++;
+  }
+  if (emptySections > 0) {
+    issues.push(`${emptySections} section(s) have almost no visible content`);
+  }
+
+  return { pass: issues.length === 0, issues, autoFixable };
+}
+
+// ── Auto-Repair — mechanically fixes what checkAdvancedQuality() flagged ──
+// Zero AI calls. Only touches issues that are safely fixable via string
+// transforms; anything needing real content/design judgment is left for
+// the existing AI repair pass (see buildRepairInstructions in production-gate.ts).
+export function applyAutoRepairs(html: string, advancedIssues: string[]): string {
+  let fixed = html;
+
+  // Fix: cropped/fixed-px headings → clamp()
+  if (advancedIssues.includes("Cropped/fixed-px headings")) {
+    fixed = fixed.replace(
+      /(\bh[123][^{]*\{[^}]*?font-size:\s*)(\d+)(px)/gi,
+      (match, pre, px, unit) => {
+        const size = parseInt(px, 10);
+        if (size < 28) return match;
+        const min = Math.round(size * 0.55);
+        const vw = Math.round(size * 0.09 * 10) / 10;
+        return `${pre}clamp(${min}px,${vw}vw,${size}${unit})`;
+      }
+    );
+  }
+
+  // Fix: missing footer → inject a minimal real footer before </body>
+  if (advancedIssues.includes("Missing footer")) {
+    const footer = `<footer style="padding:48px 24px;text-align:center;border-top:1px solid rgba(255,255,255,0.08);"><p style="opacity:0.6;font-size:14px;">&copy; 2026 All rights reserved.</p></footer>`;
+    fixed = fixed.replace(/<\/body>/i, `${footer}</body>`);
+  }
+
+  // Fix: missing CTA → inject a visible CTA button right after <body> opens
+  // (best-effort placement; AI repair pass can reposition it more precisely later)
+  if (advancedIssues.includes("Missing call-to-action button")) {
+    const cta = `<div style="text-align:center;padding:16px;"><a href="#contact" class="btn" style="display:inline-block;padding:14px 32px;border-radius:10px;background:#6366F1;color:#fff;font-weight:700;text-decoration:none;">Get Started</a></div>`;
+    fixed = fixed.replace(/(<body[^>]*>)/i, `$1${cta}`);
+  }
+
+  // Fix: missing responsive breakpoint → append a safe generic mobile breakpoint
+  if (advancedIssues.includes("Missing responsive breakpoint")) {
+    const breakpoint = `\n@media (max-width: 768px) { .container, section { padding-left: 16px; padding-right: 16px; } h1 { font-size: clamp(28px,8vw,42px); } }\n`;
+    if (/<\/style>/i.test(fixed)) fixed = fixed.replace(/<\/style>/i, `${breakpoint}</style>`);
+  }
+
+  // Fix: poor section spacing → append an override rule (doesn't touch inline styles
+  // directly to avoid breaking other declarations on the same line; CSS cascade wins)
+  if (advancedIssues.includes("Poor section spacing")) {
+    const spacingFix = `\nsection { padding-top: max(48px, 6vw) !important; padding-bottom: max(48px, 6vw) !important; }\n`;
+    if (/<\/style>/i.test(fixed)) fixed = fixed.replace(/<\/style>/i, `${spacingFix}</style>`);
+  }
+
+  // Fix: invisible buttons → force a visible text color override via !important
+  if (advancedIssues.includes("Invisible buttons")) {
+    const buttonFix = `\n.btn, button, a.btn { color: #FFFFFF !important; }\n`;
+    if (/<\/style>/i.test(fixed)) fixed = fixed.replace(/<\/style>/i, `${buttonFix}</style>`);
+  }
+
+  return fixed;
+}
+
 export function checkPerformance(html: string, kind: "game" | "website"): PerformanceResult {
   const checks: { ok: boolean; weight: number; issue: string }[] = [];
 
@@ -322,5 +507,4 @@ export function checkPerformance(html: string, kind: "game" | "website"): Perfor
   const issues = checks.filter(c => !c.ok).map(c => c.issue);
 
   return { score: total > 0 ? Math.round((earned / total) * 100) : 100, issues };
-  }
-
+}
