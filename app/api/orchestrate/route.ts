@@ -126,6 +126,76 @@ async function fetchUnsplashImages(query: string, count: number): Promise<string
 
 // Main entry — tries real API first, falls back to curated bank.
 // Returns a ready-to-use array of WORKING image URLs for this niche.
+// ═══════════════════════════════════════════════════════════════
+// IMAGE SANITIZER — Safety net for when the AI ignores instructions
+// and hallucinates its own unsplash.com photo IDs (which are almost
+// always fake/broken, since the AI is pattern-matching from training
+// data, not actually looking up real photos). This guarantees every
+// shipped website has WORKING images regardless of AI behavior.
+// ═══════════════════════════════════════════════════════════════
+function sanitizeImageUrls(html: string, realUrls: string[]): string {
+  if (realUrls.length === 0) return html;
+  let urlIndex = 0;
+  const nextUrl = () => realUrls[urlIndex++ % realUrls.length];
+
+  // Replace any src="...unsplash.com..." or url(...unsplash.com...) that is
+  // NOT one of our verified real URLs (AI-hallucinated ones get swapped out).
+  const isOurUrl = (url: string) => realUrls.some(u => url.includes(u.split('?')[0]));
+
+  // Fix <img src="...">
+  html = html.replace(/(<img[^>]*\bsrc=["'])([^"']*unsplash\.com[^"']*)(["'])/gi, (match, pre, url, post) => {
+    if (isOurUrl(url)) return match; // already a real URL, leave it
+    return `${pre}${nextUrl()}${post}`;
+  });
+
+  // Fix CSS background-image: url('...')
+  html = html.replace(/(background(?:-image)?:\s*url\(['"]?)([^'")]*unsplash\.com[^'")]*)(['"]?\))/gi, (match, pre, url, post) => {
+    if (isOurUrl(url)) return match;
+    return `${pre}${nextUrl()}${post}`;
+  });
+
+  // Also catch any other dead/placeholder patterns the AI might invent
+  html = html.replace(/(<img[^>]*\bsrc=["'])(https?:\/\/source\.unsplash\.com[^"']*)(["'])/gi, (match, pre, url, post) => `${pre}${nextUrl()}${post}`);
+  html = html.replace(/(<img[^>]*\bsrc=["'])(https?:\/\/via\.placeholder\.com[^"']*)(["'])/gi, (match, pre, url, post) => `${pre}${nextUrl()}${post}`);
+
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LUXURY PALETTE ENFORCER — safety net for when the AI defaults to
+// cheap flat SaaS colors (#FFD700, #FFA500, #FF7A00 etc.) instead of
+// the muted antique-gold palette specified for luxury-tier brands.
+// Same defense-in-depth pattern as the image sanitizer.
+// ═══════════════════════════════════════════════════════════════
+function enforceLuxuryPalette(html: string, niche: NicheProfile): string {
+  if (niche.marketLevel !== "luxury") return html;
+
+  const p = niche.palette;
+  // Cheap flat colors the AI sometimes defaults to, regardless of our
+  // palette instructions — swap these for the correct muted-gold tones.
+  const CHEAP_COLOR_SWAPS: [RegExp, string][] = [
+    [/#FFD700/gi, p.primary],   // bright gold → antique gold
+    [/#FFC107/gi, p.primary],
+    [/#FFA500/gi, p.secondary], // bright orange → deep bronze
+    [/#FF7A00/gi, p.secondary],
+    [/#FFB000/gi, p.accent],
+    [/#FFEB3B/gi, p.primary],
+  ];
+  for (const [re, replacement] of CHEAP_COLOR_SWAPS) {
+    html = html.replace(re, replacement);
+  }
+
+  // If the generated CSS uses flat solid background on buttons/CTAs,
+  // nudge toward the elegant gradient instead (best-effort regex swap
+  // on common button background patterns using the primary color).
+  html = html.replace(
+    new RegExp(`background:\\s*${p.primary.replace('#','\\#')}([;\\s])`, 'gi'),
+    `background:${p.grad}$1`
+  );
+
+  return html;
+}
+
 async function getRealImageSet(industry: string, keyword: string, count = 6): Promise<string[]> {
   try {
     const real = await fetchUnsplashImages(keyword, count);
@@ -2311,6 +2381,10 @@ Format: numbered list only. No preamble.`;
         const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
         let provider = genProvider;
         let html = cleanHTML(rawHTML);
+        // Safety net: force-replace any hallucinated/dead image URLs with our verified real ones
+        html = sanitizeImageUrls(html, resolvedImages["main"] || []);
+        // Safety net: force elegant muted-gold palette for luxury tier (AI sometimes defaults to flat cheap colors)
+        html = enforceLuxuryPalette(html, _niche);
         send("phase", { agent:"Building", icon:"⚙️", action:`Code generated via ${provider}`, pct:72, done:true });
 
         // ── PHASE 5: QA — Product Completion Engine: Production Gate ────
@@ -2352,7 +2426,7 @@ ${html}`;
           repairAttempts++;
           try {
             const { text: repairedRaw, provider: repairProvider } = await kryptonGenerate(systemPrompt, fixPrompt);
-            const repairedHtml = cleanHTML(repairedRaw);
+            const repairedHtml = enforceLuxuryPalette(sanitizeImageUrls(cleanHTML(repairedRaw), resolvedImages["main"] || []), _niche);
             if (repairedHtml.length > 500 && repairedHtml.includes("</html>")) {
               const repairedGate = runProductionGate(repairedHtml, gateKind, gateSubtype);
               if (repairedGate.score > gate.score) {
