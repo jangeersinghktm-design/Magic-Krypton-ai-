@@ -2804,7 +2804,7 @@ Format: numbered list only. No preamble.`;
         const complexity = assessComplexity(nicheDetectPrompt, projectType);
         const _dl = getDesignLanguage(_niche);
         let provider = "claude";
-        let html: string;
+        let html: string = "";
 
         // systemPrompt always built — used directly for simple path, and reused
         // by the repair pass later regardless of which path generated the first draft
@@ -2854,6 +2854,16 @@ Format: numbered list only. No preamble.`;
             html = combineOutput(sectionsHTML, generatedCSS, generatedJS, _niche, nicheDetectPrompt.slice(0,60));
             html = cleanHTML(html);
           }
+        }
+
+        // Final safety net — if every path above somehow left html empty
+        // (e.g. componentContent succeeded but assembled to an empty string),
+        // fall back to the reliable single-pass generation rather than
+        // shipping a blank page.
+        if (!html || html.trim().length < 200) {
+          const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
+          provider = genProvider;
+          html = cleanHTML(rawHTML);
         }
 
         // Safety nets — applied regardless of which path generated the HTML
