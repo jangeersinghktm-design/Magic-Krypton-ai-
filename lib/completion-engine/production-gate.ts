@@ -20,7 +20,7 @@
 
 import { auditGameHTML, type AuditResult as GameAuditResult } from "@/lib/game-builder/quality-audit";
 import { auditWebsiteHTML, type AuditResult as WebAuditResult } from "./website-checklist";
-import { checkSyntaxBalance, checkVisualQA, checkMobileSupport, checkPerformance } from "./validators";
+import { checkSyntaxBalance, checkVisualQA, checkMobileSupport, checkPerformance, checkAdvancedQuality, applyAutoRepairs } from "./validators";
 import { computeChecklistDimensionScores, type DimensionScore, type QualityDimension } from "./dimensions";
 
 export type ProductKind = "game" | "website";
@@ -42,6 +42,8 @@ export interface ProductionGateResult {
   mobileIssues:   string[];
   buildIssues:    string[];
   performanceIssues: string[];
+  advancedIssues: string[];   // Smart Quality Gate 2.0 — footer/CTA/contrast/etc
+  autoFixableIssues: string[]; // subset of advancedIssues fixable without an AI call
 }
 
 const VALIDATION_PASS_THRESHOLD = 80;
@@ -86,6 +88,12 @@ export function runProductionGate(
   const visual  = checkVisualQA(html);
   const mobile  = checkMobileSupport(html);
   const perf    = checkPerformance(html, kind);
+  // Smart Quality Gate 2.0 — website-specific (footer/CTA/contrast/nav/etc).
+  // Games have different conventions (no footer/CTA expected), so this only
+  // runs for websites — zero extra AI calls, pure heuristic analysis.
+  const advanced = kind === "website"
+    ? checkAdvancedQuality(html)
+    : { pass: true, issues: [] as string[], autoFixable: [] as string[] };
 
   // 4 checklist-derived dimensions (Functionality/UX/Mobile/Completeness)
   const checklistDims = computeChecklistDimensionScores(audit.passed, audit.failed);
@@ -108,7 +116,8 @@ export function runProductionGate(
   const mobilePass      = mobile.pass;
   const buildPass       = build.pass;
 
-  const overallPass = buildPass && validationPass && runtimePass && mobilePass && score >= OVERALL_TARGET_SCORE;
+  const overallPass = buildPass && validationPass && runtimePass && mobilePass
+    && advanced.pass && score >= OVERALL_TARGET_SCORE;
 
   return {
     buildPass,
@@ -124,6 +133,8 @@ export function runProductionGate(
     mobileIssues: mobile.issues,
     buildIssues: build.issues,
     performanceIssues: perf.issues,
+    advancedIssues: advanced.issues,
+    autoFixableIssues: advanced.autoFixable,
   };
 }
 
@@ -178,6 +189,14 @@ export function buildRepairInstructions(gate: ProductionGateResult): string {
   if (gate.failedFeatures.length > 0) {
     sections.push(
       `MISSING FEATURES:\n` + gate.failedFeatures.map(f => `- ${f.label}`).join("\n")
+    );
+  }
+  // Smart Quality Gate 2.0 issues that auto-repair couldn't fix mechanically
+  // (e.g. empty sections, low contrast, broken nav anchors — need real judgment)
+  const remainingAdvanced = gate.advancedIssues.filter(i => !gate.autoFixableIssues.some(af => i.includes(af) || af === i));
+  if (remainingAdvanced.length > 0) {
+    sections.push(
+      `QUALITY GATE 2.0 ISSUES:\n` + remainingAdvanced.map(i => `- ${i}`).join("\n")
     );
   }
   if (gate.mobileIssues.length > 0) {
