@@ -656,7 +656,7 @@ function CreatePageInner() {
           editedProjMem = buildProjectMemory(newHtml,projectName,projectMemory?.originalPrompt||editPrompt,messages,projectMemory);
           setProjectMemory(editedProjMem);
         }
-         Priority 1 — persist updated memory so edit context survives reopen
+        // Priority 1 — persist updated memory so edit context survives reopen
         persistMemory(projectId, editedProjMem||null, editedGameMem||null);
         setCredits(cv=>({...cv,used:cv.used+1}));
         updateMsg(thinkId,{isActive:false,phases:[
