@@ -6,6 +6,10 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
+  renderComponent, getDefaultVariant, listVariants, buildComponentContext,
+  buildRootTokens, type ComponentCategory,
+} from "@/lib/component-library";
+import {
   runProductionGate,
   buildRepairInstructions,
   getWebsiteTemplate,
@@ -13,12 +17,13 @@ import {
   buildWebsiteChecklistPrompt,
   generateWebsiteBlueprint,
   buildBlueprintPrompt,
+  applyAutoRepairs,
   type ProductionGateResult,
   type ProjectBlueprint,
 } from "@/lib/completion-engine";
 
 export const runtime     = "edge";
-export const maxDuration = 120;
+export const maxDuration = 240; // raised for 4-stage pipeline (Blueprint→Sections→CSS→JS)
 
 // ── Types ────────────────────────────────────────────────────────
 interface AgentPhase {
@@ -35,28 +40,28 @@ interface StreamController {
 }
 
 // ── Krypton Intelligence Engine — Multi-provider system ───────────
-async function callClaude(system: string, user: string, maxTokens = 8000): Promise<string> {
+async function callClaude(system: string, user: string, maxTokens = 24000): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY not set");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01" },
     body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:maxTokens, system, messages:[{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(50000),
+    signal: AbortSignal.timeout(95000), // raised from 50s — 24k tokens needs more generation time
   });
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const d = await res.json();
   return d.content?.[0]?.text || "";
 }
 
-async function callOpenAI(system: string, user: string, maxTokens = 8000): Promise<string> {
+async function callOpenAI(system: string, user: string, maxTokens = 24000): Promise<string> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY not set");
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type":"application/json","Authorization":`Bearer ${key}` },
-    body: JSON.stringify({ model:"gpt-4o-mini", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(50000),
+    body: JSON.stringify({ model:"gpt-4o", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
+    signal: AbortSignal.timeout(95000),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
   const d = await res.json();
@@ -69,8 +74,8 @@ async function callGemini(system: string, user: string): Promise<string> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
     method: "POST",
     headers: { "Content-Type":"application/json" },
-    body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:12000} }),
-    signal: AbortSignal.timeout(50000),
+    body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:24000} }),
+    signal: AbortSignal.timeout(95000),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}`);
   const d = await res.json();
@@ -194,6 +199,29 @@ function enforceLuxuryPalette(html: string, niche: NicheProfile): string {
   );
 
   return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESPONSIVE FONT ENFORCER — safety net for when the AI uses fixed
+// px font-sizes on headings instead of clamp(), causing huge
+// one-word-per-line wrapping on mobile (e.g. "font-size: 48px"
+// on a 6-word headline becomes 6 separate giant lines on a 375px
+// screen). Forces every heading rule to scale responsively.
+// ═══════════════════════════════════════════════════════════════
+function enforceResponsiveHeadings(html: string): string {
+  // Convert "font-size: 48px" / "font-size:48px" on h1/h2/h3 rules to clamp().
+  // Matches patterns like ".hero h1 { ... font-size: 48px; ... }" or
+  // "h1 { font-size:56px; }" and rewrites just the font-size value.
+  return html.replace(
+    /(\bh[123][^{]*\{[^}]*?font-size:\s*)(\d+)(px\s*;)/gi,
+    (match, pre, px, post) => {
+      const size = parseInt(px, 10);
+      if (size < 28) return match; // small text, fixed px is fine
+      const min = Math.round(size * 0.55);
+      const vw  = Math.round(size * 0.09 * 10) / 10; // gentle viewport scaling
+      return `${pre}clamp(${min}px,${vw}vw,${size}px)${post}`;
+    }
+  );
 }
 
 async function getRealImageSet(industry: string, keyword: string, count = 6): Promise<string[]> {
@@ -1260,6 +1288,31 @@ Before writing </body>, mentally review your output against:
 □ CTA: Is primary CTA "${niche.brandVoice.ctaPrimary}" above the fold?
 □ TRUST: Are trust elements (${(niche.trustElements||[]).slice(0,2).join(', ')}) visible early?
 □ MOBILE: Will nav collapse to hamburger at 768px? Will hero stack to 1 column?
+
+MANDATORY MOBILE NAV PATTERN — copy this exact structure, don't improvise:
+\`\`\`html
+<nav style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px">
+  <div class="logo">...</div>
+  <div class="nav-links" style="display:flex;gap:32px;align-items:center">
+    <a href="#">Link1</a><a href="#">Link2</a><a href="#">Link3</a>
+    <button class="btn-cta">CTA</button>
+  </div>
+  <button class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')"
+    style="display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer">☰</button>
+</nav>
+\`\`\`
+\`\`\`css
+@media (max-width: 768px) {
+  .nav-links { display:none !important; position:fixed; top:0; right:0; height:100vh; width:75%;
+    flex-direction:column; background:var(--surface); padding:80px 24px; z-index:100;
+    box-shadow:-4px 0 24px rgba(0,0,0,0.3); }
+  .nav-links.open { display:flex !important; }
+  .hamburger { display:block !important; z-index:101; }
+}
+\`\`\`
+CRITICAL: the CTA/cart/button inside nav-links must NEVER render inline next to
+the logo on mobile — it goes inside the SAME collapsing .nav-links container as
+the other links, never as a separate sibling that can wrap awkwardly.
 □ INTERACTIONS: Do ALL buttons, accordions, tabs have working JS?
 □ OBJECTIONS: Does the page address: "${(niche.objectionHandling||['Is it worth it?'])[0]}"?
 
@@ -1277,7 +1330,7 @@ ${plan}`;
     return BASE;
   }
 
-  return BASE + getNicheWebsitePrompt(niche, userPrompt, realImages);
+  return FORCE_RULES + "\n\n" + BASE + getNicheWebsitePrompt(niche, userPrompt, realImages);
 }
 
 // hexToRgb -> use hexToRgbValues()
@@ -1892,10 +1945,19 @@ function buildSectionBlueprints(niche: NicheProfile, dl: DesignLanguage, imgs: s
     </h1>
     Headline: ${v.heroHeadlineStyle}
     
-    <p class="body-lg reveal" style="color:var(--text-2);max-width:520px;margin-bottom:40px">[2-3 sentence real description]</p>
-    
+    <p class="body-lg reveal" style="color:var(--text-2);max-width:520px;margin-bottom:24px">[2-3 sentence real description]</p>
+
+    <!-- Checkmark benefit list — proven high-conversion pattern, scannable trust signals -->
+    <div class="reveal" style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px">
+      [Exactly 3 items, each as:]
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="width:22px;height:22px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#fff;font-weight:800">✓</span>
+        <span style="font-size:15px;color:var(--text);font-weight:500">[Specific benefit relevant to ${niche.industry}, e.g. real outcome not generic fluff]</span>
+      </div>
+    </div>
+
     <div style="display:flex;gap:16px;flex-wrap:wrap" class="reveal">
-      <a href="#" class="btn btn-primary" style="font-size:16px;padding:16px 36px">${v.ctaPrimary} →</a>
+      <a href="#" class="btn btn-primary" style="font-size:16px;padding:16px 36px;box-shadow:0 12px 32px rgba(${rgb},0.35)">${v.ctaPrimary} →</a>
       <a href="#" class="btn btn-secondary" style="font-size:16px;padding:16px 36px">${v.ctaSecondary}</a>
     </div>
     
@@ -1989,7 +2051,7 @@ function buildSectionBlueprints(niche: NicheProfile, dl: DesignLanguage, imgs: s
            <button class="btn btn-primary" style="border-radius:8px">Subscribe</button></div>
   </div>
   <div style="border-top:1px solid var(--border);padding-top:32px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px">
-    <p style="color:var(--text-2);font-size:14px">© 2025 [Brand]. All rights reserved.</p>
+    <p style="color:var(--text-2);font-size:14px">© 2026 [Brand]. All rights reserved.</p> <!-- ALWAYS use 2026, the current year — NEVER 2023, 2024, or any other year -->
     <div style="display:flex;gap:24px"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a></div>
   </div>`;
 
@@ -2214,6 +2276,367 @@ function computeQualityScoreV2(html: string, niche: NicheProfile, gate: any): {
   return { overall, design, conversion, brand, trust, mobile, competitorMatch, content, ctaQuality, breakdown, recommendations };
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// MULTI-STAGE GENERATION PIPELINE
+// Blueprint → Sections (HTML) → CSS → JS → Combine (deterministic)
+//
+// Why split: a single 24k-token call must split attention across content,
+// layout, every CSS rule, and all JS behavior simultaneously — under that
+// load the model quietly drops detail (thin footers, missing hover states,
+// skipped checklist items) to keep the output valid. Splitting into focused
+// stages gives each concern its own full token budget and full attention,
+// closer to how Lovable/Bolt/v0 structure their agentic generation.
+//
+// Each stage still goes through the same Claude→OpenAI→Gemini fallback
+// via kryptonGenerate, so reliability is unchanged.
+// ═══════════════════════════════════════════════════════════════════════
+
+const FORCE_RULES = `
+MANDATORY OUTPUT REQUIREMENTS — NON-NEGOTIABLE:
+✓ PRODUCTION READY — this ships to a real visitor today, not a draft
+✓ COMPLETE — every section fully written, zero shortcuts
+✓ NO PLACEHOLDERS — never "[Your text here]", never "Lorem ipsum"
+✓ NO TODO / NO COMMENTS LIKE "add more here later" — finish it now
+✓ FULLY RESPONSIVE — works correctly at 375px, 768px, 1440px
+✓ REQUIRED SECTIONS: Navbar, Hero, Features/Value, Social Proof, CTA, Footer
+✓ ANIMATIONS — scroll-reveal on sections, hover states on every interactive element
+This is not a guideline — incomplete output will be rejected by the quality gate.`;
+
+// ── Stage 1: Blueprint ──────────────────────────────────────────────────
+// Lightweight planning pass — locks in the exact section list, key
+// components, and any special requirements before any code is written.
+async function generateBlueprint(niche: NicheProfile, userPrompt: string, projectType: string): Promise<string> {
+  const system = `You are a senior product architect planning a ${projectType}. Output ONLY a structured plan, no code, no preamble.`;
+  const user = `User request: "${userPrompt}"
+Niche: ${niche.industry} (${niche.marketLevel} tier, ${niche.tone} tone)
+Default section order: ${niche.sectionOrder.join(" → ")}
+
+Output EXACTLY this format:
+SECTIONS: [ordered list of 7-10 sections this specific site needs, comma-separated]
+KEY_COMPONENTS: [specific interactive components needed, e.g. "mobile hamburger nav, FAQ accordion, testimonial slider, sticky header on scroll"]
+CONTENT_FOCUS: [1-2 sentences on what makes THIS site's content specific/real, not generic]`;
+
+  try {
+    const { text } = await kryptonGenerate(system, user);
+    return text.trim() || `SECTIONS: ${niche.sectionOrder.join(", ")}\nKEY_COMPONENTS: mobile hamburger nav, scroll animations\nCONTENT_FOCUS: ${niche.industry} specific content`;
+  } catch {
+    return `SECTIONS: ${niche.sectionOrder.join(", ")}\nKEY_COMPONENTS: mobile hamburger nav, scroll animations\nCONTENT_FOCUS: ${niche.industry} specific content`;
+  }
+}
+
+// ── Stage 2: Sections (semantic HTML, no <style>/<script>) ─────────────
+async function generateSectionsHTML(
+  niche: NicheProfile, dl: DesignLanguage, blueprint: string,
+  userPrompt: string, realImages: Record<string,string[]>
+): Promise<string> {
+  const contentRules = getNicheWebsitePrompt(niche, userPrompt, realImages);
+  const sectionBlueprints = buildSectionBlueprints(niche, dl, realImages["main"] || []);
+
+  const system = `You are Krypton AI's HTML structure specialist. Output ONLY semantic HTML for the <body> content — no <!DOCTYPE>, no <head>, no <style> tag, no <script> tag. Use clear, consistent class names (kebab-case) that a CSS specialist will style next, and that a JS specialist will hook into next. Every class name you invent must be meaningful and reused consistently.`;
+
+  const user = `${FORCE_RULES}
+
+BLUEPRINT FROM PLANNING STAGE:
+${blueprint}
+
+${contentRules}
+
+${sectionBlueprints}
+
+Output ONLY the HTML body content (nav through footer). Use real, specific copy — never placeholders. Reference these EXACT image URLs where images are needed: ${(realImages["main"]||[]).join(", ")}`;
+
+  try {
+    const { text } = await kryptonGenerate(system, user);
+    const cleaned = text.replace(/\`\`\`html|\`\`\`/g, "").trim();
+    if (cleaned.length > 200) return cleaned; // sanity check — not empty/truncated
+    throw new Error("Sections output too short");
+  } catch {
+    // One retry with a shorter, simpler prompt before giving up (caller has its own fallback)
+    const simplerUser = `${FORCE_RULES}\n\nBuild semantic HTML body content for: "${userPrompt}"\nSections needed: ${niche.sectionOrder.join(", ")}\nUse real specific copy, no placeholders.`;
+    const { text: retryText } = await kryptonGenerate(system, simplerUser);
+    return retryText.replace(/\`\`\`html|\`\`\`/g, "").trim();
+  }
+}
+
+// ── Stage 3: CSS (complete stylesheet matching the HTML above) ─────────
+async function generateCSS(niche: NicheProfile, dl: DesignLanguage, htmlStructure: string): Promise<string> {
+  const p = niche.palette;
+  const t = niche.typography;
+  const rgb = hexToRgbValues(p.primary);
+  const premiumEffects = getPremiumEffects(niche, rgb);
+
+  const system = `You are Krypton AI's CSS specialist. You will be given exact HTML and must write a COMPLETE stylesheet that styles every class used in it. Output ONLY CSS — no markdown fences, no explanation.`;
+
+  const user = `${FORCE_RULES}
+
+HTML TO STYLE (style every class name that appears here — do not invent classes that aren't in this HTML):
+${htmlStructure}
+
+DESIGN SYSTEM — use exactly these values:
+@import url('${t.googleFonts}');
+:root {
+  --primary: ${p.primary}; --secondary: ${p.secondary}; --grad: ${p.grad};
+  --accent: ${p.accent}; --bg: ${p.bg}; --surface: ${p.surface}; --card: ${p.card};
+  --text: #FFFFFF; --text-2: ${p.text2};
+  --border: rgba(255,255,255,0.07); --border-accent: rgba(${rgb},0.3);
+}
+Heading font: ${t.headingFont}, weight ${t.headingWeight}, letter-spacing ${t.headingSpacing}
+Body font: ${t.bodyFont}
+
+CRITICAL RULES:
+- ALL heading font-sizes MUST use clamp(min,vw,max) — NEVER a fixed px value (causes mobile wrapping)
+- Mobile nav MUST collapse to hamburger below 768px (full pattern, not partial)
+- Every button/card/link needs a hover state with transition
+- Add scroll-reveal animation classes (.reveal) with @keyframes
+${premiumEffects}
+
+Output the complete CSS now.`;
+
+  try {
+    const { text } = await kryptonGenerate(system, user);
+    let css = text.replace(/\`\`\`css|\`\`\`/g, "").trim();
+    if (css.length < 200) throw new Error("CSS output too short");
+    // Belt-and-suspenders: catch any fixed-px headings the CSS stage still produces
+    css = enforceResponsiveHeadings(`<style>${css}</style>`).replace(/^<style>|<\/style>$/g, "");
+    return css;
+  } catch {
+    // Fallback: a solid, working default stylesheet using the real niche palette —
+    // not pretty, but guarantees the site is never unstyled if the CSS stage fails twice.
+    return `
+:root{--primary:${p.primary};--secondary:${p.secondary};--grad:${p.grad};--accent:${p.accent};
+--bg:${p.bg};--surface:${p.surface};--card:${p.card};--text:#FFFFFF;--text-2:${p.text2};
+--border:rgba(255,255,255,0.07);}
+body{background:var(--bg);color:var(--text);font-family:${t.bodyFont};line-height:1.6;}
+h1,h2,h3{font-family:${t.headingFont};font-weight:${t.headingWeight};}
+h1{font-size:clamp(28px,6vw,56px);} h2{font-size:clamp(22px,4vw,38px);}
+.container{max-width:1200px;margin:0 auto;padding:0 24px;}
+section{padding:clamp(48px,8vw,96px) 0;}
+nav{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;position:sticky;top:0;background:var(--surface);z-index:100;}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;}
+@media(max-width:768px){.nav-links{display:none;}.hamburger{display:block;}}
+.btn,button,a.btn{background:var(--grad);color:#fff;border:none;padding:14px 28px;border-radius:10px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;transition:transform .2s;}
+.btn:hover{transform:translateY(-2px);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;}
+footer{background:var(--surface);padding:48px 24px;text-align:center;color:var(--text-2);}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s,transform .6s;}
+.reveal.visible{opacity:1;transform:none;}`;
+  }
+}
+
+// ── Stage 4: JS (interactivity targeting the HTML above) ───────────────
+async function generateJS(htmlStructure: string, projectType: string): Promise<string> {
+  const system = `You are Krypton AI's JavaScript specialist. You will be given exact HTML and must write vanilla JS (no frameworks, no libraries) that makes every interactive element in it actually work. Output ONLY JS — no markdown fences, no explanation.`;
+
+  const user = `${FORCE_RULES}
+
+HTML TO MAKE INTERACTIVE:
+${htmlStructure}
+
+REQUIRED BEHAVIOR:
+- Mobile hamburger menu: toggle .open class on click, close on link click or outside-click
+- FAQ accordions (if present): expand/collapse, only one open at a time
+- Scroll-reveal: IntersectionObserver adds .visible to .reveal elements as they enter viewport
+- Smooth scroll for all anchor links (#section)
+- Forms: prevent default, show a success message inline (no real backend call)
+- Sticky header: add .scrolled class to nav after 50px scroll for shadow/bg change
+- Any sliders/carousels referenced in the HTML must be fully functional
+
+Output the complete JS now.`;
+
+  try {
+    const { text } = await kryptonGenerate(system, user);
+    const cleaned = text.replace(/\`\`\`(javascript|js)?|\`\`\`/g, "").trim();
+    if (cleaned.length < 50) throw new Error("JS output too short");
+    return cleaned;
+  } catch {
+    // Fallback: minimal but genuinely functional JS — hamburger menu + smooth scroll +
+    // scroll-reveal still work even if the JS stage fails. Better than zero interactivity.
+    return `
+document.querySelectorAll('.hamburger').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-links').forEach(n=>n.classList.toggle('open'));
+  });
+});
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}
+  });
+});
+const revealObserver=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});
+},{threshold:0.15});
+document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
+window.addEventListener('scroll',()=>{
+  document.querySelectorAll('nav').forEach(n=>n.classList.toggle('scrolled',window.scrollY>50));
+});`;
+  }
+}
+
+// ── Complexity Router — decides single-pass (fast) vs 4-stage pipeline ──
+// Simple requests don't need 4 sequential AI calls; that latency only pays
+// off for genuinely complex builds. Keeps simple-site experience fast while
+// reserving the deeper pipeline for where it actually improves quality.
+function assessComplexity(prompt: string, projectType: string): "simple" | "complex" {
+  const p = prompt.toLowerCase();
+  const complexSignals = /\b(saas|dashboard|platform|marketplace|booking|e-?commerce|admin\s*panel|crm|erp|multi-?step|multi-?page|booking\s*system|reservation)\b/.test(p);
+  const wordCount = prompt.trim().split(/\s+/).length;
+  if (complexSignals || wordCount > 20 || projectType === "dashboard" || projectType === "app") return "complex";
+  return "simple";
+}
+
+// ── Stage 5: Combine (deterministic — no AI call, fast and reliable) ───
+// ── Stage 2b: Component-Assembled Sections — replaces raw HTML writing ──
+// for the 7 categories covered by the Component Library. AI generates ONLY
+// content (JSON), tested template code renders the actual HTML. Structural
+// correctness (spacing/shadows/radius/mobile/a11y) is now guaranteed by
+// code, not by hoping the AI remembers every rule on every generation.
+async function generateComponentContent(
+  niche: NicheProfile, blueprint: string, userPrompt: string, projectType: string
+): Promise<Record<string, any> | null> {
+  const tone = niche.tone || "default";
+  const categories: ComponentCategory[] = projectType === "dashboard"
+    ? ["navbar", "dashboard", "footer"]
+    : ["navbar", "hero", "features", "pricing", "cta", "footer"];
+
+  const variantOptions = categories.map(c => `${c}: [${listVariants(c).join(", ")}]`).join("\n");
+
+  const system = `You are Krypton AI's content specialist. Output ONLY valid JSON (no markdown fences, no explanation). You write real, specific marketing copy — never placeholders.`;
+  const user = `User request: "${userPrompt}"
+Niche: ${niche.industry} (${niche.marketLevel} tier, ${tone} tone)
+Blueprint: ${blueprint}
+
+Pick ONE variant per category from these REAL options (do not invent new variant names):
+${variantOptions}
+
+Output this exact JSON shape (omit "dashboard" key if not applicable):
+{
+  "variants": { "navbar":"...", "hero":"...", "features":"...", "pricing":"...", "cta":"...", "footer":"...", "dashboard":"..." },
+  "navbar": { "logoText":"...", "links":[{"label":"...","href":"#..."}], "cta":{"text":"...","href":"#..."} },
+  "hero": { "badge":"...", "headline":"...", "subheadline":"...", "ctaPrimary":{"text":"...","href":"#..."}, "ctaSecondary":{"text":"...","href":"#..."}, "benefits":[{"text":"..."}] },
+  "features": { "eyebrow":"...", "headline":"...", "items":[{"icon":"emoji","title":"...","desc":"...","stat":"e.g. 98%"}] },
+  "pricing": { "eyebrow":"...", "headline":"...", "tiers":[{"name":"...","price":"$X","period":"month","features":["..."],"cta":{"text":"...","href":"#"},"highlighted":false}] },
+  "cta": { "headline":"...", "subheadline":"...", "ctaPrimary":{"text":"...","href":"#..."} },
+  "footer": { "logoText":"...", "tagline":"...", "columns":[{"title":"...","links":[{"label":"...","href":"#..."}]}], "socialLinks":[{"label":"Twitter","href":"#"}], "copyrightName":"..." },
+  "dashboard": { "title":"...", "navItems":[{"label":"...","icon":"emoji","active":false}], "stats":[{"label":"...","value":"...","trend":"+12%","trendUp":true}], "tableHeaders":["..."], "tableRows":[{"cells":["...","..."]}] }
+}
+
+Real, specific copy for ${niche.industry} — never "[Your text here]" or generic filler.`;
+
+  try {
+    const { text } = await kryptonGenerate(system, user);
+    const cleaned = text.replace(/\`\`\`json|\`\`\`/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    return parsed;
+  } catch {
+    return null; // caller falls back to raw HTML generation
+  }
+}
+
+// Deterministic — assembles real component HTML from AI-written content.
+// Zero AI risk for structure; only the copy came from the model.
+function assembleFromComponentLibrary(
+  niche: NicheProfile, content: Record<string, any>, realImages: string[]
+): string {
+  const ctx = buildComponentContext(niche.palette.primary);
+  const v = content.variants || {};
+  const tone = niche.tone || "default";
+  let html = "";
+  let imgIdx = 0;
+  const nextImg = () => realImages[imgIdx++ % Math.max(realImages.length, 1)] || "";
+
+  if (content.navbar) html += renderComponent("navbar", v.navbar || getDefaultVariant("navbar", tone), ctx, content.navbar);
+  if (content.hero) {
+    const heroContent = { ...content.hero, imageUrl: content.hero.imageUrl || nextImg() };
+    html += renderComponent("hero", v.hero || getDefaultVariant("hero", tone), ctx, heroContent);
+  }
+  if (content.dashboard) html += renderComponent("dashboard", v.dashboard || getDefaultVariant("dashboard", tone), ctx, content.dashboard);
+  if (content.features) {
+    const items = (content.features.items || []).map((it: any) => ({ ...it, imageUrl: it.imageUrl || nextImg() }));
+    html += renderComponent("features", v.features || getDefaultVariant("features", tone), ctx, { ...content.features, items });
+  }
+  if (content.pricing) html += renderComponent("pricing", v.pricing || getDefaultVariant("pricing", tone), ctx, content.pricing);
+  if (content.cta) html += renderComponent("cta", v.cta || getDefaultVariant("cta", tone), ctx, content.cta);
+  if (content.footer) html += renderComponent("footer", v.footer || getDefaultVariant("footer", tone), ctx, content.footer);
+
+  return html;
+}
+
+// ── Design Critic — text-based holistic review (no screenshot needed) ──
+// Quality Gate 2.0 catches STRUCTURAL bugs (missing footer, low contrast).
+// This catches SUBJECTIVE weaknesses a human reviewer would notice but no
+// regex can: "this headline is generic", "CTA buried below other content",
+// "pricing section has no differentiation between tiers". Only runs on the
+// complex path — one extra AI call is worth it for SaaS/dashboard-tier
+// builds, not worth the latency cost on a simple landing page.
+interface DesignCritique {
+  score: number;        // 1-10 holistic first-impression score
+  issues: string[];     // specific, actionable weaknesses
+  strengths: string[];  // what's already working (informational)
+}
+
+async function runDesignCritic(html: string, niche: NicheProfile): Promise<DesignCritique | null> {
+  // Strip script/style for a leaner review payload — critic judges content/structure, not CSS internals
+  const reviewable = html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .slice(0, 12000);
+
+  const system = `You are a world-class design critic — the kind who reviews work for Apple, Linear, and Stripe. You give direct, specific, actionable feedback. Output ONLY valid JSON, no markdown fences, no explanation.`;
+  const user = `Review this ${niche.industry} (${niche.marketLevel} tier) website's HTML structure as if you were seeing it for the first time:
+
+${reviewable}
+
+Evaluate against these standards a senior designer would actually check:
+1. Is the hero headline specific and compelling, or generic/forgettable?
+2. Is the primary CTA visible without scrolling (within the first ~600px of markup)?
+3. Does the pricing section (if present) clearly differentiate tiers, or do they feel interchangeable?
+4. Is there enough visual/content variety between sections, or does it feel repetitive?
+5. Would a real visitor trust this enough to take the desired action?
+
+Output this exact JSON shape:
+{"score": 1-10, "issues": ["specific actionable issue", ...max 4], "strengths": ["what's working", ...max 2]}
+
+Be honest — a 6/10 with real issues listed is more useful than an inflated 9/10.`;
+
+  try {
+    const { text } = await kryptonGenerate(system, user);
+    const cleaned = text.replace(/\`\`\`json|\`\`\`/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (typeof parsed.score === "number" && Array.isArray(parsed.issues)) return parsed;
+    return null;
+  } catch {
+    return null; // critic is informational/best-effort — never blocks generation
+  }
+}
+
+function combineOutput(htmlStructure: string, css: string, js: string, niche: NicheProfile, title: string): string {
+  // buildRootTokens() is deterministic (not AI-generated) — guarantees every
+  // CSS variable the Component Library relies on (--heading-font,
+  // --primary-rgb, etc.) is always correct, regardless of what the CSS
+  // generation stage produced. AI-generated CSS layers on top of this.
+  const rootTokens = buildRootTokens(niche);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title}</title>
+<style>
+${rootTokens}
+${css}
+</style>
+</head>
+<body>
+${htmlStructure}
+<script>
+${js}
+</script>
+</body>
+</html>`;
+}
+
 // ── Main SSE Handler ──────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const { prompt, userId, accessToken, competitorUrl, forceType } = await req.json().catch(() => ({}));
@@ -2291,7 +2714,7 @@ const activeGenerations = new Set<string>();
           } catch {}
         }
 
-        // ── PHASE 1: Reading ──────────────────────────────────────
+         ── PHASE 1: Reading ──────────────────────────────────────
         send("phase", { agent:"Reading", icon:"🔍", action:"Analyzing your request...", pct:8 });
         const rawProjectType = detectProjectType(prompt);
         // forceType from UI dropdown overrides auto-detection
@@ -2372,20 +2795,73 @@ Format: numbered list only. No preamble.`;
           resolvedImages["main"] = [];
         }
 
-        const systemPrompt = buildNichePrompt(nicheDetectPrompt, projectType, executionPlan, cachedUrlBlueprint, resolvedImages)
-          + (blueprint ? `\n\n${buildBlueprintPrompt(blueprint)}` : "");
         // Fix 5: Abort if client disconnected
         if ((req as any).signal?.aborted) {
           finish(); return;
         }
-        const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
-        let provider = genProvider;
-        let html = cleanHTML(rawHTML);
-        // Safety net: force-replace any hallucinated/dead image URLs with our verified real ones
+
+        // ── COMPLEXITY ROUTER: simple → fast single-pass | complex → 4-stage pipeline ──
+        const complexity = assessComplexity(nicheDetectPrompt, projectType);
+        const _dl = getDesignLanguage(_niche);
+        let provider = "claude";
+        let html: string;
+
+        // systemPrompt always built — used directly for simple path, and reused
+        // by the repair pass later regardless of which path generated the first draft
+        const systemPrompt = buildNichePrompt(nicheDetectPrompt, projectType, executionPlan, cachedUrlBlueprint, resolvedImages)
+          + (blueprint ? `\n\n${buildBlueprintPrompt(blueprint)}` : "");
+
+        if (complexity === "simple") {
+          // ── FAST PATH: single comprehensive call, ~30-60s typical ──
+          send("phase", { agent:"Building", icon:"⚡", action:"Generating (fast path)...", pct:45 });
+          const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
+          provider = genProvider;
+          html = cleanHTML(rawHTML);
+        } else {
+          // ── DEEP PATH: 4-stage pipeline for complex builds, ~90-150s typical ──
+          send("phase", { agent:"Reading", icon:"🧭", action:"Stage 1/4 — Planning blueprint...", pct:28 });
+          const pipelineBlueprint = await generateBlueprint(_niche, nicheDetectPrompt, projectType);
+
+          send("phase", { agent:"Building", icon:"📐", action:"Stage 2/4 — Assembling from component library...", pct:42 });
+          let sectionsHTML: string;
+          // ── Component Library first: AI writes content only, tested templates
+          // render the HTML. Falls back to raw AI-HTML generation only if the
+          // content stage fails (bad JSON, provider outage, etc).
+          const componentContent = await generateComponentContent(_niche, pipelineBlueprint, nicheDetectPrompt, projectType);
+          if (componentContent) {
+            sectionsHTML = assembleFromComponentLibrary(_niche, componentContent, resolvedImages["main"] || []);
+          } else {
+            try {
+              sectionsHTML = await generateSectionsHTML(_niche, _dl, pipelineBlueprint, nicheDetectPrompt, resolvedImages);
+            } catch {
+              // Sections stage failed twice (incl. its own internal retry) — fall back
+              // to the reliable single-pass path rather than failing the whole request
+              send("phase", { agent:"Building", icon:"⚡", action:"Falling back to single-pass...", pct:45 });
+              const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
+              provider = genProvider;
+              html = cleanHTML(rawHTML);
+              sectionsHTML = "";
+            }
+          }
+
+          if (sectionsHTML) {
+            send("phase", { agent:"Building", icon:"🎨", action:"Stage 3/4 — Generating styles...", pct:58 });
+            const generatedCSS = await generateCSS(_niche, _dl, sectionsHTML);
+
+            send("phase", { agent:"Building", icon:"⚡", action:"Stage 4/4 — Generating interactivity...", pct:68 });
+            const generatedJS = await generateJS(sectionsHTML, projectType);
+
+            html = combineOutput(sectionsHTML, generatedCSS, generatedJS, _niche, nicheDetectPrompt.slice(0,60));
+            html = cleanHTML(html);
+          }
+        }
+
+        // Safety nets — applied regardless of which path generated the HTML
         html = sanitizeImageUrls(html, resolvedImages["main"] || []);
-        // Safety net: force elegant muted-gold palette for luxury tier (AI sometimes defaults to flat cheap colors)
         html = enforceLuxuryPalette(html, _niche);
-        send("phase", { agent:"Building", icon:"⚙️", action:`Code generated via ${provider}`, pct:72, done:true });
+        html = enforceResponsiveHeadings(html);
+
+        send("phase", { agent:"Building", icon:"⚙️", action:`Code generated via ${provider} (${complexity} path)`, pct:72, done:true });
 
         // ── PHASE 5: QA — Product Completion Engine: Production Gate ────
         send("phase", { agent:"Validating", icon:"🧪", action:"Running production gate audit...", pct:78 });
@@ -2393,12 +2869,35 @@ Format: numbered list only. No preamble.`;
         const gateKind  = projectType === "game" ? "game" : "website";
         const gateSubtype = projectType === "game" ? "arcade" : projectType;
         let gate: ProductionGateResult = runProductionGate(html, gateKind, gateSubtype);
+
+        // Smart Quality Gate 2.0 — mechanically auto-repair what's fixable
+        // BEFORE spending a costly AI repair pass on it. Zero extra AI calls.
+        if (gate.autoFixableIssues.length > 0) {
+          send("phase", { agent:"Validating", icon:"🔧", action:`Auto-repairing ${gate.autoFixableIssues.length} issue(s)...`, pct:80 });
+          html = applyAutoRepairs(html, gate.autoFixableIssues);
+          gate = runProductionGate(html, gateKind, gateSubtype); // re-check after mechanical fixes
+        }
+
+        // Design Critic — holistic subjective review (complex path only,
+        // one extra AI call). Catches what regex can't: weak headlines,
+        // buried CTAs, undifferentiated pricing tiers.
+        let critique: DesignCritique | null = null;
+        if (complexity === "complex" && gateKind === "website") {
+          send("phase", { agent:"Validating", icon:"🎨", action:"Running design critique...", pct:82 });
+          critique = await runDesignCritic(html, _niche);
+        }
+
         let repairAttempts = 0;
         const MAX_REPAIR_ATTEMPTS = 1; // websites get 1 repair pass (vs 2 for dedicated game route)
 
-        while (!gate.overallPass && repairAttempts < MAX_REPAIR_ATTEMPTS) {
+        // Critic-driven repair: trigger even if the structural gate already
+        // passed, IF the critic found real issues on a low score — subjective
+        // weaknesses (weak headline, buried CTA) don't fail the gate but are
+        // still worth one repair attempt while we're already in this flow.
+        const critiqueNeedsRepair = !!critique && critique.score < 7 && critique.issues.length > 0;
+        while ((!gate.overallPass || critiqueNeedsRepair) && repairAttempts < MAX_REPAIR_ATTEMPTS) {
           const elapsed = Date.now() - startTime;
-          const remainingMs = 115000 - elapsed; // edge maxDuration=120s, leave 5s buffer
+          const remainingMs = 235000 - elapsed; // edge maxDuration=240s, leave 5s buffer
           if (remainingMs < 20000) break;
 
           const reasons: string[] = [];
@@ -2407,13 +2906,17 @@ Format: numbered list only. No preamble.`;
           if (!gate.mobilePass)     reasons.push("mobile gaps");
           if (!gate.validationPass) reasons.push(`score ${gate.score}/100`);
           else if (gate.score < 95) reasons.push(`score ${gate.score}/95`);
+          if (critiqueNeedsRepair)  reasons.push(`design critique ${critique!.score}/10`);
 
           send("phase", { agent:"Validating", icon:"🧪", action:`Repair pass: fixing ${reasons.join(", ")}...`, pct:80 });
 
           const instructions = buildRepairInstructions(gate);
+          const critiqueBlock = (critique && critique.issues.length > 0)
+            ? `\n\nDESIGN CRITIC FEEDBACK (score: ${critique.score}/10):\n${critique.issues.map(i => `- ${i}`).join("\n")}`
+            : "";
           const fixPrompt = `The page below has the following issues that MUST be fixed:
 
-${instructions}
+${instructions}${critiqueBlock}
 
 Fix ALL of the above WITHOUT removing or breaking any feature that
 already works. If there are SYNTAX ERRORS, fixing those is the highest
@@ -2426,7 +2929,7 @@ ${html}`;
           repairAttempts++;
           try {
             const { text: repairedRaw, provider: repairProvider } = await kryptonGenerate(systemPrompt, fixPrompt);
-            const repairedHtml = enforceLuxuryPalette(sanitizeImageUrls(cleanHTML(repairedRaw), resolvedImages["main"] || []), _niche);
+            const repairedHtml = enforceResponsiveHeadings(enforceLuxuryPalette(sanitizeImageUrls(cleanHTML(repairedRaw), resolvedImages["main"] || []), _niche));
             if (repairedHtml.length > 500 && repairedHtml.includes("</html>")) {
               const repairedGate = runProductionGate(repairedHtml, gateKind, gateSubtype);
               if (repairedGate.score > gate.score) {
