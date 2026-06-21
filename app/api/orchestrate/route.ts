@@ -2714,7 +2714,7 @@ const activeGenerations = new Set<string>();
           } catch {}
         }
 
-         ── PHASE 1: Reading ──────────────────────────────────────
+         // ── PHASE 1: Reading ────────────────────────────────────── ──────────────────────────────────────
         send("phase", { agent:"Reading", icon:"🔍", action:"Analyzing your request...", pct:8 });
         const rawProjectType = detectProjectType(prompt);
         // forceType from UI dropdown overrides auto-detection
