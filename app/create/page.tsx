@@ -402,10 +402,13 @@ function CreatePageInner() {
     const {data:{session}} = await supabase.auth.getSession();
     if (!session) { setSaving(false); return; }
     const usePid = pid||projectId;
+    // Serialize chat history for persistence — fixes bug where reopening
+    // a project showed only the live preview but lost all prior chat messages.
+    const historyPayload = messages.map(m => ({ role:m.role, type:m.type, content:m.content }));
     if (usePid) {
-      await supabase.from("projects").update({ name, title:name, updated_at:new Date().toISOString() }).eq("id",usePid);
+      await supabase.from("projects").update({ name, title:name, conversation_history:historyPayload, updated_at:new Date().toISOString() }).eq("id",usePid);
     } else {
-      const {data} = await supabase.from("projects").insert({ user_id:session.user.id, name, title:name, html_code:html, prompt:promptRef.current, status:"completed", created_at:new Date().toISOString(), updated_at:new Date().toISOString() }).select("id").single();
+      const {data} = await supabase.from("projects").insert({ user_id:session.user.id, name, title:name, html_code:html, prompt:promptRef.current, conversation_history:historyPayload, status:"completed", created_at:new Date().toISOString(), updated_at:new Date().toISOString() }).select("id").single();
       if (data?.id) { setProjectId(data.id); window.history.replaceState({},"",`/create?id=${data.id}`); }
     }
     setSaved(true); setSaving(false); setTimeout(()=>setSaved(false),2500);
@@ -545,20 +548,26 @@ function CreatePageInner() {
     }
 
     const pidToUse=savedPid||projectId;
-    (async()=>{
+    // Deferred slightly so the addMsg calls above have been queued before
+    // we snapshot `messages` for conversation_history (avoids stale closure
+    // missing the just-added summary/warning messages on first generation).
+    setTimeout(()=>{(async()=>{
       try{
         const {data:{session:s}}=await supabase.auth.getSession(); if(!s) return;
         let finalPid=pidToUse;
+        const historyPayload = messages.map(m=>({role:m.role,type:m.type,content:m.content}));
         if(!finalPid){
-          const {data:proj}=await supabase.from("projects").insert({user_id:s.user.id,name:pName,title:pName,html_code:html,prompt:promptRef.current,status:"completed",created_at:new Date().toISOString(),updated_at:new Date().toISOString()}).select("id").single();
+          const {data:proj}=await supabase.from("projects").insert({user_id:s.user.id,name:pName,title:pName,html_code:html,prompt:promptRef.current,conversation_history:historyPayload,status:"completed",created_at:new Date().toISOString(),updated_at:new Date().toISOString()}).select("id").single();
           if(proj?.id){finalPid=proj.id;setProjectId(proj.id);window.history.replaceState({},"",`/create?id=${proj.id}`);}
+        } else {
+          await supabase.from("projects").update({conversation_history:historyPayload}).eq("id",finalPid);
         }
         if(finalPid){
           const {data:ver}=await supabase.from("project_versions").insert({project_id:finalPid,code_snapshot:{"index.html":html},message:`Generated: ${pName.slice(0,30)}`,type:"auto",version_number:1,size_bytes:html.length}).select().single();
           if(ver)setVersions([ver as Version]);
         }
       }catch{}
-    })();
+    })();},50);
     setLoading(false);
   };
 
@@ -647,10 +656,9 @@ function CreatePageInner() {
           editedProjMem = buildProjectMemory(newHtml,projectName,projectMemory?.originalPrompt||editPrompt,messages,projectMemory);
           setProjectMemory(editedProjMem);
         }
-        // Priority 1 — persist updated memory so edit context survives reopen
+         Priority 1 — persist updated memory so edit context survives reopen
         persistMemory(projectId, editedProjMem||null, editedGameMem||null);
         setCredits(cv=>({...cv,used:cv.used+1}));
-        (async()=>{try{await saveProject(newHtml,projectName);}catch{}})();
         updateMsg(thinkId,{isActive:false,phases:[
           {agent:"Reading",icon:"○",action:"Understood",pct:100,done:true,status:"done"},
           {agent:"Building",icon:"○",action:"Applied",pct:100,done:true,status:"done"},
@@ -680,6 +688,9 @@ function CreatePageInner() {
 
         addMsg({role:"ai",type:"summary",content:`Changes applied.${qualityDelta}`,credits:1,gate:editGate});
         if(isMobile)setMobilePanel("preview");
+        // Save AFTER all messages for this turn are queued — avoids stale-closure
+        // bug where saveProject's `messages` snapshot misses the latest reply.
+        setTimeout(()=>{(async()=>{try{await saveProject(newHtml,projectName);}catch{}})();},50);
       } else {
         updateMsg(thinkId,{type:"error",content:isGameProject?"Be specific: 'Add pause button top-right' or 'Change snake color to neon blue'":"Be specific: 'Change header to dark blue' or 'Add contact form'",isActive:false});
       }
