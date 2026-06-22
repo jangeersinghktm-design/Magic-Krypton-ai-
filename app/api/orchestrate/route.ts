@@ -22,8 +22,9 @@ import {
   type ProjectBlueprint,
 } from "@/lib/completion-engine";
 
-export const runtime     = "edge";
-export const maxDuration = 240; // raised for 4-stage pipeline (Blueprint→Sections→CSS→JS)
+export const runtime     = "nodejs"; // FIXED: was "edge" — Edge ignores maxDuration on Hobby plan
+                                      // and blocks external API calls. Node.js required for AI calls.
+export const maxDuration = 60; // Hobby plan Node.js max = 60s. Pro plan allows 300s.
 
 // ── Types ────────────────────────────────────────────────────────
 interface AgentPhase {
@@ -47,7 +48,7 @@ async function callClaude(system: string, user: string, maxTokens = 24000): Prom
     method: "POST",
     headers: { "Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01" },
     body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:maxTokens, system, messages:[{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(95000), // raised from 50s — 24k tokens needs more generation time
+    signal: AbortSignal.timeout(45000), // 45s per AI call — fits within Hobby plan 60s Node.js limit
   });
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const d = await res.json();
@@ -61,7 +62,7 @@ async function callOpenAI(system: string, user: string, maxTokens = 24000): Prom
     method: "POST",
     headers: { "Content-Type":"application/json","Authorization":`Bearer ${key}` },
     body: JSON.stringify({ model:"gpt-4o", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(95000),
+    signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
   const d = await res.json();
@@ -75,7 +76,7 @@ async function callGemini(system: string, user: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:24000} }),
-    signal: AbortSignal.timeout(95000),
+    signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}`);
   const d = await res.json();
@@ -2479,10 +2480,9 @@ window.addEventListener('scroll',()=>{
 // off for genuinely complex builds. Keeps simple-site experience fast while
 // reserving the deeper pipeline for where it actually improves quality.
 function assessComplexity(prompt: string, projectType: string): "simple" | "complex" {
-  const p = prompt.toLowerCase();
-  const complexSignals = /\b(saas|dashboard|platform|marketplace|booking|e-?commerce|admin\s*panel|crm|erp|multi-?step|multi-?page|booking\s*system|reservation)\b/.test(p);
-  const wordCount = prompt.trim().split(/\s+/).length;
-  if (complexSignals || wordCount > 20 || projectType === "dashboard" || projectType === "app") return "complex";
+  // On Hobby plan (60s Node.js limit), 4-stage pipeline (4 AI calls × ~20s = ~80s)
+  // exceeds the limit. Force simple single-pass path until Pro plan is active.
+  // TODO: Change back to full complexity logic when upgrading to Pro plan (300s limit).
   return "simple";
 }
 
