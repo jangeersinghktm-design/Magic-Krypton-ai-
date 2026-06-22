@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const maxDuration = 120;
-export const runtime     = "edge";
+export const runtime = "nodejs";
 
 // ── Rate Limiter ─────────────────────────────────────────────────
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
