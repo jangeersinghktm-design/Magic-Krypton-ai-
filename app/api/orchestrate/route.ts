@@ -24,7 +24,7 @@ import {
 
 export const runtime     = "nodejs"; // FIXED: was "edge" — Edge ignores maxDuration on Hobby plan
                                       // and blocks external API calls. Node.js required for AI calls.
-export const maxDuration = 60; // Hobby plan Node.js max = 60s. Pro plan allows 300s.
+export const maxDuration = 300; // Hobby plan Node.js max = 60s. Pro plan allows 300s.
 
 // ── Types ────────────────────────────────────────────────────────
 interface AgentPhase {
@@ -41,7 +41,7 @@ interface StreamController {
 }
 
 // ── Krypton Intelligence Engine — Multi-provider system ───────────
-async function callClaude(system: string, user: string, maxTokens = 12000): Promise<string> {
+async function callClaude(system: string, user: string, maxTokens = 24000): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY not set");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -55,7 +55,7 @@ async function callClaude(system: string, user: string, maxTokens = 12000): Prom
   return d.content?.[0]?.text || "";
 }
 
-async function callOpenAI(system: string, user: string, maxTokens = 12000): Promise<string> {
+async function callOpenAI(system: string, user: string, maxTokens = 24000): Promise<string> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY not set");
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -75,7 +75,7 @@ async function callGemini(system: string, user: string): Promise<string> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
     method: "POST",
     headers: { "Content-Type":"application/json" },
-    body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:12000} }),
+    body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:24000} }),
     signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}`);
