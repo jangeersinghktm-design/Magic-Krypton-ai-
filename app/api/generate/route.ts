@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const maxDuration = 120;
+export const maxDuration = 308;
 export const runtime     = "nodejs"; // FIXED: was "edge" — Edge has hard 25s limit on Hobby plan
                                       // which caused FUNCTION_INVOCATION_TIMEOUT before any API
                                       // call could even be made. Node.js respects maxDuration=120s.
