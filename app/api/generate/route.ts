@@ -497,19 +497,19 @@ function getModelCascade(plan: string) {
     {
       provider: "claude",
       model: "claude-sonnet-4-6", // Sonnet for ALL plans — Haiku was causing 504 + thin output
-      maxTokens: 24000,            // raised from 8000/16000 — matches orchestrate.ts
+      maxTokens: 12000,            // raised from 8000/16000 — matches orchestrate.ts
       label: "Claude",
     },
     {
       provider: "openai",
       model: "gpt-4o",
-      maxTokens: 24000,
+      maxTokens: 12000,
       label: "OpenAI",
     },
     {
       provider: "gemini",
       model: "gemini-2.0-flash",  // fixed: 1.5-pro/flash deprecated
-      maxTokens: 24000,
+      maxTokens: 12000,
       label: "Gemini",
     },
   ];
