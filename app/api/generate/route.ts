@@ -653,6 +653,10 @@ export async function POST(req: NextRequest) {
           raw = await callGemini(systemPrompt, prompt, attempt.model);
         }
 
+        console.log("RAW RESPONSE PROVIDER:", attempt.provider);
+        console.log("RAW RESPONSE LENGTH:", raw.length);
+        console.log("RAW RESPONSE FIRST 1000:", raw.slice(0, 1000));
+
         html = cleanHTML(raw);
         usedProvider = attempt.provider;
 
