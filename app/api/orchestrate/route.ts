@@ -2714,7 +2714,7 @@ const activeGenerations = new Set<string>();
           } catch {}
         }
 
-         // ── PHASE 1: Reading ────────────────────────────────────── ──────────────────────────────────────
+        // ── PHASE 1: Reading ──────────────────────────────────────
         send("phase", { agent:"Reading", icon:"🔍", action:"Analyzing your request...", pct:8 });
         const rawProjectType = detectProjectType(prompt);
         // forceType from UI dropdown overrides auto-detection
@@ -2804,7 +2804,7 @@ Format: numbered list only. No preamble.`;
         const complexity = assessComplexity(nicheDetectPrompt, projectType);
         const _dl = getDesignLanguage(_niche);
         let provider = "claude";
-        let html: string = "";
+        let html: string = ""; // initialized — TS couldn't prove definite assignment across all branches below
 
         // systemPrompt always built — used directly for simple path, and reused
         // by the repair pass later regardless of which path generated the first draft
@@ -2820,9 +2820,14 @@ Format: numbered list only. No preamble.`;
         } else {
           // ── DEEP PATH: 4-stage pipeline for complex builds, ~90-150s typical ──
           send("phase", { agent:"Reading", icon:"🧭", action:"Stage 1/4 — Planning blueprint...", pct:28 });
+          console.log("Stage 1 Blueprint Start");
+          const _s1 = Date.now();
           const pipelineBlueprint = await generateBlueprint(_niche, nicheDetectPrompt, projectType);
+          console.log(`Stage 1 Blueprint Done — ${Date.now()-_s1}ms`);
 
           send("phase", { agent:"Building", icon:"📐", action:"Stage 2/4 — Assembling from component library...", pct:42 });
+          console.log("Stage 2 Sections Start");
+          const _s2 = Date.now();
           let sectionsHTML: string;
           // ── Component Library first: AI writes content only, tested templates
           // render the HTML. Falls back to raw AI-HTML generation only if the
@@ -2843,16 +2848,26 @@ Format: numbered list only. No preamble.`;
               sectionsHTML = "";
             }
           }
+          console.log(`Stage 2 Sections Done — ${Date.now()-_s2}ms | length:${sectionsHTML?.length || 0}`);
 
           if (sectionsHTML) {
             send("phase", { agent:"Building", icon:"🎨", action:"Stage 3/4 — Generating styles...", pct:58 });
+            console.log("Stage 3 CSS Start");
+            const _s3 = Date.now();
             const generatedCSS = await generateCSS(_niche, _dl, sectionsHTML);
+            console.log(`Stage 3 CSS Done — ${Date.now()-_s3}ms | length:${generatedCSS.length}`);
 
             send("phase", { agent:"Building", icon:"⚡", action:"Stage 4/4 — Generating interactivity...", pct:68 });
+            console.log("Stage 4 JS Start");
+            const _s4 = Date.now();
             const generatedJS = await generateJS(sectionsHTML, projectType);
+            console.log(`Stage 4 JS Done — ${Date.now()-_s4}ms | length:${generatedJS.length}`);
 
+            console.log("Stage 5 Combine Start");
+            const _s5 = Date.now();
             html = combineOutput(sectionsHTML, generatedCSS, generatedJS, _niche, nicheDetectPrompt.slice(0,60));
             html = cleanHTML(html);
+            console.log(`Stage 5 Combine Done — ${Date.now()-_s5}ms | total html:${html.length}`);
           }
         }
 
@@ -2894,7 +2909,10 @@ Format: numbered list only. No preamble.`;
         let critique: DesignCritique | null = null;
         if (complexity === "complex" && gateKind === "website") {
           send("phase", { agent:"Validating", icon:"🎨", action:"Running design critique...", pct:82 });
+          console.log("Design Critic Start");
+          const _sc = Date.now();
           critique = await runDesignCritic(html, _niche);
+          console.log(`Design Critic Done — ${Date.now()-_sc}ms | score:${critique?.score ?? "null"}`);
         }
 
         let repairAttempts = 0;
