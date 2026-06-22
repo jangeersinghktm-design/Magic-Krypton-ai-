@@ -123,8 +123,10 @@ export async function POST(req: NextRequest) {
       .replace(/```\s*/gi, "")
       .trim();
 
-    let parsed;
+    let let parsed;
     try {
+      console.log("ANALYZE RAW LENGTH:", cleaned.length);
+      console.log("ANALYZE RAW FIRST 1000:", cleaned.slice(0, 1000));
       parsed = JSON.parse(cleaned);
     } catch {
       const match = cleaned.match(/\{[\s\S]*\}/);
