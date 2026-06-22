@@ -8,7 +8,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const maxDuration = 120;
-export const runtime = "nodejs";
+export const runtime     = "nodejs"; // FIXED: was "edge" — Edge has hard 25s limit on Hobby plan
+                                      // which caused FUNCTION_INVOCATION_TIMEOUT before any API
+                                      // call could even be made. Node.js respects maxDuration=120s.
 
 // ── Rate Limiter ─────────────────────────────────────────────────
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -349,16 +351,33 @@ function validateHTML(html: string): { valid: boolean; issues: string[] } {
 
 // ── Clean HTML Output ────────────────────────────────────────────
 function cleanHTML(raw: string): string {
+  if (!raw?.trim()) return "";
+
+  // Strip markdown code fences the AI sometimes wraps output in
   let html = raw
+    .replace(/^```html\s*/im, "")
+    .replace(/^```\s*/im, "")
+    .replace(/```\s*$/im, "")
     .replace(/^html\s*/im, "")
-    .replace(/^\s*/im, "")
-    .replace(/\s*$/im, "")
     .trim();
 
+  // Find the actual HTML document start
   const idx = html.indexOf("<!DOCTYPE");
   if (idx > 0) html = html.substring(idx);
 
-  return html;
+  // If no DOCTYPE found but <html> tag exists, use that as start
+  if (!html.includes("<!DOCTYPE") && html.includes("<html")) {
+    const htmlIdx = html.indexOf("<html");
+    if (htmlIdx > 0) html = html.substring(htmlIdx);
+    html = "<!DOCTYPE html>\n" + html;
+  }
+
+  // Ensure closing tags exist
+  if (html.includes("<html") && !html.includes("</html>")) {
+    html += "\n</html>";
+  }
+
+  return html.trim();
 }
 
 // ── AI Provider: Claude ──────────────────────────────────────────
@@ -450,7 +469,7 @@ async function healHTML(brokenHTML: string, issues: string[], system: string, pl
 Fix ALL issues and return a complete, working HTML file. Keep all existing content and styling — only fix the broken parts. Output ONLY the corrected HTML starting with <!DOCTYPE html>.
 
 BROKEN HTML:
-${brokenHTML.slice(0, 8000)}`;
+${brokenHTML.slice(0, 40000)}`;
 
   // Try healing with same providers
   const models = getModelCascade(plan);
@@ -477,20 +496,20 @@ function getModelCascade(plan: string) {
   return [
     {
       provider: "claude",
-      model: isPaid ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001",
-      maxTokens: isPaid ? 16000 : 8000,
+      model: "claude-sonnet-4-6", // Sonnet for ALL plans — Haiku was causing 504 + thin output
+      maxTokens: 24000,            // raised from 8000/16000 — matches orchestrate.ts
       label: "Claude",
     },
     {
       provider: "openai",
       model: "gpt-4o",
-      maxTokens: isPaid ? 16000 : 8000,
+      maxTokens: 24000,
       label: "OpenAI",
     },
     {
       provider: "gemini",
-      model: isPaid ? "gemini-1.5-pro" : "gemini-1.5-flash",
-      maxTokens: isPaid ? 16000 : 8000,
+      model: "gemini-2.0-flash",  // fixed: 1.5-pro/flash deprecated
+      maxTokens: 24000,
       label: "Gemini",
     },
   ];
@@ -652,10 +671,6 @@ export async function POST(req: NextRequest) {
         } else {
           raw = await callGemini(systemPrompt, prompt, attempt.model);
         }
-
-        console.log("RAW RESPONSE PROVIDER:", attempt.provider);
-        console.log("RAW RESPONSE LENGTH:", raw.length);
-        console.log("RAW RESPONSE FIRST 1000:", raw.slice(0, 1000));
 
         html = cleanHTML(raw);
         usedProvider = attempt.provider;
