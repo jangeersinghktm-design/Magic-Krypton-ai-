@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       .replace(/```\s*/gi, "")
       .trim();
 
-    let let parsed;
+    let parsed;
     try {
       console.log("ANALYZE RAW LENGTH:", cleaned.length);
       console.log("ANALYZE RAW FIRST 1000:", cleaned.slice(0, 1000));
