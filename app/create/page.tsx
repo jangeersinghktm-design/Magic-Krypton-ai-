@@ -459,7 +459,7 @@ function CreatePageInner() {
         method: "POST",
         headers: {"Content-Type":"application/json","Authorization":`Bearer ${session?.access_token}`},
         body: JSON.stringify({screenshot, html: result}),
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(300000),
       });
       const data = await res.json();
       if (!res.ok || !data.review) throw new Error(data.error || "Review failed");
