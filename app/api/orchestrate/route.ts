@@ -41,14 +41,31 @@ interface StreamController {
 }
 
 // ── Krypton Intelligence Engine — Multi-provider system ───────────
-async function callClaude(system: string, user: string, maxTokens = 16000): Promise<string> {
+async function callClaude(system: string, user: string, maxTokens = 12000): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY not set");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01" },
-    body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:maxTokens, system, messages:[{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(120000), // 45s per AI call — fits within Hobby plan 60s Node.js limit
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "prompt-caching-2024-07-31", // Enable prompt caching
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: maxTokens,
+      // System prompt cached — saves ~90% cost on repeated calls (blueprint, generation, repair)
+      system: [
+        {
+          type: "text",
+          text: system,
+          cache_control: { type: "ephemeral" }, // Cache for 5 mins — all 3 Claude calls reuse this
+        }
+      ],
+      messages: [{ role: "user", content: user }],
+    }),
+    signal: AbortSignal.timeout(120000),
   });
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const d = await res.json();
