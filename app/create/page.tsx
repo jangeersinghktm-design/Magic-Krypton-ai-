@@ -1128,7 +1128,7 @@ function CreatePageInner() {
                         {visionReview.issues.map((issue,i)=>(
                           <div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:4}}>
                             <span style={{color:"#E5736B",fontSize:11,flexShrink:0}}>✗</span>
-                            <span style={{fontSize:12,color:C.text2}}>{issue}</span>
+                            <span style={{fontSize:12,color:C.muted}}>{issue}</span>
                           </div>
                         ))}
                       </div>
@@ -1139,7 +1139,7 @@ function CreatePageInner() {
                         {visionReview.passed.map((p,i)=>(
                           <div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:4}}>
                             <span style={{color:"#5FB88A",fontSize:11,flexShrink:0}}>✓</span>
-                            <span style={{fontSize:12,color:C.text2}}>{p}</span>
+                            <span style={{fontSize:12,color:C.muted}}>{p}</span>
                           </div>
                         ))}
                       </div>
