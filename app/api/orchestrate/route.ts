@@ -48,7 +48,7 @@ async function callClaude(system: string, user: string, maxTokens = 16000): Prom
     method: "POST",
     headers: { "Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01" },
     body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:maxTokens, system, messages:[{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(120000, // 45s per AI call — fits within Hobby plan 60s Node.js limit
+    signal: AbortSignal.timeout(120000), // 45s per AI call — fits within Hobby plan 60s Node.js limit
   });
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const d = await res.json();
