@@ -2654,6 +2654,50 @@ ${js}
 </html>`;
 }
 
+// ── Generation Logger — writes to generation_logs table ─────────────
+// Fire-and-forget: never blocks generation, never throws
+async function logGeneration(supabase: any, data: {
+  id?: string;
+  user_id?: string;
+  type?: string;
+  prompt?: string;
+  status: string;
+  provider?: string;
+  error_message?: string;
+  error_code?: string;
+  credits_used?: number;
+  duration_ms?: number;
+  html_length?: number;
+  metadata?: any;
+}) {
+  try {
+    if (data.id) {
+      // Update existing log entry
+      await supabase.from("generation_logs").update({
+        status:        data.status,
+        provider:      data.provider,
+        error_message: data.error_message,
+        error_code:    data.error_code,
+        credits_used:  data.credits_used,
+        duration_ms:   data.duration_ms,
+        html_length:   data.html_length,
+        metadata:      data.metadata,
+      }).eq("id", data.id);
+    } else {
+      // Insert new log entry
+      const { data: inserted } = await supabase.from("generation_logs").insert({
+        user_id:  data.user_id,
+        type:     data.type || "website",
+        prompt:   data.prompt?.slice(0, 500),
+        status:   data.status,
+        metadata: data.metadata || {},
+      }).select("id").single();
+      return inserted?.id;
+    }
+  } catch {} // never block generation
+  return null;
+}
+
 // ── Main SSE Handler ──────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const { prompt, userId, accessToken, competitorUrl, forceType } = await req.json().catch(() => ({}));
@@ -2732,6 +2776,18 @@ const activeGenerations = new Set<string>();
         }
 
         // ── PHASE 1: Reading ──────────────────────────────────────
+        // Start generation log entry
+        let genLogId: string | null = null;
+        try {
+          genLogId = await logGeneration(supabase, {
+            user_id: authedUserId,
+            type:    projectType || "website",
+            prompt:  prompt?.slice(0, 500),
+            status:  "started",
+            metadata: { userAgent: req.headers.get("user-agent")?.slice(0, 100) },
+          });
+        } catch {}
+
         send("phase", { agent:"Reading", icon:"🔍", action:"Analyzing your request...", pct:8 });
         const rawProjectType = detectProjectType(prompt);
         // forceType from UI dropdown overrides auto-detection
@@ -3082,6 +3138,24 @@ ${html}`;
         // ── PHASE 6: Quality Score V2 (8-dimension) ───────────────
         const qualityScoreV2 = computeQualityScoreV2(html, _niche, gate);
 
+        // Log successful generation
+        await logGeneration(supabase, {
+          id:           genLogId || undefined,
+          status:       "completed",
+          provider,
+          credits_used: creditCost,
+          duration_ms:  Date.now() - startTime,
+          html_length:  html.length,
+          metadata: {
+            projectType,
+            qualityScore:  gate.score,
+            linesOfCode:   html.split("\n").length,
+            repairAttempts,
+            buildPass:     gate.buildPass,
+            mobilePass:    gate.mobilePass,
+          },
+        });
+
         send("complete", {
           html,
           projectId:   savedProjectId,
@@ -3107,6 +3181,17 @@ ${html}`;
         });
 
       } catch (err: any) {
+        const errMsg = err?.message || "Unknown error";
+        const isTimeout = errMsg.includes("timeout") || errMsg.includes("Timeout");
+        // Log failed generation
+        await logGeneration(supabase, {
+          id:            genLogId || undefined,
+          status:        isTimeout ? "timeout" : "failed",
+          error_message: errMsg.slice(0, 500),
+          error_code:    isTimeout ? "TIMEOUT" : "GENERATION_ERROR",
+          duration_ms:   Date.now() - startTime,
+          metadata:      { prompt: prompt?.slice(0, 200) },
+        });
         send("error", { message: "Generation failed. Please try again." });
       } finally {
         // Fix 6: Release generation lock
