@@ -753,12 +753,317 @@ document.getElementById('calcBtn').addEventListener('click', () => {
 </script>
 </body>
 </html>`,
-};
 
-// detectProjectType() in orchestrate returns "app" (not "mobile-app") for
-// generic web apps/tools — alias it to the mobile-app skeleton.
 
-// ── Luxury / E-Commerce / Perfume template ───────────────────────
+  // ── Premium Game Template (Snake) ──────────────────────────────
+  "game-snake": `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Snake Game</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#050816;font-family:"Segoe UI",Arial,sans-serif;}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+#hud{display:flex;gap:40px;align-items:center;}
+.hud-item{text-align:center;}
+.hud-val{font-size:28px;font-weight:800;background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hud-label{font-size:11px;color:#64748B;letter-spacing:0.1em;text-transform:uppercase;}
+#gameCanvas{border-radius:12px;border:1px solid rgba(99,102,241,0.3);box-shadow:0 0 60px rgba(99,102,241,0.15);}
+#overlayScreen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:rgba(5,8,22,0.95);z-index:100;}
+#overlayScreen h1{font-size:clamp(32px,6vw,56px);font-weight:800;background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#overlayScreen p{color:#64748B;font-size:16px;}
+#finalScore{font-size:48px;font-weight:800;color:#fff;}
+.game-btn{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border:none;padding:14px 40px;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;}
+.game-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(99,102,241,.4);}
+#dpad{position:fixed;bottom:24px;left:24px;width:140px;height:140px;display:none;}
+#dpad.show{display:block;}
+.dbtn{position:absolute;width:46px;height:46px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);border-radius:8px;color:#6366F1;font-size:20px;display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer;-webkit-user-select:none;}
+#dUp{top:0;left:47px;}#dDown{bottom:0;left:47px;}#dLeft{top:47px;left:0;}#dRight{top:47px;right:0;}
+</style>
+</head>
+<body>
+<div id="hud">
+  <div class="hud-item"><div class="hud-val" id="scoreDisplay">0</div><div class="hud-label">Score</div></div>
+  <div class="hud-item"><div class="hud-val" id="levelDisplay">1</div><div class="hud-label">Level</div></div>
+  <div class="hud-item"><div class="hud-val" id="highDisplay">0</div><div class="hud-label">Best</div></div>
+</div>
+<canvas id="gameCanvas"></canvas>
+<div id="dpad">
+  <div class="dbtn" id="dUp">▲</div><div class="dbtn" id="dDown">▼</div>
+  <div class="dbtn" id="dLeft">◀</div><div class="dbtn" id="dRight">▶</div>
+</div>
+<div id="overlayScreen">
+  <h1>SNAKE</h1>
+  <p>Use arrow keys or WASD to move</p>
+  <div id="finalScore" style="display:none;"></div>
+  <button class="game-btn" id="startBtn">▶ Start Game</button>
+</div>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const CELL = 20;
+let cols, rows, snake, dir, food, score, level, hs, speed, loop, gameRunning = false;
+
+function resize() {
+  const size = Math.min(window.innerWidth - 48, window.innerHeight - 160, 600);
+  canvas.width = Math.floor(size / CELL) * CELL;
+  canvas.height = canvas.width;
+  cols = canvas.width / CELL; rows = canvas.height / CELL;
+}
+
+function init() {
+  snake = [{x: Math.floor(cols/2), y: Math.floor(rows/2)}];
+  dir = {x:1,y:0}; score = 0; level = 1; speed = 120;
+  hs = parseInt(localStorage.getItem('snakeHS') || '0');
+  updateHUD(); placeFood(); gameRunning = true;
+  clearInterval(loop); loop = setInterval(tick, speed);
+}
+
+function placeFood() {
+  do { food = {x:Math.floor(Math.random()*cols), y:Math.floor(Math.random()*rows)}; }
+  while (snake.some(s=>s.x===food.x&&s.y===food.y));
+}
+
+function tick() {
+  const head = {x:(snake[0].x+dir.x+cols)%cols, y:(snake[0].y+dir.y+rows)%rows};
+  if (snake.some(s=>s.x===head.x&&s.y===head.y)) return gameOver();
+  snake.unshift(head);
+  if (head.x===food.x&&head.y===food.y) {
+    score += 10 * level; if (score > hs) { hs = score; localStorage.setItem('snakeHS', hs); }
+    if (score % 50 === 0) { level++; speed = Math.max(60, speed - 10); clearInterval(loop); loop = setInterval(tick, speed); }
+    placeFood();
+  } else snake.pop();
+  updateHUD(); draw();
+}
+
+function draw() {
+  ctx.fillStyle = '#050816'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Grid
+  ctx.strokeStyle = 'rgba(99,102,241,0.05)';
+  for(let i=0;i<=cols;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,canvas.height);ctx.stroke();}
+  for(let j=0;j<=rows;j++){ctx.beginPath();ctx.moveTo(0,j*CELL);ctx.lineTo(canvas.width,j*CELL);ctx.stroke();}
+  // Food
+  const gf = ctx.createRadialGradient(food.x*CELL+CELL/2,food.y*CELL+CELL/2,2,food.x*CELL+CELL/2,food.y*CELL+CELL/2,CELL/2);
+  gf.addColorStop(0,'#F59E0B'); gf.addColorStop(1,'#EF4444');
+  ctx.fillStyle=gf; ctx.beginPath(); ctx.arc(food.x*CELL+CELL/2,food.y*CELL+CELL/2,CELL/2-2,0,Math.PI*2); ctx.fill();
+  // Snake
+  snake.forEach((s,i)=>{
+    const ratio = i/snake.length;
+    const g = ctx.createLinearGradient(s.x*CELL,s.y*CELL,s.x*CELL+CELL,s.y*CELL+CELL);
+    g.addColorStop(0,i===0?'#818CF8':'#6366F1'); g.addColorStop(1,i===0?'#6366F1':'#4F46E5');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.roundRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2,4); ctx.fill();
+    if(i===0){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x*CELL+CELL/2,s.y*CELL+CELL/2,2,0,Math.PI*2);ctx.fill();}
+  });
+}
+
+function updateHUD() {
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('levelDisplay').textContent = level;
+  document.getElementById('highDisplay').textContent = hs;
+}
+
+function gameOver() {
+  gameRunning=false; clearInterval(loop);
+  const o=document.getElementById('overlayScreen');
+  o.querySelector('h1').textContent='GAME OVER';
+  o.querySelector('p').textContent='Better luck next time!';
+  document.getElementById('finalScore').style.display='block';
+  document.getElementById('finalScore').textContent=score;
+  document.getElementById('startBtn').textContent='↺ Play Again';
+  o.style.display='flex';
+}
+
+document.getElementById('startBtn').addEventListener('click',()=>{
+  document.getElementById('overlayScreen').style.display='none';
+  document.getElementById('finalScore').style.display='none';
+  resize(); init();
+});
+
+document.addEventListener('keydown',e=>{
+  if(!gameRunning)return;
+  const k={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},
+    w:{x:0,y:-1},s:{x:0,y:1},a:{x:-1,y:0},d:{x:1,y:0}};
+  const nd=k[e.key];
+  if(nd&&!(nd.x===-dir.x&&nd.y===-dir.y)){dir=nd;e.preventDefault();}
+});
+
+// Mobile D-Pad
+const dmap={dUp:{x:0,y:-1},dDown:{x:0,y:1},dLeft:{x:-1,y:0},dRight:{x:1,y:0}};
+Object.keys(dmap).forEach(id=>{
+  document.getElementById(id).addEventListener('touchstart',e=>{e.preventDefault();if(gameRunning){const nd=dmap[id];if(!(nd.x===-dir.x&&nd.y===-dir.y))dir=nd;}},{passive:false});
+});
+if('ontouchstart' in window){document.getElementById('dpad').classList.add('show');}
+window.addEventListener('resize',()=>{if(gameRunning){resize();draw();}});
+resize();
+</script>
+</body>
+</html>`,
+
+  // ── Premium App Template (Task Manager) ──────────────────────────
+  "task-app": `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskFlow App</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--primary:#6366F1;--grad:linear-gradient(135deg,#6366F1,#8B5CF6);--bg:#030308;--surf:#07070F;--card:#0D0D1A;--text:#FFF;--muted:#64748B;--border:rgba(255,255,255,0.07);--success:#10B981;--warning:#F59E0B;--danger:#EF4444;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;min-height:100vh;display:flex;}
+.sidebar{width:240px;background:var(--surf);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:8px;position:fixed;top:0;left:0;bottom:0;}
+.sidebar-logo{font-family:"Syne",sans-serif;font-weight:800;font-size:18px;padding:8px 12px;margin-bottom:8px;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:all .2s;color:var(--muted);font-size:14px;}
+.nav-item:hover,.nav-item.active{background:rgba(99,102,241,.12);color:#fff;}
+.nav-item.active{color:var(--primary);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.nav-divider{height:1px;background:var(--border);margin:8px 0;}
+.main{margin-left:240px;flex:1;padding:32px;min-height:100vh;}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+.page-title{font-family:"Syne",sans-serif;font-size:24px;font-weight:800;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;border:none;transition:all .2s;}
+.btn-primary{background:var(--grad);color:#fff;}.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(99,102,241,.35);}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.stat-num{font-family:"Syne",sans-serif;font-size:28px;font-weight:800;margin-bottom:4px;}
+.stat-label{font-size:12px;color:var(--muted);}
+.stat-trend{font-size:12px;font-weight:600;margin-top:4px;}
+.trend-up{color:var(--success);}.trend-down{color:var(--danger);}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.column{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.col-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.col-title{font-weight:700;font-size:14px;}
+.col-count{background:var(--card);border:1px solid var(--border);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--muted);}
+.task-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all .2s;}
+.task-card:hover{border-color:rgba(99,102,241,.3);transform:translateY(-2px);}
+.task-title{font-size:14px;font-weight:600;margin-bottom:8px;}
+.task-meta{display:flex;justify-content:space-between;align-items:center;}
+.tag{font-size:11px;padding:3px 10px;border-radius:999px;font-weight:600;}
+.tag-high{background:rgba(239,68,68,.15);color:#EF4444;}
+.tag-medium{background:rgba(245,158,11,.15);color:#F59E0B;}
+.tag-low{background:rgba(16,185,129,.15);color:#10B981;}
+.task-date{font-size:11px;color:var(--muted);}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:10px;}
+.progress-fill{height:100%;border-radius:2px;background:var(--grad);}
+.add-task{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;border:1px dashed var(--border);cursor:pointer;font-size:13px;color:var(--muted);transition:all .2s;margin-top:8px;}
+.add-task:hover{border-color:var(--primary);color:var(--primary);}
+.modal{display:none;position:fixed;inset:0;background:rgba(3,3,8,.85);z-index:200;align-items:center;justify-content:center;}
+.modal.open{display:flex;}
+.modal-box{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:28px;width:420px;max-width:95vw;}
+.modal-title{font-family:"Syne",sans-serif;font-size:18px;font-weight:800;margin-bottom:20px;}
+.form-group{margin-bottom:16px;}
+.form-label{font-size:12px;color:var(--muted);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.05em;}
+.form-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;outline:none;}
+.form-input:focus{border-color:var(--primary);}
+.form-select{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:"DM Sans",sans-serif;font-size:14px;outline:none;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border);}
+@media(max-width:768px){.sidebar{display:none;}.main{margin-left:0;padding:16px;}.stats-row{grid-template-columns:repeat(2,1fr);}.board{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">TaskFlow</div>
+  <div class="nav-divider"></div>
+  <div class="nav-item active"><span class="nav-icon">📋</span>My Tasks</div>
+  <div class="nav-item"><span class="nav-icon">📊</span>Dashboard</div>
+  <div class="nav-item"><span class="nav-icon">👥</span>Team</div>
+  <div class="nav-item"><span class="nav-icon">📅</span>Calendar</div>
+  <div class="nav-item"><span class="nav-icon">📁</span>Projects</div>
+  <div class="nav-divider"></div>
+  <div class="nav-item"><span class="nav-icon">⚙️</span>Settings</div>
+</aside>
+<main class="main">
+  <div class="page-header">
+    <h1 class="page-title">My Tasks</h1>
+    <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('open')">+ New Task</button>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;" id="totalCount">12</div><div class="stat-label">Total Tasks</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--warning);" id="todoCount">4</div><div class="stat-label">To Do</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--primary);" id="inProgressCount">5</div><div class="stat-label">In Progress</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--success);" id="doneCount">3</div><div class="stat-label">Completed</div></div>
+  </div>
+  <div class="board">
+    <div class="column">
+      <div class="col-header"><span class="col-title">📋 To Do</span><span class="col-count" id="todoColCount">4</span></div>
+      <div id="todoCol">
+        <div class="task-card"><div class="task-title">Design new dashboard layout</div><div class="task-meta"><span class="tag tag-high">High</span><span class="task-date">Jun 25</span></div><div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div></div>
+        <div class="task-card"><div class="task-title">Write API documentation</div><div class="task-meta"><span class="tag tag-medium">Medium</span><span class="task-date">Jun 28</span></div></div>
+        <div class="task-card"><div class="task-title">Set up email notifications</div><div class="task-meta"><span class="tag tag-low">Low</span><span class="task-date">Jul 1</span></div></div>
+        <div class="task-card"><div class="task-title">Review user feedback</div><div class="task-meta"><span class="tag tag-medium">Medium</span><span class="task-date">Jul 3</span></div></div>
+      </div>
+      <div class="add-task" onclick="document.getElementById('addModal').classList.add('open')">+ Add task</div>
+    </div>
+    <div class="column">
+      <div class="col-header"><span class="col-title">🔄 In Progress</span><span class="col-count" id="inProgColCount">5</span></div>
+      <div id="inProgressCol">
+        <div class="task-card"><div class="task-title">Build authentication system</div><div class="task-meta"><span class="tag tag-high">High</span><span class="task-date">Jun 24</span></div><div class="progress-bar"><div class="progress-fill" style="width:65%"></div></div></div>
+        <div class="task-card"><div class="task-title">Implement search feature</div><div class="task-meta"><span class="tag tag-medium">Medium</span><span class="task-date">Jun 26</span></div><div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div></div>
+        <div class="task-card"><div class="task-title">Optimize database queries</div><div class="task-meta"><span class="tag tag-high">High</span><span class="task-date">Jun 23</span></div><div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div></div>
+        <div class="task-card"><div class="task-title">Mobile responsive fixes</div><div class="task-meta"><span class="tag tag-medium">Medium</span><span class="task-date">Jun 27</span></div><div class="progress-bar"><div class="progress-fill" style="width:30%"></div></div></div>
+        <div class="task-card"><div class="task-title">Write unit tests</div><div class="task-meta"><span class="tag tag-low">Low</span><span class="task-date">Jun 30</span></div><div class="progress-bar"><div class="progress-fill" style="width:15%"></div></div></div>
+      </div>
+    </div>
+    <div class="column">
+      <div class="col-header"><span class="col-title">✅ Done</span><span class="col-count" id="doneColCount">3</span></div>
+      <div id="doneCol">
+        <div class="task-card" style="opacity:.7"><div class="task-title" style="text-decoration:line-through;">Project setup & config</div><div class="task-meta"><span class="tag tag-high">High</span><span class="task-date">Jun 20</span></div><div class="progress-bar"><div class="progress-fill" style="width:100%;background:var(--success)"></div></div></div>
+        <div class="task-card" style="opacity:.7"><div class="task-title" style="text-decoration:line-through;">Design system creation</div><div class="task-meta"><span class="tag tag-medium">Medium</span><span class="task-date">Jun 21</span></div><div class="progress-bar"><div class="progress-fill" style="width:100%;background:var(--success)"></div></div></div>
+        <div class="task-card" style="opacity:.7"><div class="task-title" style="text-decoration:line-through;">Initial prototype</div><div class="task-meta"><span class="tag tag-low">Low</span><span class="task-date">Jun 22</span></div><div class="progress-bar"><div class="progress-fill" style="width:100%;background:var(--success)"></div></div></div>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="modal" id="addModal">
+  <div class="modal-box">
+    <div class="modal-title">New Task</div>
+    <div class="form-group"><label class="form-label">Task Title</label><input class="form-input" id="taskTitle" placeholder="Enter task title..." /></div>
+    <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="taskPriority"><option value="high">🔴 High</option><option value="medium" selected>🟡 Medium</option><option value="low">🟢 Low</option></select></div>
+    <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="taskDate" type="date" /></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="document.getElementById('addModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="addTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+<script>
+function addTask(){
+  const title=document.getElementById('taskTitle').value.trim();
+  if(!title)return;
+  const priority=document.getElementById('taskPriority').value;
+  const date=document.getElementById('taskDate').value;
+  const tagClass={high:'tag-high',medium:'tag-medium',low:'tag-low'}[priority];
+  const tagLabel={high:'High',medium:'Medium',low:'Low'}[priority];
+  const card=document.createElement('div');
+  card.className='task-card';
+  card.innerHTML=\`<div class="task-title">\${title}</div><div class="task-meta"><span class="tag \${tagClass}">\${tagLabel}</span><span class="task-date">\${date||'No date'}</span></div>\`;
+  document.getElementById('todoCol').prepend(card);
+  document.getElementById('taskTitle').value='';
+  document.getElementById('addModal').classList.remove('open');
+  updateCounts();
+}
+function updateCounts(){
+  const t=document.getElementById('todoCol').querySelectorAll('.task-card').length;
+  const p=document.getElementById('inProgressCol').querySelectorAll('.task-card').length;
+  const d=document.getElementById('doneCol').querySelectorAll('.task-card').length;
+  document.getElementById('todoColCount').textContent=t;
+  document.getElementById('inProgColCount').textContent=p;
+  document.getElementById('doneColCount').textContent=d;
+  document.getElementById('totalCount').textContent=t+p+d;
+  document.getElementById('todoCount').textContent=t;
+  document.getElementById('inProgressCount').textContent=p;
+  document.getElementById('doneCount').textContent=d;
+}
+document.getElementById('addModal').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.classList.remove('open');});
+document.querySelectorAll('.nav-item').forEach(item=>{item.addEventListener('click',function(){document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));this.classList.add('active');});});
+</script>
+</body>
+</html>`,
+
+  // ── Luxury / E-Commerce / Perfume template ───────────────────────
 // Production-ready premium store template — manually crafted for
 // maximum quality. AI fills in brand name, product names, prices,
 // and color palette. Structure/sections/footer are guaranteed correct.
@@ -794,7 +1099,7 @@ h3{font-size:clamp(20px,2.5vw,26px);}
 img{display:block;width:100%;object-fit:cover;}
 a{text-decoration:none;color:inherit;}
 
-/* UTILS */
+ /* UTILS */
 .container{max-width:1260px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
 .grad-text{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .eyebrow{font-family:'Jost',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;}
@@ -2904,7 +3209,7 @@ document.querySelectorAll('#navLinks a').forEach(a => {
 </body>
 </html>
 `,
-
+};
 
 const TEMPLATE_ALIASES: Record<string, string> = { app: "mobile-app", perfume: "luxury", store: "luxury", ecommerce: "luxury", "parfume": "luxury", "fragrance": "luxury" };
 
