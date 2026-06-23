@@ -662,14 +662,14 @@ function CreatePageInner() {
       const codeForChat=isLarge&&isGameProject
         ?result.slice(0,5000)+"\n\n/* ... MIDDLE SECTION PRESERVED ... */\n\n"+result.slice(-3000)
         :result;
-      const r1=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userMessage:editPrompt,currentCode:{"index.html":codeForChat},projectName,framework:isGameProject?"game":"html",projectContext:gCtx,gameMemory:gameMemory||undefined}),signal:AbortSignal.timeout(110000)});
+      const r1=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userMessage:editPrompt,currentCode:{"index.html":codeForChat},projectName,framework:isGameProject?"game":"html",projectContext:gCtx,gameMemory:gameMemory||undefined}),signal:AbortSignal.timeout(300000)});
       const d1=await r1.json();
       newHtml=d1.codeChanges?.["index.html"]||"";
       if(!newHtml){const m=(d1.reply||"").match(/<!DOCTYPE[\s\S]*<\/html>/i);if(m)newHtml=m[0];}
 
       // Strategy 2: Game API regenerate with memory (games only)
       if(!newHtml&&isGameProject){
-        const r2=await fetch("/api/game",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:editPrompt+" (EDIT: preserve all existing mechanics)",userId:session.user.id,accessToken:session.access_token,gameMemory}),signal:AbortSignal.timeout(110000)});
+        const r2=await fetch("/api/game",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:editPrompt+" (EDIT: preserve all existing mechanics)",userId:session.user.id,accessToken:session.access_token,gameMemory}),signal:AbortSignal.timeout(300000)});
         if(r2.ok&&r2.body){
           const reader=r2.body.getReader();const dec=new TextDecoder();let buf="";
           while(true){
@@ -687,7 +687,7 @@ function CreatePageInner() {
       // Strategy 3: Generate API (websites only)
       if(!newHtml&&!isGameProject){
         const ctx=isLarge?result.slice(0,6000)+"\n\n[...]\n\n"+result.slice(-3000):result.slice(0,10000);
-        const r3=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:`Apply ONLY: "${editPrompt}"\nPreserve design.\nCODE:\n${ctx}`,isEdit:true}),signal:AbortSignal.timeout(110000)});
+        const r3=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:`Apply ONLY: "${editPrompt}"\nPreserve design.\nCODE:\n${ctx}`,isEdit:true}),signal:AbortSignal.timeout(300000)});
         const d3=await r3.json();if(d3.html)newHtml=d3.html;
       }
 
