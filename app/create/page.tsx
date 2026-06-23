@@ -510,7 +510,7 @@ function CreatePageInner() {
       const res = await fetch(apiEndpoint,{
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({prompt:userPrompt,userId:session.user.id,accessToken:session.access_token,forceType:forceType||undefined,competitorUrl:competitorUrl?.trim()||undefined}),
-        signal:AbortSignal.timeout(110000),
+        signal:AbortSignal.timeout(300000),
       });
       if (!res.ok||!res.body) throw new Error("stream_failed");
 
