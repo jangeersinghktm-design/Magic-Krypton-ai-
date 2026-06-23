@@ -2933,7 +2933,7 @@ Format: numbered list only. No preamble.`;
         }
 
         let repairAttempts = 0;
-        const MAX_REPAIR_ATTEMPTS = 1; // websites get 1 repair pass (vs 2 for dedicated game route)
+        const MAX_REPAIR_ATTEMPTS = 0; // websites get 1 repair pass (vs 2 for dedicated game route)
 
         // Critic-driven repair: trigger even if the structural gate already
         // passed, IF the critic found real issues on a low score — subjective
