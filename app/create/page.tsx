@@ -266,6 +266,10 @@ function CreatePageInner() {
   const [editingName, setEditingName] = useState(false);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
   const [device, setDevice]     = useState<Device>("desktop");
+  // Screenshot Vision states
+  const [visionReviewing, setVisionReviewing] = useState(false);
+  const [visionReview, setVisionReview] = useState<{score:number;issues:string[];passed:string[];autoFixInstructions:string}|null>(null);
+  const [visionError, setVisionError] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   // Smart resize: "chat" = 50/50, "preview" = 35/65 default
   const [panelFocus, setPanelFocus] = useState<"chat"|"preview">("preview");
@@ -423,6 +427,50 @@ function CreatePageInner() {
   // ══════════════════════════════════════════════════════
   // GENERATION FLOW
   // ══════════════════════════════════════════════════════
+  // ── Screenshot Vision Review ──────────────────────────────────────
+  const runVisionReview = async () => {
+    if (!result || visionReviewing) return;
+    setVisionReviewing(true);
+    setVisionError("");
+    setVisionReview(null);
+    try {
+      const iframe = document.querySelector("iframe[title=\"Live Preview\"]") as HTMLIFrameElement;
+      if (!iframe?.contentWindow) throw new Error("Preview not ready");
+      await new Promise<void>((resolve) => {
+        const script = iframe.contentDocument!.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+        script.onload = () => resolve();
+        script.onerror = () => resolve(); // fallback
+        iframe.contentDocument!.head.appendChild(script);
+        setTimeout(resolve, 5000);
+      });
+      await new Promise(r => setTimeout(r, 600));
+      const screenshot: string = await new Promise((resolve, reject) => {
+        const h2c = (iframe.contentWindow as any).html2canvas;
+        if (!h2c) return reject(new Error("html2canvas not loaded"));
+        h2c(iframe.contentDocument!.body, {
+          scale: 0.5, useCORS: true, allowTaint: true,
+          backgroundColor: "#050816", width: 1280, height: 720,
+          windowWidth: 1280, windowHeight: 720,
+        }).then((canvas: HTMLCanvasElement) => resolve(canvas.toDataURL("image/png"))).catch(reject);
+      });
+      const {data:{session}} = await supabase.auth.getSession();
+      const res = await fetch("/api/screenshot-review", {
+        method: "POST",
+        headers: {"Content-Type":"application/json","Authorization":`Bearer ${session?.access_token}`},
+        body: JSON.stringify({screenshot, html: result}),
+        signal: AbortSignal.timeout(60000),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.review) throw new Error(data.error || "Review failed");
+      setVisionReview(data.review);
+    } catch (err: any) {
+      setVisionError(err.message || "Vision review failed. Try again.");
+    } finally {
+      setVisionReviewing(false);
+    }
+  };
+
   const runFlow = async (userPrompt:string) => {
     if (!userPrompt.trim()||loading) return;
     if (remaining<1) {
@@ -1011,6 +1059,15 @@ function CreatePageInner() {
                     <button key={d.id} onClick={()=>setDevice(d.id)} style={{width:26,height:26,borderRadius:7,border:`1px solid ${device===d.id?"rgba(245,245,245,0.35)":C.border}`,background:device===d.id?"rgba(245,245,245,0.12)":"none",color:device===d.id?C.purple:C.muted,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{d.icon}</button>
                   ))}
                   <button onClick={()=>{if(!result)return;const b=new Blob([result],{type:"text/html"});window.open(URL.createObjectURL(b),"_blank");}} style={{width:26,height:26,borderRadius:7,border:`1px solid ${C.border}`,background:"none",color:C.muted,fontSize:11,cursor:"pointer",marginLeft:3}}>↗</button>
+                  {/* Screenshot Vision Review Button */}
+                  <button
+                    onClick={runVisionReview}
+                    disabled={visionReviewing || !result}
+                    title="AI Vision Review — Claude will screenshot and review your website"
+                    style={{height:26,padding:"0 8px",borderRadius:7,border:`1px solid ${visionReview ? (visionReview.score>=7?"rgba(95,184,138,0.5)":"rgba(239,115,107,0.5)") : C.border}`,background:visionReviewing?"rgba(245,245,245,0.05)":visionReview?"rgba(245,245,245,0.08)":"none",color:visionReviewing?C.muted:visionReview?(visionReview.score>=7?"#5FB88A":"#E5736B"):C.muted,fontSize:10,fontWeight:600,cursor:visionReviewing||!result?"default":"pointer",marginLeft:3,display:"flex",alignItems:"center",gap:4,letterSpacing:"0.05em"}}
+                  >
+                    {visionReviewing ? "👁 Reviewing..." : visionReview ? `👁 ${visionReview.score}/10` : "👁 AI Review"}
+                  </button>
                 </div>
               )}
 
@@ -1044,6 +1101,51 @@ function CreatePageInner() {
                       <div style={{fontSize:14,color:C.muted}}>Preview will appear here</div>
                     </div>
                 }
+              </div>
+            )}
+
+            {/* Screenshot Vision Results Panel */}
+            {(visionReview || visionError) && rightTab==="preview" && (
+              <div style={{borderTop:`1px solid ${C.border}`,background:C.surface,padding:"12px 16px",flexShrink:0,maxHeight:220,overflowY:"auto"}}>
+                {visionError && (
+                  <div style={{color:"#E5736B",fontSize:12}}>{visionError}</div>
+                )}
+                {visionReview && (
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                      <span style={{fontWeight:700,fontSize:13,color:C.text}}>👁 AI Vision Review</span>
+                      <span style={{
+                        background:visionReview.score>=8?"rgba(95,184,138,0.15)":visionReview.score>=6?"rgba(245,158,11,0.15)":"rgba(229,115,107,0.15)",
+                        color:visionReview.score>=8?"#5FB88A":visionReview.score>=6?"#F59E0B":"#E5736B",
+                        border:`1px solid ${visionReview.score>=8?"rgba(95,184,138,0.3)":visionReview.score>=6?"rgba(245,158,11,0.3)":"rgba(229,115,107,0.3)"}`,
+                        borderRadius:999,padding:"2px 10px",fontSize:11,fontWeight:700
+                      }}>{visionReview.score}/10</span>
+                      <button onClick={()=>{setVisionReview(null);setVisionError("");}} style={{marginLeft:"auto",background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
+                    </div>
+                    {visionReview.issues.length > 0 && (
+                      <div style={{marginBottom:8}}>
+                        <div style={{fontSize:11,fontWeight:600,color:"#E5736B",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.08em"}}>Issues Found</div>
+                        {visionReview.issues.map((issue,i)=>(
+                          <div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:4}}>
+                            <span style={{color:"#E5736B",fontSize:11,flexShrink:0}}>✗</span>
+                            <span style={{fontSize:12,color:C.text2}}>{issue}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {visionReview.passed.length > 0 && (
+                      <div>
+                        <div style={{fontSize:11,fontWeight:600,color:"#5FB88A",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.08em"}}>Looking Good</div>
+                        {visionReview.passed.map((p,i)=>(
+                          <div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:4}}>
+                            <span style={{color:"#5FB88A",fontSize:11,flexShrink:0}}>✓</span>
+                            <span style={{fontSize:12,color:C.text2}}>{p}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
