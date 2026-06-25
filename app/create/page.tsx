@@ -17,21 +17,23 @@ import { runProductionGate } from "@/lib/completion-engine";
 
 // ── Design Tokens ─────────────────────────────────────────────────
 const C = {
-  bg:       "#050816",   // Deep Space
-  surface:  "#0B1020",
-  card:     "#11151F",   // Graphite
-  border:   "rgba(255,255,255,0.08)",
-  borderHi: "rgba(245,245,245,0.22)",
-  text:     "#F5F5F5",   // Platinum
-  sub:      "#9AA3AF",
-  muted:    "#5B6472",
-  gold:     "#F5F5F5",   // legacy key name, platinum value
-  purple:   "#D9D9D9",   // legacy key name, silver value
-  violet:   "#BFC5CC",   // legacy key name, accent-silver value
-  green:    "#5FB88A",
-  red:      "#E5736B",
-  grad:     "linear-gradient(135deg,#F5F5F5,#BFC5CC)",
-  gradP:    "linear-gradient(135deg,#D9D9D9,#9AA3AF)",
+  bg:       "#040610",   // Deep Space
+  surface:  "#080C18",
+  card:     "#0D1121",   // Card
+  border:   "rgba(255,255,255,0.07)",
+  borderHi: "rgba(255,255,255,0.18)",
+  text:     "#F0F2F5",   // Platinum
+  sub:      "#8892A0",
+  muted:    "#4A5568",
+  text2:    "#8892A0",   // alias for sub — fixes C.text2 references
+  gold:     "#E8E8E8",
+  purple:   "#C8CDD4",
+  violet:   "#A8B0BA",
+  green:    "#4CAF8A",
+  red:      "#E06B63",
+  grad:     "linear-gradient(135deg,#E8E8E8,#A8B0BA)",
+  gradP:    "linear-gradient(135deg,#C8CDD4,#8892A0)",
+  accent:   "rgba(255,255,255,0.06)",
 };
 
 type MsgRole  = "user" | "ai";
@@ -63,38 +65,72 @@ interface ProjectMemory {
   colorSystem: string; fonts: string; sections: string;
   navigation: string; editHistory: string[]; codeLines: number;
   isDarkTheme: boolean; hasNavbar: boolean; hasFooter: boolean;
+  // Primary color extracted directly — not just variable name
+  primaryColor?: string;
+  // Niche + template tracking for consistent edits
+  niche?: string;
+  templateUsed?: string;
+  componentVariants?: string;
   // Phase 7 — Memory Engine: project blueprint from generation
   blueprint?: any;
 }
 
 function buildProjectMemory(html:string, name:string, prompt:string, msgs:ChatMessage[], prev?:ProjectMemory|null, blueprint?:any): ProjectMemory {
   if (!html) return prev || { projectName:name, originalPrompt:prompt, colorSystem:"", fonts:"", sections:"", navigation:"", editHistory:[], codeLines:0, isDarkTheme:true, hasNavbar:false, hasFooter:false, blueprint };
-  const cssVars = (html.match(/--[\w-]+\s*:\s*[^;}{]+/g)||[]).slice(0,20).join("; ").slice(0,500);
+  // Capture full CSS variable definitions (name + value) — up to 800 chars
+  const cssVars = (html.match(/--[\w-]+\s*:\s*[^;}{]+/g)||[]).slice(0,25).join("; ").slice(0,800);
+  // Extract primary color hex value directly for reliable palette tracking
+  const primaryColorMatch = html.match(/--primary\s*:\s*(#[0-9a-fA-F]{3,6}|rgba?\([^)]+\))/);
+  const primaryColor = primaryColorMatch?.[1] || prev?.primaryColor || "";
   const fontMatches = html.match(/family=([^&"'\s)]+)/g)||[];
   const fonts = [...new Set(fontMatches.map(f=>f.replace("family=","").split(":")[0].replace(/\+/g," ")))].join(", ")||"System";
-  const h2s = (html.match(/<h2[^>]*>([^<]+)<\/h2>/gi)||[]).map(h=>h.replace(/<[^>]+>/g,"")).slice(0,6);
-  const h1s = (html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)||[]).map(h=>h.replace(/<[^>]+>/g,"")).slice(0,2);
-  const navLinks = (html.match(/<a[^>]*>([^<]{2,25})<\/a>/gi)||[]).map(a=>a.replace(/<[^>]+>/g,"").trim()).filter(t=>t.length>2).slice(0,8);
-  const edits = msgs.filter(m=>m.role==="user"&&m.type==="text").map(m=>m.content).slice(-8);
-  return { projectName:name, originalPrompt:prompt, colorSystem:cssVars, fonts, sections:[...h1s,...h2s].join("|").slice(0,200), navigation:navLinks.join(", ").slice(0,150), editHistory:edits, codeLines:html.split("\n").length, isDarkTheme:/#0[0-2]/.test(html.slice(0,3000)), hasNavbar:/<nav/.test(html), hasFooter:/<footer/.test(html), blueprint: blueprint||prev?.blueprint };
+  const h2s = (html.match(/<h2[^>]*>([^<]+)<\/h2>/gi)||[]).map(h=>h.replace(/<[^>]+>/g,"")).slice(0,8);
+  const h1s = (html.match(/<h1[^>]*>([^<]+)<\/h1>/gi)||[]).map(h=>h.replace(/<[^>]+>/g,"")).slice(0,3);
+  const navLinks = (html.match(/<a[^>]*>([^<]{2,25})<\/a>/gi)||[]).map(a=>a.replace(/<[^>]+>/g,"").trim()).filter(t=>t.length>2).slice(0,10);
+  // Keep last 12 edits (was 8 — more context for long sessions)
+  const edits = msgs.filter(m=>m.role==="user"&&m.type==="text").map(m=>m.content).slice(-12);
+  return {
+    projectName:name, originalPrompt:prompt, colorSystem:cssVars,
+    primaryColor, fonts,
+    sections:[...h1s,...h2s].join("|").slice(0,300),
+    navigation:navLinks.join(", ").slice(0,200),
+    editHistory:edits,
+    codeLines:html.split("\n").length,
+    isDarkTheme:/#0[0-2]/.test(html.slice(0,3000)),
+    hasNavbar:/<nav/.test(html),
+    hasFooter:/<footer/.test(html),
+    // Preserve niche/template from previous memory or blueprint
+    niche: prev?.niche || blueprint?.niche || "",
+    templateUsed: prev?.templateUsed || blueprint?.templateUsed || "",
+    componentVariants: prev?.componentVariants || "",
+    blueprint: blueprint||prev?.blueprint
+  };
 }
 
 function formatMemoryForAI(mem:ProjectMemory|null): string {
   if (!mem||!mem.colorSystem) return "";
   const blueprintLine = mem.blueprint
-    ? `║ Pages/Sections: ${(mem.blueprint.pages||[]).join(", ").slice(0,150)}\n║ Components: ${(mem.blueprint.components||[]).join(", ").slice(0,150)}\n`
+    ? `║ Pages/Sections: ${(mem.blueprint.pages||[]).join(", ").slice(0,200)}\n║ Components: ${(mem.blueprint.components||[]).join(", ").slice(0,200)}\n`
+    : "";
+  const nicheLine = (mem.niche||mem.templateUsed)
+    ? `║ Niche/Template: ${mem.niche||""}${mem.templateUsed?" | "+mem.templateUsed:""}\n`
+    : "";
+  const primaryLine = mem.primaryColor
+    ? `║ Primary Color: ${mem.primaryColor}\n`
     : "";
   return `╔═ KRYPTON PROJECT MEMORY ════════════════╗
 ║ Project: ${mem.projectName}
-║ Theme: ${mem.isDarkTheme?"Dark":"Light"} | ${mem.codeLines} lines
-║ Fonts: ${mem.fonts}
-║ CSS Variables: ${mem.colorSystem.slice(0,250)}
-║ Sections: ${mem.sections.slice(0,150)}
-${blueprintLine}╠═ PRESERVE EXACTLY ══════════════════════╣
-║ Colors, fonts, layout, existing sections
-║ Only change what user requested
-╠═ EDIT HISTORY ══════════════════════════╣
-${mem.editHistory.map((e,i)=>`║ ${i+1}. ${e.slice(0,70)}`).join("\n")||"║ First edit"}
+║ Theme: ${mem.isDarkTheme?"Dark":"Light"} | ${mem.codeLines} lines | ${mem.hasNavbar?"Has Navbar":"No Navbar"} | ${mem.hasFooter?"Has Footer":"No Footer"}
+${primaryLine}║ Fonts: ${mem.fonts}
+${nicheLine}║ CSS Design System: ${mem.colorSystem.slice(0,800)}
+║ Sections: ${mem.sections.slice(0,300)}
+║ Navigation: ${mem.navigation.slice(0,200)}
+${blueprintLine}╠═ CRITICAL — PRESERVE EXACTLY ═══════════╣
+║ Primary color: ${mem.primaryColor||"from CSS vars"}
+║ All existing fonts, layout, sections
+║ Only modify what user explicitly requests
+╠═ RECENT EDITS (last ${mem.editHistory.length}) ══════════════════╣
+${mem.editHistory.map((e,i)=>`║ ${i+1}. ${e.slice(0,80)}`).join("\n")||"║ First edit"}
 ╚═════════════════════════════════════════╝`;
 }
 
@@ -655,21 +691,21 @@ function CreatePageInner() {
     ]});
     let newHtml="";
     const codeLines=result.split("\n").length;
-    const isLarge=codeLines>600;
+    const isLarge=codeLines>1500; // raised from 600 — Component Library output is 600-1200 lines normally
     const gCtx=isGameProject&&gameMemory?formatGameMemoryForAI(gameMemory):formatMemoryForAI(projectMemory);
     try {
       // Strategy 1: Chat API (game-aware surgical edit)
       const codeForChat=isLarge&&isGameProject
         ?result.slice(0,5000)+"\n\n/* ... MIDDLE SECTION PRESERVED ... */\n\n"+result.slice(-3000)
         :result;
-      const r1=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userMessage:editPrompt,currentCode:{"index.html":codeForChat},projectName,framework:isGameProject?"game":"html",projectContext:gCtx,gameMemory:gameMemory||undefined}),signal:AbortSignal.timeout(300000)});
+      const r1=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userMessage:editPrompt,currentCode:{"index.html":codeForChat},projectName,framework:isGameProject?"game":"html",projectContext:gCtx,gameMemory:gameMemory||undefined}),signal:AbortSignal.timeout(110000)});
       const d1=await r1.json();
       newHtml=d1.codeChanges?.["index.html"]||"";
       if(!newHtml){const m=(d1.reply||"").match(/<!DOCTYPE[\s\S]*<\/html>/i);if(m)newHtml=m[0];}
 
       // Strategy 2: Game API regenerate with memory (games only)
       if(!newHtml&&isGameProject){
-        const r2=await fetch("/api/game",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:editPrompt+" (EDIT: preserve all existing mechanics)",userId:session.user.id,accessToken:session.access_token,gameMemory}),signal:AbortSignal.timeout(300000)});
+        const r2=await fetch("/api/game",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:editPrompt+" (EDIT: preserve all existing mechanics)",userId:session.user.id,accessToken:session.access_token,gameMemory}),signal:AbortSignal.timeout(110000)});
         if(r2.ok&&r2.body){
           const reader=r2.body.getReader();const dec=new TextDecoder();let buf="";
           while(true){
@@ -687,7 +723,7 @@ function CreatePageInner() {
       // Strategy 3: Generate API (websites only)
       if(!newHtml&&!isGameProject){
         const ctx=isLarge?result.slice(0,6000)+"\n\n[...]\n\n"+result.slice(-3000):result.slice(0,10000);
-        const r3=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:`Apply ONLY: "${editPrompt}"\nPreserve design.\nCODE:\n${ctx}`,isEdit:true}),signal:AbortSignal.timeout(300000)});
+        const r3=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:`Apply ONLY: "${editPrompt}"\nPreserve design.\nCODE:\n${ctx}`,isEdit:true}),signal:AbortSignal.timeout(110000)});
         const d3=await r3.json();if(d3.html)newHtml=d3.html;
       }
 
@@ -815,18 +851,24 @@ function CreatePageInner() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
-        html,body{height:100%;overflow:hidden;background:#050816;}
-        ::-webkit-scrollbar{width:3px;height:3px;}
-        ::-webkit-scrollbar-thumb{background:rgba(245,245,245,0.2);border-radius:4px;}
+        html,body{height:100%;overflow:hidden;background:#040610;}
+        ::-webkit-scrollbar{width:2px;height:2px;}
+        ::-webkit-scrollbar-track{background:transparent;}
+        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:4px;}
+        ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.22);}
         textarea,input,button{font-family:'DM Sans',sans-serif;}
         @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes pulse{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-        .kr-preview-bg{background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:32px 32px;}
-        .msg-in{animation:fadeUp .22s ease both;}
-        .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 0 20px rgba(245,245,245,0.45);}
-        .tab-icon:hover{background:rgba(255,255,255,0.07)!important;color:#fff!important;}
-        .quick-btn:hover{border-color:rgba(245,245,245,0.4)!important;color:${C.text}!important;}
+        @keyframes pulse{0%,100%{opacity:.3;transform:scale(.88)}50%{opacity:1;transform:scale(1.12)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+        @keyframes shimmer{0%{opacity:.5}50%{opacity:1}100%{opacity:.5}}
+        .kr-preview-bg{background-image:radial-gradient(circle,rgba(255,255,255,0.025) 1px,transparent 1px);background-size:24px 24px;}
+        .msg-in{animation:fadeUp .2s cubic-bezier(0.16,1,0.3,1) both;}
+        .send-btn:hover:not(:disabled){transform:scale(1.05);box-shadow:0 0 24px rgba(255,255,255,0.35);}
+        .tab-icon:hover{background:rgba(255,255,255,0.08)!important;color:#fff!important;}
+        .quick-btn:hover{border-color:rgba(255,255,255,0.35)!important;color:#F0F2F5!important;background:rgba(255,255,255,0.06)!important;}
+        .msg-bubble-user{background:linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06));border:1px solid rgba(255,255,255,0.14);}
+        .nav-link-item:hover{background:rgba(255,255,255,0.06)!important;color:#F0F2F5!important;}
+        .version-card:hover{border-color:rgba(255,255,255,0.18)!important;background:rgba(255,255,255,0.04)!important;}
       `}</style>
 
       <div
@@ -865,33 +907,53 @@ function CreatePageInner() {
       {/* Drag overlay */}
         {isDragging&&<div style={{position:"fixed",inset:0,background:"rgba(245,245,245,0.08)",border:"2px dashed rgba(245,245,245,0.4)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8}}><div style={{fontSize:18,fontWeight:700,color:C.purple}}>Drop files to attach</div></div>}
 
-        {/* ── TOP BAR ── */}
-        <div style={{height:50,flexShrink:0,padding:"0 14px",borderBottom:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",gap:10,zIndex:100}}>
-          <KryptonLogo size={26} showText={false} animated={false} onClick={()=>router.push("/")} style={{cursor:"pointer"}}/>
-          <div style={{width:1,height:18,background:C.border}}/>
+        {/* ── TOP BAR — Premium ── */}
+        <div style={{height:52,flexShrink:0,padding:"0 16px",borderBottom:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",gap:10,zIndex:100,backdropFilter:"blur(8px)"}}>
+          {/* Logo */}
+          <KryptonLogo size={24} showText={false} animated={false} onClick={()=>router.push("/")} style={{cursor:"pointer",flexShrink:0}}/>
+          <div style={{width:1,height:18,background:"rgba(255,255,255,0.08)",flexShrink:0}}/>
 
+          {/* Project Name */}
           {editingName
             ? <input autoFocus value={projectName} onChange={e=>setProjectName(e.target.value)} onBlur={()=>setEditingName(false)} onKeyDown={e=>e.key==="Enter"&&setEditingName(false)}
-                style={{flex:1,maxWidth:260,background:"rgba(245,245,245,0.08)",border:`1px solid ${C.purple}`,borderRadius:7,color:C.text,padding:"3px 10px",fontSize:13,fontWeight:600,outline:"none"}}/>
-            : <button onClick={()=>setEditingName(true)} style={{background:"none",border:"none",color:C.muted,fontSize:13,cursor:"pointer",padding:"2px 8px",flex:1,textAlign:"left",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:240}}>
-                {projectName} <span style={{opacity:.4}}>✏</span>
+                style={{flex:1,maxWidth:280,background:"rgba(255,255,255,0.07)",border:`1px solid rgba(255,255,255,0.2)`,borderRadius:8,color:C.text,padding:"4px 10px",fontSize:13,fontWeight:600,outline:"none"}}/>
+            : <button onClick={()=>setEditingName(true)} title="Click to rename" style={{background:"none",border:"none",color:C.sub,fontSize:13,cursor:"pointer",padding:"3px 8px",borderRadius:6,flex:1,textAlign:"left",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:250,transition:"color .15s"}}>
+                {projectName}
+                <span style={{opacity:.35,marginLeft:5,fontSize:11}}>✏</span>
               </button>
           }
-          {isGameProject && <span style={{padding:"2px 8px",borderRadius:10,background:"rgba(255,215,0,0.08)",border:"1px solid rgba(255,215,0,0.2)",fontSize:10,fontWeight:700,color:C.gold,flexShrink:0}}>🎮 GAME</span>}
+          {isGameProject && (
+            <span style={{padding:"2px 9px",borderRadius:20,background:"rgba(255,215,0,0.07)",border:"1px solid rgba(255,215,0,0.18)",fontSize:10,fontWeight:700,color:"#F5D800",flexShrink:0,letterSpacing:"0.04em"}}>🎮 GAME</span>
+          )}
 
+          {/* Mobile panel toggle */}
           {isMobile&&(
-            <div style={{display:"flex",gap:4,marginLeft:"auto"}}>
+            <div style={{display:"flex",gap:3,marginLeft:"auto",background:"rgba(255,255,255,0.04)",borderRadius:8,padding:3,border:`1px solid ${C.border}`}}>
               {["chat","preview"].map(t=>(
-                <button key={t} onClick={()=>setMobilePanel(t as any)} style={{padding:"4px 12px",borderRadius:7,border:"none",background:mobilePanel===t?C.purple:"rgba(255,255,255,0.06)",color:mobilePanel===t?"#fff":"#666",fontSize:11,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>{t}</button>
+                <button key={t} onClick={()=>setMobilePanel(t as any)}
+                  style={{padding:"3px 12px",borderRadius:6,border:"none",background:mobilePanel===t?"rgba(255,255,255,0.12)":"transparent",color:mobilePanel===t?C.text:C.muted,fontSize:11,fontWeight:600,cursor:"pointer",transition:"all .15s",textTransform:"capitalize"}}>{t}</button>
               ))}
             </div>
           )}
 
-          <div style={{display:"flex",gap:6,alignItems:"center",marginLeft:isMobile?"0":"auto"}}>
-            <div onClick={()=>remaining===0?router.push("/billing"):undefined} style={{padding:"3px 10px",borderRadius:16,background:remaining>0?"rgba(255,215,0,0.07)":"rgba(255,69,69,0.12)",border:`1px solid ${remaining>0?"rgba(255,215,0,0.18)":"rgba(255,69,69,0.35)"}`,fontSize:11,fontWeight:700,color:remaining>0?C.gold:C.red,cursor:remaining===0?"pointer":"default",userSelect:"none"}} title={remaining===0?"Click to upgrade":"Credits remaining"}>
-              ⚡ {remaining>0?remaining:"0 — Upgrade"}
+          {/* Right actions */}
+          <div style={{display:"flex",gap:8,alignItems:"center",marginLeft:isMobile?"0":"auto"}}>
+            {/* Credits badge */}
+            <div
+              onClick={()=>remaining===0?router.push("/billing"):undefined}
+              style={{display:"flex",alignItems:"center",gap:5,padding:"4px 11px",borderRadius:20,background:remaining>3?"rgba(255,255,255,0.05)":remaining>0?"rgba(245,158,11,0.08)":"rgba(229,115,107,0.10)",border:`1px solid ${remaining>3?"rgba(255,255,255,0.10)":remaining>0?"rgba(245,158,11,0.25)":"rgba(229,115,107,0.30)"}`,fontSize:11,fontWeight:700,color:remaining>3?C.sub:remaining>0?"#F59E0B":C.red,cursor:remaining===0?"pointer":"default",userSelect:"none",transition:"all .2s"}}
+              title={remaining===0?"Upgrade for more credits":`${remaining} credits remaining`}
+            >
+              <span style={{fontSize:12}}>⚡</span>
+              <span>{remaining>0?remaining:"Upgrade"}</span>
             </div>
-            {result&&<button onClick={()=>saveProject(result,projectName)} style={{padding:"4px 12px",background:saved?"rgba(0,208,132,0.08)":"rgba(245,245,245,0.08)",border:`1px solid ${saved?"rgba(0,208,132,0.2)":"rgba(245,245,245,0.2)"}`,borderRadius:8,color:saved?C.green:C.purple,fontSize:11,fontWeight:600,cursor:"pointer"}}>{saving?"…":saved?"✓":"Save"}</button>}
+            {/* Save button */}
+            {result&&(
+              <button onClick={()=>saveProject(result,projectName)}
+                style={{padding:"5px 14px",background:saved?"rgba(76,175,138,0.1)":"rgba(255,255,255,0.07)",border:`1px solid ${saved?"rgba(76,175,138,0.25)":"rgba(255,255,255,0.12)"}`,borderRadius:8,color:saved?C.green:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",transition:"all .2s",display:"flex",alignItems:"center",gap:5}}>
+                {saving?"…":saved?"✓ Saved":"Save"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -902,24 +964,58 @@ function CreatePageInner() {
           <div onClick={()=>!isMobile&&setPanelFocus("chat")}
           style={{width:isMobile?"100%":(panelFocus==="chat"?"50%":"35%"),display:isMobile?(mobilePanel==="chat"?"flex":"none"):"flex",flexDirection:"column",borderRight:isMobile?"none":`1px solid ${C.border}`,background:C.surface,overflow:"hidden",flexShrink:0,transition:isMobile?"none":"width .35s cubic-bezier(0.16,1,0.3,1)"}}>
             {/* Loading indicator */}
-            {loading&&<div style={{padding:"6px 16px",borderBottom:`1px solid ${C.border}`,background:"rgba(245,245,245,0.04)",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-              <div style={{display:"flex",gap:3}}>{[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:C.purple,animation:`pulse 1.2s ${i*.2}s ease-in-out infinite`}}/>)}</div>
-              <span style={{fontSize:12,color:C.purple,fontWeight:500}}>Krypton Intelligence Engine — Active</span>
+            {loading&&<div style={{padding:"6px 16px",borderBottom:`1px solid ${C.border}`,background:"rgba(255,255,255,0.02)",display:"flex",alignItems:"center",gap:10,flexShrink:0,backdropFilter:"blur(4px)"}}>
+              <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                {[0,1,2].map(i=><div key={i} style={{width:4,height:4,borderRadius:"50%",background:C.sub,animation:`pulse 1.4s ${i*.18}s ease-in-out infinite`}}/>)}
+              </div>
+              <span style={{fontSize:11,color:C.sub,fontWeight:500,letterSpacing:"0.04em"}}>Krypton AI — Generating</span>
             </div>}
 
             {/* Messages */}
             <div style={{flex:1,overflowY:"auto",paddingTop:14,paddingBottom:8,display:"flex",flexDirection:"column",gap:8}}>
               {messages.length===0&&!loading&&(
-                <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:18,textAlign:"center",padding:"24px 20px"}}>
-                  <KryptonLogo size={48} showText={false} animated={true}/>
-                  <div>
-                    <div style={{fontSize:19,fontWeight:800,marginBottom:6,fontFamily:"'Syne',sans-serif",background:"linear-gradient(135deg,#F5F5F5,#9AA3AF)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>What do you want to build?</div>
-                    <div style={{fontSize:13,color:C.muted,lineHeight:1.65}}>Describe your idea — Krypton AI will build it.</div>
+                <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:20,textAlign:"center",padding:"32px 20px"}}>
+                  {/* Animated logo */}
+                  <div style={{position:"relative"}}>
+                    <div style={{position:"absolute",inset:-16,borderRadius:"50%",background:"radial-gradient(circle,rgba(255,255,255,0.04),transparent)",animation:"shimmer 3s ease-in-out infinite"}}/>
+                    <KryptonLogo size={52} showText={false} animated={true}/>
                   </div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:7,justifyContent:"center",maxWidth:430}}>
-                    {["Build a restaurant website","Make a Snake game","Create a Space Shooter","Build a SaaS landing page","Create a Racing game","Make a Zombie Survival game","Design a portfolio","Create Tetris game","Build a Platformer"].map(s=>(
-                      <button key={s} className="quick-btn" onClick={()=>setPrompt(s)} style={{padding:"6px 14px",background:"rgba(245,245,245,0.06)",border:`1px solid rgba(245,245,245,0.15)`,borderRadius:20,color:C.muted,fontSize:12,cursor:"pointer",transition:"all .15s"}}>{s}</button>
+                  {/* Heading */}
+                  <div>
+                    <div style={{fontSize:20,fontWeight:800,marginBottom:8,fontFamily:"'Syne',sans-serif",background:"linear-gradient(135deg,#F0F2F5 30%,#8892A0)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-0.01em"}}>
+                      What do you want to build?
+                    </div>
+                    <div style={{fontSize:13,color:C.muted,lineHeight:1.6,maxWidth:280,margin:"0 auto"}}>
+                      Describe your idea — Krypton AI builds it instantly.
+                    </div>
+                  </div>
+                  {/* Category row */}
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center",maxWidth:400}}>
+                    {[
+                      {label:"🌐 Website",prompt:"Build a modern SaaS landing page"},
+                      {label:"🛒 Store",prompt:"Create a luxury perfume store"},
+                      {label:"🎮 Game",prompt:"Make a Snake game with dark theme"},
+                      {label:"📊 Dashboard",prompt:"Build an analytics dashboard"},
+                      {label:"📱 App",prompt:"Create a task manager kanban app"},
+                      {label:"🎨 Portfolio",prompt:"Design a creative portfolio"},
+                    ].map(s=>(
+                      <button key={s.label} className="quick-btn" onClick={()=>setPrompt(s.prompt)}
+                        style={{padding:"6px 14px",background:"rgba(255,255,255,0.05)",border:`1px solid rgba(255,255,255,0.10)`,borderRadius:20,color:C.sub,fontSize:12,cursor:"pointer",transition:"all .15s",fontWeight:500}}>
+                        {s.label}
+                      </button>
                     ))}
+                  </div>
+                   {/* Examples */}
+                  <div style={{width:"100%",maxWidth:340}}>
+                    <div style={{fontSize:11,color:C.muted,marginBottom:8,letterSpacing:"0.06em",textTransform:"uppercase"}}>Popular prompts</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                      {["Build a restaurant website with menu","Make a Zombie Survival shooter game","Create a fitness coaching landing page","Build a real estate agency website"].map(s=>(
+                        <button key={s} onClick={()=>setPrompt(s)}
+                          style={{padding:"8px 12px",background:"rgba(255,255,255,0.03)",border:`1px solid ${C.border}`,borderRadius:8,color:C.sub,fontSize:12,cursor:"pointer",textAlign:"left",transition:"all .15s",display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{opacity:.4,fontSize:10}}>→</span>{s}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -928,7 +1024,7 @@ function CreatePageInner() {
                 <div key={msg.id} className="msg-in">
                   {msg.role==="user" ? (
                     <div style={{display:"flex",justifyContent:"flex-end",padding:"2px 16px"}}>
-                      <div style={{maxWidth:"82%",padding:"11px 16px",background:"linear-gradient(135deg,rgba(245,245,245,0.18),rgba(109,40,217,0.1))",border:"1px solid rgba(245,245,245,0.2)",borderRadius:"18px 18px 4px 18px",fontSize:14,lineHeight:1.65,color:C.text,fontWeight:450}}>
+                      <div className="msg-bubble-user" style={{maxWidth:"80%",padding:"10px 15px",borderRadius:"16px 16px 3px 16px",fontSize:13.5,lineHeight:1.65,color:C.text,fontWeight:450}}>
                         {msg.content}
                       </div>
                     </div>
@@ -937,9 +1033,11 @@ function CreatePageInner() {
                   ) : (
                     <div style={{padding:"2px 16px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:7}}>
-                        <div style={{width:18,height:18,borderRadius:"50%",background:"rgba(245,245,245,0.1)",border:"1px solid rgba(245,245,245,0.2)",display:"flex",alignItems:"center",justifyContent:"center"}}><img src="/logo.svg" width={10} height={10} alt=""/></div>
-                        <span style={{fontSize:11,color:C.muted,fontWeight:500}}>Krypton AI</span>
-                        <span style={{fontSize:10,color:"#161B26"}}>{fmtTime(msg.ts)}</span>
+                        <div style={{width:20,height:20,borderRadius:"50%",background:"linear-gradient(135deg,rgba(255,255,255,0.15),rgba(255,255,255,0.05))",border:"1px solid rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                          <img src="/logo.svg" width={11} height={11} alt="Krypton AI"/>
+                        </div>
+                        <span style={{fontSize:11,color:C.sub,fontWeight:600,letterSpacing:"0.02em"}}>Krypton AI</span>
+                        <span style={{fontSize:10,color:C.muted}}>{fmtTime(msg.ts)}</span>
                       </div>
                       {msg.type==="summary" ? (
                         <div style={{maxWidth:"92%",padding:"13px 16px",background:"rgba(0,208,132,0.05)",border:"1px solid rgba(0,208,132,0.15)",borderRadius:"4px 18px 18px 18px"}}>
@@ -1012,29 +1110,44 @@ function CreatePageInner() {
                   ))}
                 </div>
               )}
-              <div style={{background:C.card,border:`1px solid ${loading?"rgba(245,245,245,0.25)":C.border}`,borderRadius:14,padding:"10px 12px",transition:"border-color .2s"}}>
+              <div style={{background:C.card,border:`1px solid ${loading?"rgba(255,255,255,0.18)":C.border}`,borderRadius:16,padding:"12px 14px",transition:"border-color .25s",boxShadow:loading?"0 0 0 3px rgba(255,255,255,0.04)":"none"}}>
                 <textarea value={prompt} onChange={e=>{
                     const v=e.target.value; setPrompt(v);
                     const urlMatch=v.match(/https?:\/\/[^\s]+/);
                     if(urlMatch) setCompetitorUrl(urlMatch[0]); else if(competitorUrl) setCompetitorUrl("");
                   }} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!loading){e.preventDefault();handleSend();}}}
-                  placeholder={loading?"Working on it…":result?"Describe a change to make…":"Describe what you want to build…"}
+                  placeholder={loading?"Building your project…":result?"Describe a change to make…":"Describe what you want to build…"}
                   rows={2} disabled={loading}
-                  style={{width:"100%",background:"none",border:"none",color:loading?"#161B26":C.text,fontSize:14,resize:"none",outline:"none",lineHeight:1.65,maxHeight:130,overflowY:"auto"}}
+                  style={{width:"100%",background:"none",border:"none",color:loading?C.muted:C.text,fontSize:14,resize:"none",outline:"none",lineHeight:1.7,maxHeight:140,overflowY:"auto",caretColor:C.text}}
                 />
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:7,paddingTop:7,borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8,paddingTop:8,borderTop:`1px solid rgba(255,255,255,0.05)`}}>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.txt" style={{display:"none"}} onChange={e=>{if(e.target.files?.length)addMsg({role:"user",type:"text",content:`📎 Attached: ${Array.from(e.target.files).map(f=>f.name).join(", ")}`});}}/>
-                    <button onClick={()=>fileInputRef.current?.click()} style={{width:28,height:28,borderRadius:8,background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,color:C.muted,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}} title="Attach file">📎</button>
-                    <span style={{fontSize:10,color:"#11151F"}}>Krypton Intelligence Engine</span>
-                  </div>
-                  <div style={{display:"flex",gap:7}}>
-                    <button onClick={handleVoice} style={{width:32,height:32,borderRadius:"50%",background:listening?"rgba(245,245,245,0.2)":"rgba(255,255,255,0.04)",border:`1px solid ${listening?"rgba(245,245,245,0.4)":C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="11" rx="3" fill={listening?C.purple:"#666"}/><path d="M5 11a7 7 0 0014 0" stroke={listening?C.purple:"#666"} strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke={listening?C.purple:"#666"} strokeWidth="2" strokeLinecap="round"/></svg>
+                    <button onClick={()=>fileInputRef.current?.click()}
+                      style={{width:28,height:28,borderRadius:8,background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,color:C.muted,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}
+                      title="Attach file" onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(255,255,255,0.2)"} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                      📎
                     </button>
-                    <button className="send-btn" onClick={handleSend} disabled={!prompt.trim()||loading} style={{width:38,height:38,borderRadius:"50%",background:(!loading&&prompt.trim())?C.gradP:"rgba(255,255,255,0.05)",border:"none",cursor:(!loading&&prompt.trim())?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
-                      {loading?<div style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.2)",borderTopColor:"#fff",animation:"spin .7s linear infinite"}}/>
-                      :<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke={prompt.trim()?"#fff":"#5B6472"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    <span style={{fontSize:11,color:C.muted,letterSpacing:"0.04em",userSelect:"none"}}>Krypton AI</span>
+                  </div>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    {/* Voice button */}
+                    <button onClick={handleVoice}
+                      title={listening?"Stop listening":"Voice input"}
+                      style={{width:32,height:32,borderRadius:10,background:listening?"rgba(255,255,255,0.12)":"rgba(255,255,255,0.04)",border:`1px solid ${listening?"rgba(255,255,255,0.3)":C.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s",position:"relative"}}>
+                      {listening&&<div style={{position:"absolute",inset:-3,borderRadius:13,border:"2px solid rgba(255,255,255,0.2)",animation:"pulse 1.5s ease-in-out infinite"}}/>}
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                        <rect x="9" y="2" width="6" height="11" rx="3" fill={listening?"#F0F2F5":"#5B6472"}/>
+                        <path d="M5 11a7 7 0 0014 0" stroke={listening?"#F0F2F5":"#5B6472"} strokeWidth="2" strokeLinecap="round"/>
+                        <line x1="12" y1="18" x2="12" y2="22" stroke={listening?"#F0F2F5":"#5B6472"} strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                    {/* Send button */}
+                    <button className="send-btn" onClick={handleSend} disabled={!prompt.trim()||loading}
+                      style={{width:36,height:36,borderRadius:10,background:(!loading&&prompt.trim())?"linear-gradient(135deg,#E8E8E8,#A8B0BA)":"rgba(255,255,255,0.05)",border:"none",cursor:(!loading&&prompt.trim())?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .25s"}}>
+                      {loading
+                        ?<div style={{width:14,height:14,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.15)",borderTopColor:"rgba(255,255,255,0.8)",animation:"spin .7s linear infinite"}}/>
+                        :<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke={prompt.trim()?"#050816":"#5B6472"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </button>
                   </div>
                 </div>
@@ -1155,17 +1268,41 @@ function CreatePageInner() {
             {/* Deploy */}
             {rightTab==="deploy"&&(
               <div style={{flex:1,overflowY:"auto",padding:20}}>
-                <div style={{fontSize:15,fontWeight:700,marginBottom:16,fontFamily:"'Syne',sans-serif"}}>Deploy Project</div>
-                {[{icon:"▲",label:"Deploy to Vercel",sub:"Instant global CDN",color:"#fff"},{icon:"◆",label:"Deploy to Netlify",sub:"Free hosting",color:"#5FB88A"}].map(d=>(
-                  <div key={d.label} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{width:36,height:36,borderRadius:10,background:`rgba(255,255,255,0.04)`,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:d.color,flexShrink:0}}>{d.icon}</div>
-                    <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:C.text}}>{d.label}</div><div style={{fontSize:11,color:C.muted}}>{d.sub}</div></div>
-                    <button disabled={!result} style={{padding:"7px 14px",background:result?C.grad:"rgba(255,255,255,0.06)",border:"none",borderRadius:8,color:result?"#050816":C.muted,fontSize:12,fontWeight:700,cursor:result?"pointer":"not-allowed"}}>Deploy</button>
-                  </div>
-                ))}
-                <button disabled={!result} onClick={()=>{if(!result)return;const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([result],{type:"text/html"}));a.download=`${projectName.replace(/\s+/g,"-")}.html`;a.click();}} style={{width:"100%",padding:"11px",background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,borderRadius:10,color:C.sub,fontSize:13,fontWeight:600,cursor:result?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                  ⬇ Download HTML
+                <div style={{fontSize:15,fontWeight:700,marginBottom:4,fontFamily:"'Syne',sans-serif"}}>Deploy Project</div>
+                <div style={{fontSize:12,color:C.muted,marginBottom:20}}>Export your website and deploy anywhere</div>
+
+                {/* Download — primary CTA */}
+                <button disabled={!result} onClick={()=>{
+                  if(!result)return;
+                  const a=document.createElement("a");
+                  a.href=URL.createObjectURL(new Blob([result],{type:"text/html"}));
+                  a.download=`${projectName.replace(/\s+/g,"-")}.html`;
+                  a.click();
+                }}
+                  style={{width:"100%",padding:"14px 16px",background:result?"linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))":"rgba(255,255,255,0.03)",border:`1px solid ${result?"rgba(255,255,255,0.2)":C.border}`,borderRadius:12,color:result?C.text:C.muted,fontSize:13,fontWeight:700,cursor:result?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:16,transition:"all .2s"}}>
+                  <span style={{fontSize:18}}>⬇</span>
+                  <div style={{textAlign:"left"}}><div style={{fontWeight:700}}>Download HTML File</div><div style={{fontSize:11,fontWeight:400,opacity:.7,marginTop:1}}>Single file, works offline</div></div>
                 </button>
+
+                {/* Hosting options */}
+                <div style={{fontSize:11,color:C.muted,marginBottom:10,letterSpacing:"0.06em",textTransform:"uppercase"}}>Deploy to hosting</div>
+                {[
+                  {icon:"◆",label:"Netlify Drop",sub:"Drag & drop your HTML — live in seconds",url:"https://app.netlify.com/drop",color:"#4CAF8A"},
+                  {icon:"▲",label:"Vercel",sub:"Import GitHub repo or deploy via CLI",url:"https://vercel.com/new",color:"#F0F2F5"},
+                  {icon:"🌐",label:"GitHub Pages",sub:"Free hosting for public repos",url:"https://pages.github.com",color:"#8892A0"},
+                ].map(d=>(
+                  <a key={d.label} href={result?d.url:"#"} target="_blank" rel="noopener noreferrer"
+                    style={{display:"flex",alignItems:"center",gap:12,background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:8,textDecoration:"none",opacity:result?1:0.4,transition:"all .2s",cursor:result?"pointer":"not-allowed"}}
+                    onMouseEnter={e=>{if(result)e.currentTarget.style.borderColor="rgba(255,255,255,0.18)";}}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                    <div style={{width:36,height:36,borderRadius:10,background:"rgba(255,255,255,0.04)",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:d.color,flexShrink:0,fontWeight:700}}>{d.icon}</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:600,color:C.text}}>{d.label}</div>
+                      <div style={{fontSize:11,color:C.muted,marginTop:2}}>{d.sub}</div>
+                    </div>
+                    <span style={{fontSize:11,color:C.muted}}>→</span>
+                  </a>
+                ))}
               </div>
             )}
 
@@ -1174,15 +1311,28 @@ function CreatePageInner() {
               <div style={{flex:1,overflowY:"auto",padding:16}}>
                 <div style={{fontSize:13,fontWeight:700,marginBottom:14,fontFamily:"'Syne',sans-serif"}}>Version History</div>
                 {versions.length===0
-                  ? <div style={{textAlign:"center",padding:40,color:C.muted,fontSize:13}}><div style={{fontSize:28,marginBottom:10,opacity:.2}}>○</div>No versions yet</div>
+                  ? (
+                    <div style={{textAlign:"center",padding:"40px 20px",color:C.muted}}>
+                      <div style={{fontSize:32,marginBottom:12,opacity:.15}}>⏱</div>
+                      <div style={{fontSize:13,marginBottom:6}}>No versions yet</div>
+                      <div style={{fontSize:11,opacity:.6}}>Versions are saved automatically when you edit</div>
+                    </div>
+                  )
                   : versions.map((v,i)=>(
-                    <div key={v.id||i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
-                      <div style={{width:32,height:32,borderRadius:8,background:"rgba(245,245,245,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C.purple,flexShrink:0,fontFamily:"'Syne',sans-serif"}}>v{v.version_number}</div>
-                      <div style={{flex:1,overflow:"hidden"}}>
-                        <div style={{fontSize:13,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v.message}</div>
-                        <div style={{fontSize:10,color:C.muted,marginTop:2}}>{new Date(v.created_at).toLocaleString()}</div>
+                    <div key={v.id||i} className="version-card" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",marginBottom:7,display:"flex",alignItems:"center",gap:12,transition:"all .15s"}}>
+                      <div style={{width:34,height:34,borderRadius:9,background:"rgba(255,255,255,0.06)",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C.sub,flexShrink:0,fontFamily:"'Syne',sans-serif",letterSpacing:"-0.02em"}}>
+                        v{v.version_number}
                       </div>
-                      <button onClick={()=>restoreVersion(v)} style={{padding:"5px 12px",background:"rgba(245,245,245,0.08)",border:`1px solid rgba(245,245,245,0.2)`,borderRadius:7,color:C.purple,fontSize:11,fontWeight:600,cursor:"pointer"}}>Restore</button>
+                      <div style={{flex:1,overflow:"hidden"}}>
+                        <div style={{fontSize:13,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:500}}>{v.message}</div>
+                        <div style={{fontSize:10,color:C.muted,marginTop:3}}>{new Date(v.created_at).toLocaleString()}</div>
+                      </div>
+                      <button onClick={()=>restoreVersion(v)}
+                        style={{padding:"5px 12px",background:"rgba(255,255,255,0.06)",border:`1px solid rgba(255,255,255,0.12)`,borderRadius:7,color:C.sub,fontSize:11,fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .15s"}}
+                        onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.10)";e.currentTarget.style.color=C.text;}}
+                        onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.06)";e.currentTarget.style.color=C.sub;}}>
+                        Restore
+                      </button>
                     </div>
                   ))
                 }
