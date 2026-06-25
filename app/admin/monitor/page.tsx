@@ -74,15 +74,26 @@ export default function MonitorPage() {
   }, [autoRefresh, fetchLogs]);
 
   // Stats
-  const total     = logs.length;
-  const failed    = logs.filter(l => l.status === "failed").length;
-  const completed = logs.filter(l => l.status === "completed").length;
-  const timeouts  = logs.filter(l => l.status === "timeout").length;
+  const total      = logs.length;
+  const failed     = logs.filter(l => l.status === "failed").length;
+  const completed  = logs.filter(l => l.status === "completed").length;
+  const timeouts   = logs.filter(l => l.status === "timeout").length;
+  const started    = logs.filter(l => l.status === "started").length;
   const successRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+  // Avg duration (completed only)
+  const completedWithDuration = logs.filter(l => l.status === "completed" && l.duration_ms);
+  const avgDuration = completedWithDuration.length > 0
+    ? Math.round(completedWithDuration.reduce((s,l) => s + (l.duration_ms||0), 0) / completedWithDuration.length / 1000)
+    : 0;
+  // Estimated cost ($0.10 avg per generation)
+  const totalCredits = logs.reduce((s,l) => s + (l.credits_used||0), 0);
 
+  const [expandedId, setExpandedId] = useState<string|null>(null);
   const filtered = filter === "all" ? logs : logs.filter(l => l.status === filter);
 
   return (
+    <>
+    <style>{`@keyframes pulse{0%,100%{opacity:.3;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}`}</style>
     <div style={{ display: "flex", minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "system-ui" }}>
 
       {/* ── Left Sidebar ── */}
@@ -125,9 +136,24 @@ export default function MonitorPage() {
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>🔍 Generation Monitor</h1>
-          <p style={{ color: T.muted, fontSize: 13, marginTop: 4 }}>Real-time logs — website / app / game generation errors</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+              🔍 Generation Monitor
+              {autoRefresh && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600,
+                  background: "rgba(0,204,68,0.1)", border: "1px solid rgba(0,204,68,0.25)",
+                  borderRadius: 20, padding: "2px 10px", color: T.green }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.green,
+                    animation: "pulse 1.5s ease-in-out infinite", display: "inline-block" }}/>
+                  LIVE
+                </span>
+              )}
+            </h1>
+            <p style={{ color: T.muted, fontSize: 12, marginTop: 4 }}>
+              Real-time generation logs — {total} total, {successRate}% success rate
+            </p>
+          </div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <label style={{ color: T.muted, fontSize: 13, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
@@ -151,9 +177,11 @@ export default function MonitorPage() {
         {[
           { label: "Total", value: total, color: T.gold, icon: "📊" },
           { label: "Completed", value: completed, color: T.green, icon: "✅" },
-          { label: "Failed", value: failed, color: T.red, icon: "❌" },
-          { label: "Timeouts", value: timeouts, color: T.orange, icon: "⏰" },
-          { label: "Success Rate", value: `${successRate}%`, color: successRate > 80 ? T.green : T.red, icon: "📈" },
+          { label: "Failed", value: failed + timeouts, color: T.red, icon: "❌" },
+          { label: "Running", value: started, color: T.orange, icon: "⏳" },
+          { label: "Success Rate", value: `${successRate}%`, color: successRate > 80 ? T.green : successRate > 60 ? T.orange : T.red, icon: "📈" },
+          { label: "Avg Time", value: avgDuration > 0 ? `${avgDuration}s` : "—", color: avgDuration > 120 ? T.red : avgDuration > 60 ? T.orange : T.muted, icon: "⏱" },
+          { label: "Credits Used", value: totalCredits, color: T.gold, icon: "⚡" },
         ].map(s => (
           <div key={s.label} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16 }}>
             <div style={{ fontSize: 20, marginBottom: 4 }}>{s.icon}</div>
@@ -194,10 +222,11 @@ export default function MonitorPage() {
           {filtered.map(log => (
             <div
               key={log.id}
+              onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
               style={{
                 background: T.card,
-                border: `1px solid ${log.status === "failed" || log.status === "timeout" ? "rgba(239,68,68,0.3)" : T.border}`,
-                borderRadius: 12, padding: 16,
+                border: `1px solid ${log.status === "failed" || log.status === "timeout" ? "rgba(239,68,68,0.3)" : expandedId === log.id ? "rgba(245,216,0,0.3)" : T.border}`,
+                borderRadius: 12, padding: 16, cursor: "pointer", transition: "border-color .2s",
               }}
             >
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -259,11 +288,28 @@ export default function MonitorPage() {
                   )}
                 </div>
               </div>
+
+                {/* Expanded metadata */}
+                {expandedId === log.id && log.metadata && Object.keys(log.metadata).length > 0 && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ fontSize: 11, color: T.muted, marginBottom: 8, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Metadata</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {Object.entries(log.metadata).map(([k,v]) => (
+                        <div key={k} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "3px 10px", fontSize: 11 }}>
+                          <span style={{ color: T.muted }}>{k}: </span>
+                          <span style={{ color: T.text }}>{String(v)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
             </div>
           ))}
         </div>
       )}
     </div>
       </div>
+    </div>
+    </>
   );
 }
