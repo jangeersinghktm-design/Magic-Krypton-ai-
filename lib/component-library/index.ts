@@ -16,6 +16,10 @@ import { CTA_VARIANTS, CTAVariant, CTASectionContent } from "./cta";
 import { FOOTER_VARIANTS, FooterVariant, FooterContent } from "./footer";
 import { PRICING_VARIANTS, PricingVariant, PricingContent } from "./pricing";
 import { DASHBOARD_VARIANTS, DashboardVariant, DashboardContent } from "./dashboard";
+import { TESTIMONIALS_VARIANTS, TestimonialsVariant, TestimonialsContent } from "./testimonials";
+import { FAQ_VARIANTS, FAQVariant, FAQContent } from "./faq";
+import { PORTFOLIO_VARIANTS, PortfolioVariant, PortfolioContent } from "./portfolio";
+import { ECOMMERCE_VARIANTS, EcommerceVariant, EcommerceContent } from "./ecommerce";
 
 export * from "./tokens";
 export * from "./hero";
@@ -25,8 +29,12 @@ export * from "./cta";
 export * from "./footer";
 export * from "./pricing";
 export * from "./dashboard";
+export * from "./testimonials";
+export * from "./faq";
+export * from "./portfolio";
+export * from "./ecommerce";
 
-export type ComponentCategory = "hero" | "navbar" | "features" | "cta" | "footer" | "pricing" | "dashboard";
+export type ComponentCategory = "hero" | "navbar" | "features" | "cta" | "footer" | "pricing" | "dashboard" | "testimonials" | "faq" | "portfolio" | "ecommerce";
 
 // ── Sensible default variant per niche marketLevel/tone — used when the
 // Blueprint stage doesn't specify a variant explicitly. Keeps generation
@@ -35,18 +43,22 @@ const NICHE_DEFAULTS: Record<string, Record<ComponentCategory, string>> = {
   luxury: {
     hero: "minimal-statement", navbar: "bold-split", features: "alternating",
     cta: "floating-card", footer: "minimal-centered", pricing: "single-highlight", dashboard: "analytics-charts",
+    testimonials: "featured", faq: "accordion", portfolio: "masonry", ecommerce: "featured-product",
   },
   energetic: {
     hero: "centered", navbar: "bordered-cta", features: "stat-highlight",
     cta: "banner-strip", footer: "newsletter-rich", pricing: "three-tier", dashboard: "topnav-cards",
+    testimonials: "grid", faq: "simple-list", portfolio: "filter-gallery", ecommerce: "scroll-cards",
   },
   trust: {
     hero: "split-image", navbar: "glass-sticky", features: "icon-grid",
     cta: "centered-gradient", footer: "four-column", pricing: "comparison-table", dashboard: "sidebar-stats",
+    testimonials: "logo-wall", faq: "highlighted", portfolio: "list", ecommerce: "product-grid",
   },
   default: {
     hero: "split-image", navbar: "glass-sticky", features: "icon-grid",
     cta: "centered-gradient", footer: "four-column", pricing: "three-tier", dashboard: "sidebar-stats",
+    testimonials: "grid", faq: "simple-list", portfolio: "featured-grid", ecommerce: "product-grid",
   },
 };
 
@@ -124,6 +136,22 @@ export function renderComponent(
       const fn = DASHBOARD_VARIANTS[variant as DashboardVariant] || DASHBOARD_VARIANTS["sidebar-stats"];
       return fn(ctx, content as DashboardContent);
     }
+    case "testimonials": {
+      const fn = TESTIMONIALS_VARIANTS[variant as TestimonialsVariant] || TESTIMONIALS_VARIANTS["grid"];
+      return fn(ctx, content as TestimonialsContent);
+    }
+    case "faq": {
+      const fn = FAQ_VARIANTS[variant as FAQVariant] || FAQ_VARIANTS["simple-list"];
+      return fn(ctx, content as FAQContent);
+    }
+    case "portfolio": {
+      const fn = PORTFOLIO_VARIANTS[variant as PortfolioVariant] || PORTFOLIO_VARIANTS["featured-grid"];
+      return fn(ctx, content as PortfolioContent);
+    }
+    case "ecommerce": {
+      const fn = ECOMMERCE_VARIANTS[variant as EcommerceVariant] || ECOMMERCE_VARIANTS["product-grid"];
+      return fn(ctx, content as EcommerceContent);
+    }
     default:
       return "";
   }
@@ -139,13 +167,20 @@ export function listVariants(category: ComponentCategory): string[] {
     case "cta":       return Object.keys(CTA_VARIANTS);
     case "footer":    return Object.keys(FOOTER_VARIANTS);
     case "pricing":   return Object.keys(PRICING_VARIANTS);
-    case "dashboard": return Object.keys(DASHBOARD_VARIANTS);
-    default:          return [];
+    case "dashboard":     return Object.keys(DASHBOARD_VARIANTS);
+    case "testimonials":  return Object.keys(TESTIMONIALS_VARIANTS);
+    case "faq":           return Object.keys(FAQ_VARIANTS);
+    case "portfolio":     return Object.keys(PORTFOLIO_VARIANTS);
+    case "ecommerce":     return Object.keys(ECOMMERCE_VARIANTS);
+    default:              return [];
   }
 }
 
 export const COMPONENT_LIBRARY_STATS = {
-  totalComponents: 30,
-  categories: 7,
-  breakdown: { hero: 4, navbar: 4, features: 4, cta: 4, footer: 4, pricing: 5, dashboard: 5 },
+  totalComponents: 46,
+  categories: 11,
+  breakdown: {
+    hero: 4, navbar: 4, features: 4, cta: 4, footer: 4, pricing: 5, dashboard: 5,
+    testimonials: 4, faq: 4, portfolio: 4, ecommerce: 4,
+  },
 };
