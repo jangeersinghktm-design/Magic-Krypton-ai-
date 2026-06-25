@@ -1,0 +1,95 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#040610"/>
+      <stop offset="100%" stop-color="#08101E"/>
+    </linearGradient>
+    <linearGradient id="logo-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F5F5F5"/>
+      <stop offset="55%" stop-color="#D9D9D9"/>
+      <stop offset="100%" stop-color="#BFC5CC"/>
+    </linearGradient>
+    <linearGradient id="text-grad" x1="0" y1="0" x2="400" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F0F2F5"/>
+      <stop offset="100%" stop-color="#8892A0"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F5F5F5" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#F5F5F5" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur-glow">
+      <feGaussianBlur stdDeviation="40" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid -->
+  <g opacity="0.025" stroke="#ffffff">
+    <line x1="0" y1="105" x2="1200" y2="105"/>
+    <line x1="0" y1="210" x2="1200" y2="210"/>
+    <line x1="0" y1="315" x2="1200" y2="315"/>
+    <line x1="0" y1="420" x2="1200" y2="420"/>
+    <line x1="0" y1="525" x2="1200" y2="525"/>
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+  </g>
+
+  <!-- Glow behind logo -->
+  <circle cx="600" cy="280" r="200" fill="url(#glow)"/>
+
+  <!-- Logo mark (centered, large) -->
+  <g transform="translate(500, 160) scale(4.2)">
+    <!-- Background circle -->
+    <rect width="40" height="40" rx="9" fill="#050816" opacity="0.6"/>
+
+    <!-- Connection edges -->
+    <line x1="20" y1="20" x2="9"  y2="9"  stroke="url(#logo-grad)" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+    <line x1="20" y1="20" x2="31" y2="9"  stroke="url(#logo-grad)" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+    <line x1="20" y1="20" x2="9"  y2="31" stroke="url(#logo-grad)" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+    <line x1="20" y1="20" x2="31" y2="31" stroke="url(#logo-grad)" stroke-width="1.4" stroke-linecap="round" opacity="0.55"/>
+
+    <!-- Outer ring -->
+    <circle cx="20" cy="20" r="17.5" stroke="url(#logo-grad)" stroke-width="1" opacity="0.18" fill="none"/>
+
+    <!-- Outer nodes -->
+    <circle cx="9"  cy="9"  r="2.6" fill="url(#logo-grad)"/>
+    <circle cx="31" cy="9"  r="2.6" fill="url(#logo-grad)"/>
+    <circle cx="9"  cy="31" r="2.6" fill="url(#logo-grad)"/>
+    <circle cx="31" cy="31" r="2.6" fill="url(#logo-grad)"/>
+
+    <!-- Inner connections -->
+    <line x1="20" y1="20" x2="20" y2="6"  stroke="url(#logo-grad)" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+    <line x1="20" y1="20" x2="34" y2="20" stroke="url(#logo-grad)" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+    <line x1="20" y1="20" x2="20" y2="34" stroke="url(#logo-grad)" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+    <line x1="20" y1="20" x2="6"  y2="20" stroke="url(#logo-grad)" stroke-width="1" stroke-linecap="round" opacity="0.4"/>
+
+    <!-- Cardinal nodes -->
+    <circle cx="20" cy="6"  r="1.8" fill="url(#logo-grad)" opacity="0.7"/>
+    <circle cx="34" cy="20" r="1.8" fill="url(#logo-grad)" opacity="0.7"/>
+    <circle cx="20" cy="34" r="1.8" fill="url(#logo-grad)" opacity="0.7"/>
+    <circle cx="6"  cy="20" r="1.8" fill="url(#logo-grad)" opacity="0.7"/>
+
+    <!-- Core node -->
+    <circle cx="20" cy="20" r="4.5" fill="#050816"/>
+    <circle cx="20" cy="20" r="3.5" fill="url(#logo-grad)"/>
+  </g>
+
+  <!-- Brand name -->
+  <text x="600" y="450" font-family="'Helvetica Neue', 'Arial', sans-serif" font-size="72" font-weight="800" fill="url(#text-grad)" text-anchor="middle" letter-spacing="-2">KRYPTON AI</text>
+
+  <!-- Tagline -->
+  <text x="600" y="510" font-family="'Helvetica Neue', 'Arial', sans-serif" font-size="26" font-weight="400" fill="#4A5568" text-anchor="middle" letter-spacing="1">Build Websites, Apps &amp; Games with AI</text>
+
+  <!-- Bottom border -->
+  <rect x="0" y="620" width="1200" height="10" fill="url(#logo-grad)" opacity="0.15"/>
+
+  <!-- URL -->
+  <text x="600" y="600" font-family="'Helvetica Neue', 'Arial', sans-serif" font-size="18" font-weight="500" fill="#2D3748" text-anchor="middle" letter-spacing="2">kryptonai.tech</text>
+</svg>
+
