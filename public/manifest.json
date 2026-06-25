@@ -1,75 +1,66 @@
 {
   "name": "Krypton AI",
   "short_name": "Krypton",
-  "description": "AI Operating System \u2014 Build websites, apps and games with AI",
+  "description": "Build professional websites, web apps, and browser games with AI in seconds.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#050816",
   "theme_color": "#050816",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "categories": ["productivity", "developer tools", "utilities"],
   "icons": [
     {
       "src": "/logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
-    }
-  ],
-  "categories": [
-    "productivity",
-    "developer tools",
-    "utilities"
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshots/desktop.png",
-      "sizes": "1280x800",
       "type": "image/png",
-      "form_factor": "wide",
-      "label": "Krypton AI Workspace"
-    },
-    {
-      "src": "/screenshots/mobile.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Krypton AI Mobile"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
     {
       "name": "New Project",
-      "short_name": "New",
-      "description": "Create a new AI project",
+      "short_name": "Build",
+      "description": "Create a new AI-powered website or app",
       "url": "/create",
-      "icons": [
-        {
-          "src": "/logo.svg",
-          "sizes": "any"
-        }
-      ]
+      "icons": [{ "src": "/logo.svg", "sizes": "any" }]
     },
     {
-      "name": "Dashboard",
+      "name": "My Projects",
       "short_name": "Projects",
-      "description": "View all projects",
+      "description": "View all your generated projects",
       "url": "/dashboard",
-      "icons": [
-        {
-          "src": "/logo.svg",
-          "sizes": "any"
-        }
-      ]
+      "icons": [{ "src": "/logo.svg", "sizes": "any" }]
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.svg",
+      "sizes": "1200x630",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "Krypton AI Builder"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }
