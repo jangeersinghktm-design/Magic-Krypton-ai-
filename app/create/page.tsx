@@ -1005,7 +1005,7 @@ function CreatePageInner() {
                       </button>
                     ))}
                   </div>
-                   {/* Examples */}
+                  {/* Examples */}
                   <div style={{width:"100%",maxWidth:340}}>
                     <div style={{fontSize:11,color:C.muted,marginBottom:8,letterSpacing:"0.06em",textTransform:"uppercase"}}>Popular prompts</div>
                     <div style={{display:"flex",flexDirection:"column",gap:4}}>
