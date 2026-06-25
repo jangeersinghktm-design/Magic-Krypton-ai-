@@ -170,29 +170,60 @@ export default function AiEngineerPage() {
           audits/fixes/failures first, then investigates the codebase, logs, and schema.
         </p>
 
+        {/* Quick prompts */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+          {[
+            "Why is generation failing? Check logs and fix",
+            "Audit the quality gate — is it working correctly?",
+            "Check if prompt caching is working in orchestrate",
+            "Why is Claude timing out? Find and fix root cause",
+            "Audit memory system — is project_memory saving correctly?",
+          ].map(p => (
+            <button key={p} onClick={() => setPrompt(p)}
+              style={{ fontSize: 11, padding: "4px 12px", borderRadius: 20,
+                background: "rgba(245,216,0,0.06)", border: "1px solid rgba(245,216,0,0.15)",
+                color: T.muted, cursor: "pointer", transition: "all .15s" }}
+              onMouseEnter={e=>{e.currentTarget.style.color=T.gold;e.currentTarget.style.borderColor="rgba(245,216,0,0.4)";}}
+              onMouseLeave={e=>{e.currentTarget.style.color=T.muted;e.currentTarget.style.borderColor="rgba(245,216,0,0.15)";}}>
+              {p.slice(0, 45)}{p.length > 45 ? "…" : ""}
+            </button>
+          ))}
+        </div>
+
         <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder='e.g. "Game projects are not appearing in Total Projects on the dashboard after generation — investigate and fix."'
+            placeholder='Describe a bug or ask for a codebase audit...'
             rows={3}
             disabled={running}
             style={{
-              flex: 1, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10,
-              padding: 12, color: T.text, fontSize: 14, fontFamily: "inherit", resize: "vertical",
+              flex: 1, background: T.card, border: `1px solid ${running ? "rgba(245,216,0,0.3)" : T.border}`,
+              borderRadius: 10, padding: 12, color: T.text, fontSize: 14, fontFamily: "inherit",
+              resize: "vertical", outline: "none", transition: "border-color .2s",
             }}
           />
-          <button
-            onClick={startInvestigation}
-            disabled={running || !prompt.trim()}
-            style={{
-              background: running ? T.card : G, color: running ? T.muted : "#000",
-              border: "none", borderRadius: 10, padding: "0 24px", fontWeight: 700,
-              cursor: running ? "default" : "pointer", flexShrink: 0,
-            }}
-          >
-            {running ? "Investigating..." : "Start Investigation"}
-          </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button
+              onClick={startInvestigation}
+              disabled={running || !prompt.trim()}
+              style={{
+                background: (running || !prompt.trim()) ? T.card : G,
+                color: (running || !prompt.trim()) ? T.muted : "#000",
+                border: "none", borderRadius: 10, padding: "12px 20px", fontWeight: 700,
+                cursor: (running || !prompt.trim()) ? "default" : "pointer",
+                fontSize: 13, whiteSpace: "nowrap",
+              }}
+            >
+              {running ? "🔍 Investigating..." : "▶ Investigate"}
+            </button>
+            <a href="/admin/monitor"
+              style={{ textAlign: "center", fontSize: 12, color: T.muted, textDecoration: "none",
+                padding: "8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)",
+                background: T.card, display: "block" }}>
+              📊 Monitor
+            </a>
+          </div>
         </div>
 
         {/* ── Live stream ── */}
@@ -290,4 +321,3 @@ const PROVIDER_LABEL: Record<string, string> = {
   openai: "GPT-4o-mini",
   gemini: "Gemini 1.5 Flash",
 };
-                     
