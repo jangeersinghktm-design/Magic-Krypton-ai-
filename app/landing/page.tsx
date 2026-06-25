@@ -1,743 +1,539 @@
 "use client";
-// app/landing/page.tsx
-// KRYPTON AI — Enterprise Landing Page v3
-// Apple × Linear × Stripe × Vercel quality bar
-// Platinum / Silver / Graphite / Deep-Space palette only
-
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import KryptonLogo from "@/components/branding/KryptonLogo";
 
-// ═══════════════════════════════════════════════════════════════
-// PALETTE — Platinum / Silver / Graphite / Deep-Space only
-// ═══════════════════════════════════════════════════════════════
-const BG        = "#050816";
-const SURFACE   = "#0B1020";
-const GRAPHITE  = "#11151F";
-const WHITE     = "#F5F5F5";
-const SILVER    = "#D9D9D9";
-const ACCENT    = "#BFC5CC";
-const SUB       = "#9AA3AF";
-const MUTED     = "#5B6472";
-const BORDER    = "rgba(255,255,255,0.08)";
-const BORDER_HI = "rgba(245,245,245,0.20)";
-const GLOW      = "rgba(245,245,245,0.08)";
-const GRAD      = "linear-gradient(135deg,#F5F5F5 0%,#D9D9D9 50%,#BFC5CC 100%)";
+export default function LandingPage() {
+  const router = useRouter();
+  const [prompt, setPrompt] = useState("");
+  const [navScrolled, setNavScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [phaseIdx, setPhaseIdx] = useState(2);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-const gtext: React.CSSProperties = {
-  background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-};
-
-// ═══════════════════════════════════════════════════════════════
-// DATA
-// ═══════════════════════════════════════════════════════════════
-const NAV_LINKS = [
-  { label: "Product",  id: "product" },
-  { label: "Features", id: "features" },
-  { label: "Pricing",  path: "/billing" },
-  { label: "FAQ",      path: "/faq" },
-];
-
-const DEMO_PROMPTS = [
-  "Build a SaaS dashboard with analytics",
-  "Create a luxury real estate website",
-  "Design a fitness tracking app",
-  "Build a crypto trading dashboard",
-];
-
-const PRODUCT_TABS = [
-  { id: "website",   label: "Website",   accent: "#F5F5F5" },
-  { id: "dashboard", label: "Dashboard", accent: "#D9D9D9" },
-  { id: "app",       label: "Web App",   accent: "#BFC5CC" },
-  { id: "game",      label: "Game",      accent: "#9AA3AF" },
-];
-
-const FEATURES = [
-  { title: "Natural Language Engine",   desc: "Describe your product in plain English. Krypton AI translates intent into production-grade architecture.", icon: "◇" },
-  { title: "Three-Model Intelligence",  desc: "Claude, GPT-4o, and Gemini run in concert with automatic failover — generation never stops.", icon: "◆" },
-  { title: "Design System Aware",       desc: "Every output ships with consistent typography, spacing, and color systems — not templated guesswork.", icon: "▣" },
-  { title: "Instant Deployment",        desc: "Production-ready HTML, CSS, and JavaScript — deployable to Vercel, Netlify, or your own infrastructure.", icon: "▲" },
-  { title: "Continuous Engineering",    desc: "Edit, debug, refactor, and optimize the same project for months — Krypton AI remembers context.", icon: "◈" },
-  { title: "Competitive Intelligence",  desc: "Reference any URL and Krypton AI extracts structural DNA — without copying content.", icon: "◎" },
-];
-
-const STEPS = [
-  { n: "01", title: "Describe Intent",  desc: "State what you're building in plain language. No specifications required." },
-  { n: "02", title: "AI Architects It", desc: "Krypton AI plans, designs, and writes production code in real time." },
-  { n: "03", title: "Ship Immediately", desc: "Preview, refine, and deploy — live in seconds, not sprints." },
-];
-
-// Stats/testimonials sections intentionally removed —
-// Krypton AI does not display unverified numbers, fabricated reviews,
-// or placeholder social proof. Only real, verifiable claims are shown.
-
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-  return `${r},${g},${b}`;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// FLOATING PARTICLES — subtle, performant, canvas-based
-// ═══════════════════════════════════════════════════════════════
-function ParticleField() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
+  // Nav scroll effect
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let raf = 0;
-    let particles: { x: number; y: number; r: number; vx: number; vy: number; o: number }[] = [];
-
-    const resize = () => {
-      canvas.width  = canvas.offsetWidth  * devicePixelRatio;
-      canvas.height = canvas.offsetHeight * devicePixelRatio;
-      ctx.scale(devicePixelRatio, devicePixelRatio);
-      const count = window.innerWidth < 768 ? 22 : 42;
-      particles = Array.from({ length: count }, () => ({
-        x: Math.random() * canvas.offsetWidth,
-        y: Math.random() * canvas.offsetHeight,
-        r: Math.random() * 1.4 + 0.4,
-        vx: (Math.random() - 0.5) * 0.12,
-        vy: (Math.random() - 0.5) * 0.12,
-        o: Math.random() * 0.35 + 0.08,
-      }));
-    };
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = canvas.offsetWidth;
-        if (p.x > canvas.offsetWidth) p.x = 0;
-        if (p.y < 0) p.y = canvas.offsetHeight;
-        if (p.y > canvas.offsetHeight) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(245,245,245,${p.o})`;
-        ctx.fill();
-      });
-      raf = requestAnimationFrame(draw);
-    };
-
-    resize();
-    draw();
-    window.addEventListener("resize", resize);
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+    const onScroll = () => setNavScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// REVEAL ON SCROLL — wraps children, fades up into view
-// ═══════════════════════════════════════════════════════════════
-function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
+  // Demo phases animation
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setVisible(true); obs.disconnect(); }
-    }, { threshold: 0.15 });
-    obs.observe(el);
+    const iv = setInterval(() => {
+      setPhaseIdx(p => (p >= 4 ? 1 : p + 1));
+    }, 1800);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Scroll reveal
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("vis"); obs.unobserve(e.target); } }),
+      { threshold: 0.08 }
+    );
+    document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
     return () => obs.disconnect();
   }, []);
 
-  return (
-    <div ref={ref} style={{
-      opacity: visible ? 1 : 0,
-      transform: visible ? "translateY(0)" : "translateY(24px)",
-      transition: `opacity .7s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform .7s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MOCKUP FRAME — realistic browser/device chrome for product previews
-// ═══════════════════════════════════════════════════════════════
-function MockupFrame({ type, accent, building = false, progress = 1 }: { type: string; accent: string; building?: boolean; progress?: number }) {
-  const rgb = hexToRgb(accent);
-  return (
-    <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${BORDER_HI}`, background: GRAPHITE, boxShadow: "0 40px 100px rgba(0,0,0,0.5)", opacity: building ? 0.4 + progress * 0.6 : 1, transition: "opacity .4s ease" }}>
-      <div style={{ height: 32, background: "#0D0F18", display: "flex", alignItems: "center", padding: "0 12px", gap: 6, borderBottom: `1px solid ${BORDER}` }}>
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.15)" }} />
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.15)" }} />
-        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.15)" }} />
-        <div style={{ flex: 1, height: 16, background: "rgba(255,255,255,0.04)", borderRadius: 4, marginLeft: 8 }} />
-      </div>
-
-      <div style={{ aspectRatio: "16/10", padding: 16, position: "relative", background: `radial-gradient(circle at 30% 0%,rgba(${rgb},0.06),transparent 60%)` }}>
-        {type === "website" && (
-          <>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-              <div style={{ width: 60, height: 8, borderRadius: 4, background: `rgba(${rgb},0.5)` }} />
-              <div style={{ display: "flex", gap: 6 }}>
-                {[1,2,3].map(i => <div key={i} style={{ width: 24, height: 6, borderRadius: 3, background: "rgba(255,255,255,0.12)" }} />)}
-              </div>
-            </div>
-            <div style={{ width: "70%", height: 16, borderRadius: 4, background: "rgba(255,255,255,0.18)", marginBottom: 8 }} />
-            <div style={{ width: "50%", height: 10, borderRadius: 4, background: "rgba(255,255,255,0.08)", marginBottom: 18 }} />
-            <div style={{ width: 80, height: 24, borderRadius: 6, background: `rgba(${rgb},0.7)`, marginBottom: 20 }} />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-              {[1,2,3].map(i => <div key={i} style={{ height: 50, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: `1px solid ${BORDER}` }} />)}
-            </div>
-          </>
-        )}
-        {type === "dashboard" && (
-          <div style={{ display: "flex", gap: 10, height: "100%" }}>
-            <div style={{ width: 36, background: "rgba(255,255,255,0.03)", borderRadius: 6, display: "flex", flexDirection: "column", gap: 8, padding: 6 }}>
-              {[1,2,3,4].map(i => <div key={i} style={{ width: "100%", height: 8, borderRadius: 3, background: i===1?`rgba(${rgb},0.6)`:"rgba(255,255,255,0.08)" }} />)}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 10 }}>
-                {[1,2,3].map(i => <div key={i} style={{ height: 36, borderRadius: 6, background: "rgba(255,255,255,0.04)", border: `1px solid ${BORDER}` }} />)}
-              </div>
-              <div style={{ height: 90, borderRadius: 8, background: `linear-gradient(180deg,rgba(${rgb},0.12),transparent)`, border: `1px solid ${BORDER}` }} />
-            </div>
-          </div>
-        )}
-        {type === "app" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
-            <div style={{ width: "40%", height: 12, borderRadius: 4, background: "rgba(255,255,255,0.15)", marginBottom: 6 }} />
-            {[1,2,3].map(i => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: 8, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER}` }}>
-                <div style={{ width: 24, height: 24, borderRadius: 6, background: `rgba(${rgb},0.4)` }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ width: "60%", height: 8, borderRadius: 3, background: "rgba(255,255,255,0.12)", marginBottom: 4 }} />
-                  <div style={{ width: "40%", height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {type === "game" && (
-          <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-            <div style={{ width: "100%", height: "100%", borderRadius: 8, background: `linear-gradient(135deg,rgba(${rgb},0.15),rgba(0,0,0,0.3))`, border: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ width: 28, height: 28, borderRadius: 6, background: `rgba(${rgb},0.7)`, boxShadow: `0 0 24px rgba(${rgb},0.4)` }} />
-            </div>
-            <div style={{ position: "absolute", top: 8, left: 8, fontSize: 9, color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>SCORE: 2,480</div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// LIVE AI DEMO — LEFT: AI engineering panel / RIGHT: live preview
-// Phases sync between both sides. No fake metrics — purely a
-// transparent visualization of the real generation workflow.
-// ═══════════════════════════════════════════════════════════════
-const DEMO_PHASES = [
-  { label: "Understanding request",  type: "website" },
-  { label: "Planning architecture",  type: "website" },
-  { label: "Generating code",        type: "dashboard" },
-  { label: "Optimizing output",      type: "dashboard" },
-  { label: "Finalizing build",       type: "app" },
-];
-
-function LiveDemoSection() {
-  const [promptIdx, setPromptIdx] = useState(0);
-  const [typed, setTyped]         = useState("");
-  const [stage, setStage]         = useState<"typing"|"building"|"done">("typing");
-  const [phaseIdx, setPhaseIdx]   = useState(-1);
-
+  // Counter animation
   useEffect(() => {
-    let mounted = true;
-    const target = DEMO_PROMPTS[promptIdx];
-    let i = 0;
-    setTyped(""); setStage("typing"); setPhaseIdx(-1);
-
-    const typeNext = () => {
-      if (!mounted) return;
-      if (i <= target.length) {
-        setTyped(target.slice(0, i));
-        i++;
-        setTimeout(typeNext, 30 + Math.random() * 26);
-      } else {
-        setTimeout(() => mounted && setStage("building"), 450);
-      }
+    const animate = (id: string, target: number, suffix = "") => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const start = Date.now();
+      const tick = () => {
+        const p = Math.min((Date.now() - start) / 2000, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.floor(ease * target) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      tick();
     };
-    const t = setTimeout(typeNext, 350);
-    return () => { mounted = false; clearTimeout(t); };
-  }, [promptIdx]);
-
-  useEffect(() => {
-    if (stage !== "building") return;
-    let mounted = true;
-    let step = -1;
-    const advance = () => {
-      if (!mounted) return;
-      step++;
-      setPhaseIdx(step);
-      if (step < DEMO_PHASES.length - 1) {
-        setTimeout(advance, 620);
-      } else {
-        setTimeout(() => mounted && setStage("done"), 500);
-      }
-    };
-    const t = setTimeout(advance, 400);
-    return () => { mounted = false; clearTimeout(t); };
-  }, [stage]);
-
-  useEffect(() => {
-    if (stage !== "done") return;
-    const t = setTimeout(() => setPromptIdx(p => (p + 1) % DEMO_PROMPTS.length), 3200);
-    return () => clearTimeout(t);
-  }, [stage]);
-
-  const currentType = phaseIdx >= 0 ? DEMO_PHASES[Math.min(phaseIdx, DEMO_PHASES.length - 1)].type : "website";
-  const buildProgress = stage === "done" ? 1 : phaseIdx >= 0 ? (phaseIdx + 1) / DEMO_PHASES.length : 0;
-
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 16 }} className="live-demo-grid">
-      {/* LEFT — AI Engineering Panel */}
-      <div className="glass-card" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: stage === "done" ? "#7CFFB2" : SILVER, transition: "background .3s" }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: SUB, letterSpacing: "0.02em" }}>AI Engineering Panel</span>
-        </div>
-
-        <div style={{ padding: "16px 18px", borderBottom: `1px solid ${BORDER}`, minHeight: 44, display: "flex", alignItems: "center" }}>
-          <span style={{ fontFamily: "'Inter',monospace", fontSize: 13.5, color: WHITE }}>
-            {typed}
-            {stage === "typing" && <span style={{ opacity: 0.6, animation: "blink 1s step-end infinite" }}>|</span>}
-          </span>
-        </div>
-
-        <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 14, flex: 1 }}>
-          {DEMO_PHASES.map((p, i) => {
-            const isDone   = stage === "done" || i < phaseIdx;
-            const isActive = stage === "building" && i === phaseIdx;
-            return (
-              <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 11, opacity: stage === "typing" ? 0.25 : isDone ? 1 : isActive ? 0.95 : 0.3, transition: "opacity .35s" }}>
-                <div style={{
-                  width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
-                  border: `1.5px solid ${isDone ? "#7CFFB2" : BORDER_HI}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: isDone ? "rgba(124,255,178,0.12)" : "transparent",
-                }}>
-                  {isDone && <span style={{ fontSize: 9, color: "#7CFFB2" }}>✓</span>}
-                  {isActive && <div style={{ width: 6, height: 6, borderRadius: "50%", background: SILVER, animation: "pulse 1s ease infinite" }} />}
-                </div>
-                <span style={{ fontSize: 13, color: isDone ? WHITE : isActive ? SUB : MUTED, fontWeight: isActive ? 600 : 400 }}>{p.label}</span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Progress bar — real, tied to phase count, not fabricated */}
-        <div style={{ padding: "0 18px 18px" }}>
-          <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${buildProgress * 100}%`, background: GRAD, transition: "width .5s cubic-bezier(0.16,1,0.3,1)" }} />
-          </div>
-        </div>
-      </div>
-
-      {/* RIGHT — Live Preview Window */}
-      <div>
-        <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: SUB }}>Live Preview</span>
-          <span style={{ fontSize: 11, color: MUTED, textTransform: "capitalize" }}>· {currentType}</span>
-        </div>
-        <MockupFrame type={currentType} accent="#F5F5F5" building={stage === "building"} progress={buildProgress} />
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MAIN PAGE
-// ═══════════════════════════════════════════════════════════════
-export default function LandingPage() {
-  const router = useRouter();
-  const [isWide, setIsWide]   = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [mobMenu, setMobMenu] = useState(false);
-  const [activeTab, setActiveTab] = useState("website");
-  const [heroPrompt, setHeroPrompt] = useState("");
-  const [heroTyped, setHeroTyped]   = useState("");
-  const [heroListening, setHeroListening] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const submitHeroPrompt = useCallback(() => {
-    const p = heroPrompt.trim();
-    if (!p) { router.push("/auth/signup"); return; }
-    router.push(`/auth/signup?prompt=${encodeURIComponent(p)}`);
-  }, [heroPrompt, router]);
-
-  // Animated rotating placeholder — types out example prompts character by character
-  const HERO_PLACEHOLDERS = [
-    "Build a SaaS dashboard with analytics...",
-    "Create a luxury real estate website...",
-    "Design a fitness tracking app...",
-    "Build a crypto trading dashboard...",
-  ];
-  useEffect(() => {
-    let mounted = true;
-    let idx = 0;
-    const runCycle = () => {
-      const target = HERO_PLACEHOLDERS[idx % HERO_PLACEHOLDERS.length];
-      let i = 0;
-      const iv = setInterval(() => {
-        if (!mounted) { clearInterval(iv); return; }
-        if (i < target.length) { setHeroTyped(target.slice(0, ++i)); }
-        else {
-          clearInterval(iv);
-          setTimeout(() => { if (mounted) { idx++; runCycle(); } }, 2200);
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          animate("s1", 2847); animate("s2", 1203);
+          animate("s3", 45, "s"); animate("s4", 46);
+          obs.disconnect();
         }
-      }, 35);
-    };
-    runCycle();
-    return () => { mounted = false; };
+      });
+    }, { threshold: 0.3 });
+    const el = document.getElementById("stats-grid");
+    if (el) obs.observe(el);
+    return () => obs.disconnect();
   }, []);
 
-  const handleHeroVoice = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    if (heroListening) { setHeroListening(false); return; }
-    const r = new SR();
-    r.continuous = false; r.interimResults = false; r.lang = "en-IN";
-    r.onstart = () => setHeroListening(true);
-    r.onresult = (e: any) => {
-      const t = e.results[0]?.[0]?.transcript || "";
-      if (t.trim()) setHeroPrompt(prev => prev ? prev + " " + t : t);
-    };
-    r.onerror = () => setHeroListening(false);
-    r.onend = () => setHeroListening(false);
-    r.start();
-  }, [heroListening]);
+  const handleGenerate = () => {
+    if (!prompt.trim()) { inputRef.current?.focus(); return; }
+    router.push(`/create?prompt=${encodeURIComponent(prompt.trim())}`);
+  };
 
-  useEffect(() => {
-    const check = () => setIsWide(window.innerWidth >= 860);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  const setQuickPrompt = (p: string) => {
+    setPrompt(p);
+    inputRef.current?.focus();
+  };
 
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const h = () => setScrolled(el.scrollTop > 20);
-    el.addEventListener("scroll", h, { passive: true });
-    return () => el.removeEventListener("scroll", h);
-  }, []);
+  const phases = [
+    { label: "📐 Blueprint analysis complete", state: "done" },
+    { label: "🎨 Design system generated", state: "done" },
+    { label: "⚡ Building components...", state: "active" },
+    { label: "🔍 Quality gate check", state: "pending" },
+    { label: "✅ Ready to download", state: "pending" },
+  ];
 
-  const goto = useCallback((id: string) => {
-    const el = document.getElementById(id);
-    if (el && containerRef.current) {
-      const top = el.offsetTop - 76;
-      containerRef.current.scrollTo({ top, behavior: "smooth" });
-    }
-    setMobMenu(false);
-  }, []);
+  const C = {
+    bg: "#040610", surf: "#070B16", card: "#0C1020", card2: "#101525",
+    border: "rgba(255,255,255,0.07)", borderH: "rgba(255,255,255,0.16)",
+    text: "#F0F2F5", sub: "#8892A0", muted: "#45505E",
+    grad: "linear-gradient(135deg,#F0F2F5 0%,#C8CDD4 50%,#A8B0BA 100%)",
+    green: "#4CAF8A",
+  };
+
+  const Logo = () => (
+    <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+      <rect width="40" height="40" rx="9" fill="#050816"/>
+      <defs>
+        <linearGradient id="lg" x1="4" y1="4" x2="36" y2="36">
+          <stop stopColor="#F5F5F5"/>
+          <stop offset="55%" stopColor="#D9D9D9"/>
+          <stop offset="100%" stopColor="#BFC5CC"/>
+        </linearGradient>
+      </defs>
+      <line x1="20" y1="20" x2="9" y2="9" stroke="url(#lg)" strokeWidth="1.4" strokeLinecap="round" opacity=".55"/>
+      <line x1="20" y1="20" x2="31" y2="9" stroke="url(#lg)" strokeWidth="1.4" strokeLinecap="round" opacity=".55"/>
+      <line x1="20" y1="20" x2="9" y2="31" stroke="url(#lg)" strokeWidth="1.4" strokeLinecap="round" opacity=".55"/>
+      <line x1="20" y1="20" x2="31" y2="31" stroke="url(#lg)" strokeWidth="1.4" strokeLinecap="round" opacity=".55"/>
+      <circle cx="9" cy="9" r="2.6" fill="url(#lg)"/><circle cx="31" cy="9" r="2.6" fill="url(#lg)"/>
+      <circle cx="9" cy="31" r="2.6" fill="url(#lg)"/><circle cx="31" cy="31" r="2.6" fill="url(#lg)"/>
+      <circle cx="20" cy="20" r="4" fill="#050816"/><circle cx="20" cy="20" r="3" fill="url(#lg)"/>
+    </svg>
+  );
 
   return (
-    <div ref={containerRef} style={{ height: "100dvh", overflowY: "auto", overflowX: "hidden", background: BG, color: WHITE, fontFamily: "'Inter',system-ui,sans-serif", position: "relative" }}>
+    <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        *{box-sizing:border-box;}
-        ::-webkit-scrollbar{width:5px;}
-        ::-webkit-scrollbar-track{background:${BG};}
-        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:4px;}
-        @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
-        @keyframes pulse{0%,100%{opacity:.4;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-        @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-        @keyframes gridDrift{0%{background-position:0 0}100%{background-position:48px 48px}}
-        .bg-grid{position:absolute;inset:-48px;background-image:linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);background-size:48px 48px;animation:gridDrift 18s linear infinite;mask-image:radial-gradient(ellipse 70% 60% at 50% 20%,#000 0%,transparent 75%);}
-        .glass-card{background:rgba(255,255,255,0.025);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid ${BORDER};border-radius:18px;transition:all .3s cubic-bezier(0.16,1,0.3,1);}
-        .glass-card:hover{border-color:${BORDER_HI};transform:translateY(-4px);box-shadow:0 24px 60px rgba(0,0,0,0.4);}
-        .nav-link{background:none;border:none;color:${SUB};font-size:13.5px;font-weight:500;cursor:pointer;transition:color .2s;padding:6px 0;}
-        .nav-link:hover{color:${WHITE};}
-        .btn-primary{background:${GRAD};color:#050505;border:none;border-radius:11px;font-weight:700;cursor:pointer;transition:all .25s cubic-bezier(0.16,1,0.3,1);}
-        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(245,245,245,0.18);}
-        .btn-secondary{background:rgba(255,255,255,0.03);color:${WHITE};border:1px solid ${BORDER_HI};border-radius:11px;font-weight:600;cursor:pointer;transition:all .25s;}
-        .btn-secondary:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.3);}
-        .feature-card{padding:28px;}
-        .live-demo-grid{text-align:left;max-width:880px;margin:0 auto;}
-        @media(min-width:860px){.live-demo-grid{grid-template-columns:1fr 1fr!important;}}
-        @media(max-width:860px){.hide-mobile{display:none!important}}
-        @media(min-width:861px){.hide-desktop{display:none!important}}
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0;}
+        html{scroll-behavior:smooth;}
+        body{background:${C.bg};color:${C.text};font-family:"DM Sans",sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+        ::-webkit-scrollbar{width:2px;}
+        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px;}
+        .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1);}
+        .reveal.vis{opacity:1;transform:none;}
+        @keyframes pulse{0%,100%{opacity:.3;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+        .hero-badge-dot{animation:pulse 2s infinite;}
+        .step-card:hover,.type-card:hover,.feat-card:hover,.testi-card:hover{border-color:rgba(255,255,255,.18)!important;transform:translateY(-3px)!important;}
+        .nav-cta:hover{opacity:.9!important;transform:translateY(-1px)!important;}
+        .hero-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(240,242,245,.2);}
+        .hero-tag:hover{color:${C.text}!important;border-color:rgba(255,255,255,.2)!important;background:rgba(255,255,255,.04)!important;}
+        .price-card:hover{transform:translateY(-4px);}
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(240,242,245,.2);}
+        .btn-outline:hover{border-color:rgba(255,255,255,.25)!important;background:rgba(255,255,255,.05)!important;}
+        @media(max-width:768px){.nav-links-desktop{display:none!important;}.hamburger{display:flex!important;}}
+        @media(max-width:900px){.steps-grid{grid-template-columns:repeat(2,1fr)!important;}.types-grid{grid-template-columns:repeat(2,1fr)!important;}.feat-grid{grid-template-columns:1fr!important;}.testi-grid{grid-template-columns:1fr!important;}.pricing-grid{grid-template-columns:1fr!important;}.footer-grid{grid-template-columns:1fr 1fr!important;}.demo-content{grid-template-columns:1fr!important;}.demo-right-panel{display:none!important;}}
+        @media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)!important;}.hero-input-wrap{flex-direction:column!important;}.hero-btn{width:100%!important;justify-content:center!important;border-radius:10px!important;}.footer-grid{grid-template-columns:1fr!important;}}
       `}</style>
 
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
-        {/* Animated grid — very low opacity, subtle drift */}
-        <div className="bg-grid" />
-        {/* Aurora glow */}
-        <div style={{ position: "absolute", top: "-10%", left: "50%", transform: "translateX(-50%)", width: 900, height: 900, borderRadius: "50%", background: `radial-gradient(circle,${GLOW},transparent 70%)`, filter: "blur(40px)" }} />
-        <div style={{ position: "absolute", bottom: "0%", left: "-10%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(191,197,204,0.05),transparent 70%)", filter: "blur(60px)" }} />
-      </div>
-      <div style={{ position: "fixed", inset: 0, zIndex: 0 }}><ParticleField /></div>
-
+      {/* ── NAV ── */}
       <nav style={{
-        position: "sticky", top: 0, zIndex: 50, height: 68, display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 clamp(20px,4vw,48px)", background: scrolled ? "rgba(5,8,22,0.85)" : "rgba(5,8,22,0.3)",
-        backdropFilter: "blur(20px)", borderBottom: scrolled ? `1px solid ${BORDER}` : "1px solid transparent", transition: "all .3s ease",
+        position:"fixed",top:0,left:0,right:0,zIndex:99,
+        padding:"0 clamp(20px,5vw,60px)",height:58,
+        display:"flex",alignItems:"center",justifyContent:"space-between",
+        background:navScrolled?"rgba(4,6,16,.97)":"rgba(4,6,16,.8)",
+        backdropFilter:"blur(20px)",borderBottom:`1px solid ${C.border}`,
+        transition:"background .3s",
       }}>
-        <button onClick={() => router.push("/landing")} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}>
-          <KryptonLogo size={32} showText animated={false} />
+        <button onClick={()=>router.push("/")} style={{display:"flex",alignItems:"center",gap:10,background:"none",border:"none",cursor:"pointer",textDecoration:"none"}}>
+          <Logo/>
+          <span style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:16,color:C.text}}>Krypton AI</span>
         </button>
 
-        {isWide && (
-          <div style={{ display: "flex", gap: 36, position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
-            {NAV_LINKS.map(l => (
-              <button key={l.label} className="nav-link" onClick={() => l.path ? router.push(l.path) : goto(l.id!)}>
-                {l.label}
-              </button>
+        {/* Desktop links */}
+        <div className="nav-links-desktop" style={{display:"flex",alignItems:"center",gap:6}}>
+          {[["#how","How it works"],["#features","Features"],["#pricing","Pricing"]].map(([href,label])=>(
+            <a key={href} href={href} style={{fontSize:13,color:C.sub,textDecoration:"none",padding:"6px 14px",borderRadius:8,transition:"all .15s"}}
+              onMouseEnter={e=>{e.currentTarget.style.color=C.text;e.currentTarget.style.background="rgba(255,255,255,.05)";}}
+              onMouseLeave={e=>{e.currentTarget.style.color=C.sub;e.currentTarget.style.background="transparent";}}
+            >{label}</a>
+          ))}
+          <a href="/login" style={{fontSize:13,color:C.sub,textDecoration:"none",padding:"6px 14px",borderRadius:8}}
+            onMouseEnter={e=>{e.currentTarget.style.color=C.text;}} onMouseLeave={e=>{e.currentTarget.style.color=C.sub;}}>Login</a>
+          <a href="/signup" className="nav-cta" style={{background:C.grad,color:"#040610",fontWeight:700,fontSize:13,padding:"7px 18px",borderRadius:8,textDecoration:"none",transition:"all .2s"}}>
+            Get Started Free
+          </a>
+        </div>
+
+        {/* Hamburger */}
+        <button className="hamburger" onClick={()=>setMobileOpen(o=>!o)}
+          style={{display:"none",background:"none",border:"none",color:C.text,cursor:"pointer",fontSize:20,alignItems:"center"}}>
+          {mobileOpen?"✕":"☰"}
+        </button>
+
+        {/* Mobile menu */}
+        {mobileOpen&&(
+          <div style={{position:"fixed",top:58,left:0,right:0,bottom:0,background:"rgba(4,6,16,.97)",display:"flex",flexDirection:"column",padding:24,gap:12,zIndex:98}}>
+            {[["#how","How it works"],["#features","Features"],["#pricing","Pricing"],["#login","Login"]].map(([href,label])=>(
+              <a key={href} href={href} onClick={()=>setMobileOpen(false)}
+                style={{fontSize:18,color:C.text,textDecoration:"none",padding:"12px 0",borderBottom:`1px solid ${C.border}`}}>{label}</a>
             ))}
+            <a href="/signup" style={{background:C.grad,color:"#040610",fontWeight:700,fontSize:15,padding:"14px 28px",borderRadius:10,textDecoration:"none",textAlign:"center",marginTop:8}}>
+              Get Started Free
+            </a>
           </div>
         )}
-
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {isWide && (
-            <button onClick={() => router.push("/auth/login")} className="btn-secondary" style={{ padding: "8px 18px", fontSize: 13 }}>
-              Sign In
-            </button>
-          )}
-          <button onClick={() => router.push("/auth/signup")} className="btn-primary" style={{ padding: "9px 20px", fontSize: 13 }}>
-            Start Building
-          </button>
-          {!isWide && (
-            <button onClick={() => setMobMenu(v => !v)} style={{ background: "rgba(255,255,255,.05)", border: `1px solid ${BORDER}`, borderRadius: 9, color: WHITE, fontSize: 15, padding: "7px 11px", cursor: "pointer" }}>
-              {mobMenu ? "✕" : "☰"}
-            </button>
-          )}
-        </div>
       </nav>
 
-      {mobMenu && !isWide && (
-        <div style={{ position: "sticky", top: 68, zIndex: 49, background: "rgba(5,8,22,0.98)", borderBottom: `1px solid ${BORDER}`, padding: "16px 20px", backdropFilter: "blur(20px)", display: "flex", flexDirection: "column", gap: 4 }}>
-          {NAV_LINKS.map(l => (
-            <button key={l.label} onClick={() => l.path ? router.push(l.path) : goto(l.id!)}
-              style={{ background: "none", border: "none", color: SUB, fontSize: 15, padding: "12px 0", textAlign: "left", borderBottom: `1px solid ${BORDER}`, cursor: "pointer" }}>
-              {l.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* ── HERO ── */}
+      <section style={{minHeight:"100vh",display:"flex",alignItems:"center",padding:"100px 0 80px",position:"relative",overflow:"hidden"}}>
+        {/* Backgrounds */}
+        <div style={{position:"absolute",inset:0,pointerEvents:"none",background:"radial-gradient(ellipse 80% 50% at 20% 80%,rgba(240,242,245,.04) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 20%,rgba(200,205,212,.03) 0%,transparent 50%)"}}/>
+        <div style={{position:"absolute",inset:0,pointerEvents:"none",backgroundImage:"linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px)",backgroundSize:"64px 64px",WebkitMaskImage:"radial-gradient(ellipse at center,black 30%,transparent 80%)"}}/>
 
-      <main style={{ position: "relative", zIndex: 1 }}>
-        <section style={{ padding: "clamp(60px,9vw,110px) clamp(20px,4vw,48px) clamp(50px,7vw,80px)" }}>
-          <div style={{ maxWidth: 920, margin: "0 auto", textAlign: "center" }}>
-            <div className="glass-card" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 16px", borderRadius: 30, marginBottom: 28, animation: "fadeUp .6s ease both" }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#7CFFB2" }} />
-              <span style={{ fontSize: 12, fontWeight: 600, color: SUB, letterSpacing: "0.02em" }}>Enterprise AI Creation Platform</span>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)",width:"100%",position:"relative",zIndex:1}}>
+          <div style={{textAlign:"center",maxWidth:800,margin:"0 auto"}}>
+
+            {/* Badge */}
+            <div className="reveal" style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(255,255,255,.06)",border:`1px solid rgba(255,255,255,.12)`,borderRadius:999,padding:"6px 16px",marginBottom:28,fontSize:12,fontWeight:600,color:C.sub}}>
+              <span className="hero-badge-dot" style={{width:6,height:6,borderRadius:"50%",background:C.green,display:"inline-block"}}/>
+              Powered by Krypton Intelligence Engine
             </div>
 
-            <h1 style={{ fontFamily: "'Inter',sans-serif", fontSize: "clamp(32px,5.2vw,64px)", fontWeight: 800, lineHeight: 1.1, letterSpacing: "-0.025em", marginBottom: 22, animation: "fadeUp .6s .1s ease both" }}>
-              The Operating System For<br /><span style={gtext}>AI Product Creation</span>
+            {/* Headline */}
+            <h1 className="reveal" style={{fontFamily:"Syne,sans-serif",fontWeight:800,letterSpacing:"-0.03em",lineHeight:1.02,fontSize:"clamp(40px,8vw,88px)",marginBottom:22}}>
+              Build Anything<br/>with{" "}
+              <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>
+                One Prompt
+              </span>
             </h1>
 
-            <p style={{ fontSize: "clamp(15px,1.6vw,18px)", color: SUB, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 32px", animation: "fadeUp .6s .2s ease both" }}>
-              Describe what you want to build. Krypton AI plans the architecture, writes the code, and ships a working website, dashboard, app, or game — in real time, in your browser.
+            {/* Sub */}
+            <p className="reveal" style={{fontSize:"clamp(16px,2.5vw,20px)",color:C.sub,lineHeight:1.7,maxWidth:560,margin:"0 auto 40px",fontWeight:400}}>
+              Krypton AI generates complete, production-ready websites, apps, dashboards, and games — in seconds. No code. No designer. Just describe what you want.
             </p>
 
-            {/* Primary conversion element — prompt input, animated placeholder, voice + attach */}
-            <div className="glass-card" style={{ maxWidth: 640, margin: "0 auto 16px", padding: "10px 10px 10px 16px", display: "flex", alignItems: "center", gap: 8, animation: "fadeUp .6s .25s ease both" }}>
-              <button
-                title="Attach file"
-                onClick={() => router.push("/auth/signup")}
-                style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.04)", border: `1px solid ${BORDER}`, color: SUB, fontSize: 15, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                +
-              </button>
+            {/* Input */}
+            <div className="reveal hero-input-wrap" style={{display:"flex",gap:0,maxWidth:640,margin:"0 auto 36px",background:C.card,border:`1px solid ${C.borderH}`,borderRadius:14,padding:6,boxShadow:`0 0 0 4px rgba(240,242,245,.04),0 24px 48px rgba(0,0,0,.4)`}}>
               <input
-                value={heroPrompt}
-                onChange={e => setHeroPrompt(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") submitHeroPrompt(); }}
-                placeholder={heroTyped || "Describe what you want to build..."}
-                style={{ flex: 1, background: "none", border: "none", outline: "none", color: WHITE, fontSize: 14, padding: "10px 4px", fontFamily: "'Inter',sans-serif" }}
+                ref={inputRef} value={prompt} onChange={e=>setPrompt(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&handleGenerate()}
+                placeholder="Build a luxury perfume store with cart..."
+                style={{flex:1,background:"none",border:"none",outline:"none",color:C.text,fontFamily:"DM Sans,sans-serif",fontSize:15,padding:"12px 16px"}}
               />
-              <button
-                onClick={handleHeroVoice}
-                title="Voice input"
-                style={{ width: 30, height: 30, borderRadius: "50%", background: heroListening ? "rgba(245,245,245,0.15)" : "rgba(255,255,255,0.04)", border: `1px solid ${heroListening ? BORDER_HI : BORDER}`, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                  <rect x="9" y="2" width="6" height="11" rx="3" fill={heroListening ? WHITE : SUB}/>
-                  <path d="M5 11a7 7 0 0014 0M12 18v3" stroke={heroListening ? WHITE : SUB} strokeWidth="2" strokeLinecap="round" fill="none"/>
-                </svg>
-              </button>
-              <button onClick={submitHeroPrompt} className="btn-primary" style={{ padding: "10px 20px", fontSize: 13.5, flexShrink: 0 }}>
-                Build it →
+              <button className="hero-btn" onClick={handleGenerate}
+                style={{background:C.grad,color:"#040610",border:"none",borderRadius:10,padding:"13px 24px",fontFamily:"DM Sans,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8,transition:"all .2s"}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="#040610" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Build Now
               </button>
             </div>
 
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 56, animation: "fadeUp .6s .3s ease both" }}>
-              <button onClick={() => router.push("/auth/signup")} className="btn-secondary" style={{ padding: "11px 24px", fontSize: 13.5 }}>
-                Start Building
-              </button>
-              <button onClick={() => goto("product")} className="btn-secondary" style={{ padding: "11px 24px", fontSize: 13.5 }}>
-                View Examples
-              </button>
-            </div>
-
-            <div style={{ animation: "fadeUp .6s .4s ease both" }}>
-              <LiveDemoSection />
-            </div>
-
-            <p style={{ marginTop: 24, fontSize: 12.5, color: MUTED }}>Free plan available · No credit card required</p>
-          </div>
-        </section>
-
-        <section id="product" style={{ padding: "clamp(60px,8vw,90px) clamp(20px,4vw,48px)", borderTop: `1px solid ${BORDER}`, background: SURFACE }}>
-          <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-            <Reveal>
-              <div style={{ textAlign: "center", marginBottom: 40 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: MUTED, marginBottom: 12 }}>Output Quality</p>
-                <h2 style={{ fontSize: "clamp(26px,3.5vw,42px)", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 14 }}>
-                  Production-grade, <span style={gtext}>every time</span>
-                </h2>
-                <p style={{ color: SUB, fontSize: 15, maxWidth: 480, margin: "0 auto" }}>Every output ships with real design systems — not templated guesswork.</p>
-              </div>
-            </Reveal>
-
-            <Reveal delay={100}>
-              <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 32, flexWrap: "wrap" }}>
-                {PRODUCT_TABS.map(t => (
-                  <button key={t.id} onClick={() => setActiveTab(t.id)}
-                    style={{
-                      padding: "8px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                      background: activeTab === t.id ? "rgba(255,255,255,0.08)" : "transparent",
-                      color: activeTab === t.id ? WHITE : MUTED,
-                      border: `1px solid ${activeTab === t.id ? BORDER_HI : BORDER}`,
-                      transition: "all .2s",
-                    }}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </Reveal>
-
-            <Reveal delay={150}>
-              <div style={{ maxWidth: 640, margin: "0 auto" }}>
-                <MockupFrame type={activeTab} accent={PRODUCT_TABS.find(t => t.id === activeTab)?.accent || "#F5F5F5"} />
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        <section id="features" style={{ padding: "clamp(60px,8vw,90px) clamp(20px,4vw,48px)" }}>
-          <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-            <Reveal>
-              <div style={{ textAlign: "center", marginBottom: 48 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: MUTED, marginBottom: 12 }}>Capabilities</p>
-                <h2 style={{ fontSize: "clamp(26px,3.5vw,42px)", fontWeight: 700, letterSpacing: "-0.02em" }}>
-                  Built for <span style={gtext}>serious builders</span>
-                </h2>
-              </div>
-            </Reveal>
-
-            <div style={{ display: "grid", gridTemplateColumns: isWide ? "repeat(3,1fr)" : "1fr", gap: 16 }}>
-              {FEATURES.map((f, i) => (
-                <Reveal key={f.title} delay={i * 60}>
-                  <div className="glass-card feature-card">
-                    <div style={{ fontSize: 22, marginBottom: 16, color: SILVER }}>{f.icon}</div>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{f.title}</h3>
-                    <p style={{ fontSize: 13.5, color: SUB, lineHeight: 1.65 }}>{f.desc}</p>
-                  </div>
-                </Reveal>
+            {/* Tags */}
+            <div className="reveal" style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:56}}>
+              {[
+                ["🛍️ Luxury Store","Luxury perfume store with cart"],
+                ["🎮 Snake Game","Snake game with dark neon theme"],
+                ["📊 Dashboard","Analytics dashboard with charts"],
+                ["✅ Task App","Task manager kanban board"],
+                ["🏋️ Landing Page","Fitness coaching landing page"],
+                ["🎨 Portfolio","Creative photographer portfolio"],
+              ].map(([label,p])=>(
+                <button key={label} className="hero-tag" onClick={()=>setQuickPrompt(p)}
+                  style={{fontSize:12,color:C.muted,padding:"5px 14px",border:`1px solid ${C.border}`,borderRadius:999,cursor:"pointer",background:"none",transition:"all .15s"}}>
+                  {label}
+                </button>
               ))}
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section style={{ padding: "clamp(60px,8vw,90px) clamp(20px,4vw,48px)", borderTop: `1px solid ${BORDER}`, background: SURFACE }}>
-          <div style={{ maxWidth: 920, margin: "0 auto" }}>
-            <Reveal>
-              <div style={{ textAlign: "center", marginBottom: 52 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: MUTED, marginBottom: 12 }}>Process</p>
-                <h2 style={{ fontSize: "clamp(26px,3.5vw,42px)", fontWeight: 700, letterSpacing: "-0.02em" }}>
-                  From idea to <span style={gtext}>production</span>
-                </h2>
+      {/* ── LOGOS ── */}
+      <div style={{padding:"0 0 80px",textAlign:"center"}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <p style={{fontSize:12,color:C.muted,letterSpacing:".12em",textTransform:"uppercase",marginBottom:24}}>Trusted technology</p>
+          <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:48,flexWrap:"wrap",opacity:.35}}>
+            {["Krypton AI","Supabase","Vercel","Next.js","TypeScript"].map(n=>(
+              <span key={n} style={{fontFamily:"Syne,sans-serif",fontWeight:700,fontSize:16,color:C.text}}>{n}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── STATS ── */}
+      <div style={{padding:"0 0 100px"}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <div className="reveal stats-grid" id="stats-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:1,background:C.border,border:`1px solid ${C.border}`,borderRadius:16,overflow:"hidden"}}>
+            {[
+              {id:"s1",label:"Websites Generated"},
+              {id:"s2",label:"Games Created"},
+              {id:"s3",label:"Avg Generation Time"},
+              {id:"s4",label:"Components Available"},
+            ].map(s=>(
+              <div key={s.id} style={{background:C.card,padding:"32px 24px",textAlign:"center"}}>
+                <div id={s.id} style={{fontFamily:"Syne,sans-serif",fontSize:36,fontWeight:800,background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:6}}>0</div>
+                <div style={{fontSize:13,color:C.sub}}>{s.label}</div>
               </div>
-            </Reveal>
+            ))}
+          </div>
+        </div>
+      </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: isWide ? "repeat(3,1fr)" : "1fr", gap: 20, position: "relative" }}>
-              {STEPS.map((s, i) => (
-                <Reveal key={s.n} delay={i * 100}>
-                  <div className="glass-card" style={{ padding: 28, height: "100%" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: MUTED, marginBottom: 16, fontFamily: "monospace" }}>{s.n}</div>
-                    <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 10 }}>{s.title}</h3>
-                    <p style={{ fontSize: 13.5, color: SUB, lineHeight: 1.65 }}>{s.desc}</p>
+      {/* ── HOW IT WORKS ── */}
+      <section id="how" style={{padding:"0 0 100px"}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <p className="reveal" style={{fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:C.sub,marginBottom:14}}>How it works</p>
+          <h2 className="reveal" style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"clamp(28px,4vw,48px)",letterSpacing:"-.02em",marginBottom:56}}>
+            From idea to live site<br/>in{" "}
+            <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>under 60 seconds</span>
+          </h2>
+          <div className="steps-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:18}}>
+            {[
+              {num:"STEP 01",icon:"💬",title:"Describe Your Idea",desc:"Type anything — a business name, a concept, a niche. Krypton AI understands exactly what you want to build."},
+              {num:"STEP 02",icon:"🧠",title:"AI Designs & Codes",desc:"Krypton Intelligence Engine generates responsive HTML, CSS & JavaScript — premium quality, production-ready."},
+              {num:"STEP 03",icon:"✏️",title:"Edit with Chat",desc:"Say "make the header dark" — AI makes surgical edits while preserving your colors, fonts, and layout."},
+              {num:"STEP 04",icon:"🚀",title:"Download & Launch",desc:"Download the complete file and deploy anywhere — Netlify, Vercel, GitHub Pages, or any hosting platform."},
+            ].map(s=>(
+              <div key={s.num} className="reveal step-card" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:28,transition:"all .25s",position:"relative",overflow:"hidden"}}>
+                <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,rgba(255,255,255,.025),transparent)",pointerEvents:"none"}}/>
+                <div style={{fontFamily:"JetBrains Mono,monospace",fontSize:11,color:C.muted,marginBottom:14,letterSpacing:".08em"}}>{s.num}</div>
+                <div style={{fontSize:28,marginBottom:14}}>{s.icon}</div>
+                <h3 style={{fontFamily:"Syne,sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>{s.title}</h3>
+                <p style={{fontSize:13,color:C.sub,lineHeight:1.7}}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── BUILD TYPES ── */}
+      <section style={{padding:"0 0 100px"}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <p className="reveal" style={{fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:C.sub,marginBottom:14}}>What you can build</p>
+          <h2 className="reveal" style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"clamp(28px,4vw,48px)",letterSpacing:"-.02em",marginBottom:56}}>
+            One platform,<br/>
+            <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>infinite possibilities</span>
+          </h2>
+          <div className="types-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14}}>
+            {[
+              {icon:"🌐",name:"Websites",desc:"Business sites, agencies, SaaS — fully responsive and SEO-ready.",prompt:"Modern SaaS landing page with pricing"},
+              {icon:"🎮",name:"Games",desc:"Browser games — Snake, Platformer, Shooter — fully playable instantly.",prompt:"Snake game with dark neon theme"},
+              {icon:"📊",name:"Dashboards",desc:"Admin panels, analytics boards with real data visualization.",prompt:"Analytics dashboard with charts"},
+              {icon:"🛒",name:"E-Commerce",desc:"Product showcases, luxury stores — ready to integrate payments.",prompt:"Luxury perfume e-commerce store"},
+              {icon:"📱",name:"Web Apps",desc:"Task managers, kanban boards, productivity tools with full interactivity.",prompt:"Task manager kanban board app"},
+              {icon:"🎨",name:"Portfolios",desc:"Showcase your work with masonry grids and filter galleries.",prompt:"Creative photographer portfolio"},
+              {icon:"🚀",name:"Landing Pages",desc:"High-converting launch pages with hero, features, and pricing.",prompt:"SaaS product landing page"},
+              {icon:"🍽️",name:"Business Sites",desc:"Restaurants, gyms, salons — niche-aware design every time.",prompt:"Restaurant website with menu"},
+            ].map(t=>(
+              <div key={t.name} className="reveal type-card" onClick={()=>setQuickPrompt(t.prompt)}
+                style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:"24px 20px",cursor:"pointer",transition:"all .25s",textAlign:"left"}}>
+                <span style={{fontSize:24,marginBottom:12,display:"block"}}>{t.icon}</span>
+                <div style={{fontFamily:"Syne,sans-serif",fontSize:15,fontWeight:700,marginBottom:6}}>{t.name}</div>
+                <div style={{fontSize:12,color:C.sub,lineHeight:1.6}}>{t.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── DEMO ── */}
+      <section style={{padding:"0 0 100px"}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <p className="reveal" style={{fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:C.sub,marginBottom:14,textAlign:"center"}}>Live preview</p>
+          <h2 className="reveal" style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"clamp(28px,4vw,48px)",letterSpacing:"-.02em",marginBottom:56,textAlign:"center"}}>
+            Watch it generate<br/>
+            <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>in real time</span>
+          </h2>
+          <div className="reveal" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,overflow:"hidden"}}>
+            {/* Bar */}
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"14px 20px",borderBottom:`1px solid ${C.border}`,background:"rgba(255,255,255,.02)"}}>
+              {["#FF5F57","#FEBC2E","#28C840"].map(c=><div key={c} style={{width:11,height:11,borderRadius:"50%",background:c}}/>)}
+              <span style={{fontSize:12,color:C.muted,marginLeft:8,fontFamily:"JetBrains Mono,monospace"}}>kryptonai.tech/create</span>
+            </div>
+            {/* Content */}
+            <div className="demo-content" style={{display:"grid",gridTemplateColumns:"1fr 1fr",minHeight:300}}>
+              <div style={{padding:32,borderRight:`1px solid ${C.border}`}}>
+                <div style={{fontFamily:"JetBrains Mono,monospace",fontSize:13,color:C.sub,marginBottom:20}}>
+                  $ <span style={{color:C.text}}>"Build a luxury perfume store"</span>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {phases.map((ph,i)=>{
+                    const state = i < phaseIdx ? "done" : i === phaseIdx ? "active" : "pending";
+                    return (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:10,fontSize:13}}>
+                        <div style={{width:8,height:8,borderRadius:"50%",flexShrink:0,background:state==="done"?"#4CAF8A":state==="active"?"#F0F2F5":"#45505E",transition:"all .3s"}}/>
+                        <span style={{color:state==="done"?C.sub:state==="active"?C.text:C.muted,fontWeight:state==="active"?600:400,transition:"all .3s"}}>{ph.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="demo-right-panel" style={{padding:32,background:"rgba(255,255,255,.01)"}}>
+                <div style={{background:C.card2,borderRadius:10,border:`1px solid ${C.border}`,height:"100%",minHeight:220,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
+                  <div style={{textAlign:"center",position:"relative",zIndex:1}}>
+                    <div style={{fontFamily:"Syne,sans-serif",fontSize:22,fontWeight:800,marginBottom:8,background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>PARFUM LUXE</div>
+                    <div style={{fontSize:12,color:C.sub,marginBottom:16}}>Fine Fragrances Collection</div>
+                    <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+                      <span style={{fontSize:11,padding:"4px 12px",border:"1px solid rgba(201,168,76,.3)",borderRadius:999,color:"#C9A84C"}}>Shop Now</span>
+                      <span style={{fontSize:11,padding:"4px 12px",border:`1px solid ${C.border}`,borderRadius:999,color:C.muted}}>Explore</span>
+                    </div>
                   </div>
-                </Reveal>
-              ))}
+                  <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center,rgba(201,168,76,.06),transparent)",pointerEvents:"none"}}/>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section style={{ padding: "clamp(70px,9vw,110px) clamp(20px,4vw,48px)", borderTop: `1px solid ${BORDER}`, position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 50% 50%,${GLOW},transparent 70%)` }} />
-          <Reveal>
-            <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center", position: "relative" }}>
-              <h2 style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: 20 }}>
-                Build your next <span style={gtext}>production system</span>
-              </h2>
-              <p style={{ color: SUB, fontSize: 15, marginBottom: 36 }}>Join thousands of builders shipping at impossible speed.</p>
-              <button onClick={() => router.push("/auth/signup")} className="btn-primary" style={{ padding: "16px 36px", fontSize: 15 }}>
+      {/* ── FEATURES ── */}
+      <section id="features" style={{padding:"0 0 100px"}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <p className="reveal" style={{fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:C.sub,marginBottom:14}}>Why Krypton AI</p>
+          <h2 className="reveal" style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"clamp(28px,4vw,48px)",letterSpacing:"-.02em",marginBottom:56}}>
+            Everything you need,<br/>
+            <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>nothing you don't</span>
+          </h2>
+          <div className="feat-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:18}}>
+            {[
+              {icon:"⚡",title:"Krypton Intelligence Engine",desc:"Our proprietary AI pipeline generates premium output every time — fast, reliable, and production-ready."},
+              {icon:"📦",title:"46+ Premium Components",desc:"Production-ready hero sections, pricing tables, testimonials, FAQ accordions — assembled per your niche."},
+              {icon:"🎮",title:"Game Engine",desc:"Full browser games with polished UI, mobile D-pad, score tracking, and level progression — one prompt away."},
+              {icon:"✏️",title:"AI Chat Editing",desc:"Edit any part of your website by describing the change. Memory system preserves your colors and style."},
+              {icon:"👁️",title:"Vision Review",desc:"AI screenshots your website, reviews it for issues — broken layouts, cut text — and suggests fixes."},
+              {icon:"📱",title:"Always Responsive",desc:"Every generation is tested at 375px, 768px, and 1440px. Mobile-first layouts that work everywhere."},
+            ].map(f=>(
+              <div key={f.title} className="reveal feat-card" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:28,transition:"all .25s"}}>
+                <div style={{fontSize:24,marginBottom:16}}>{f.icon}</div>
+                <h3 style={{fontFamily:"Syne,sans-serif",fontSize:16,fontWeight:700,marginBottom:10}}>{f.title}</h3>
+                <p style={{fontSize:13,color:C.sub,lineHeight:1.75}}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section style={{padding:"0 0 100px"}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <p className="reveal" style={{fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:C.sub,marginBottom:14,textAlign:"center"}}>What users say</p>
+          <h2 className="reveal" style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"clamp(28px,4vw,48px)",letterSpacing:"-.02em",marginBottom:56,textAlign:"center"}}>
+            Loved by builders<br/>
+            <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>worldwide</span>
+          </h2>
+          <div className="testi-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:18}}>
+            {[
+              {init:"A",name:"Arjun Mehta",role:"E-Commerce Founder",text:"Generated a complete luxury perfume store in under a minute. The quality was unbelievable — sections, animations, mobile layout, everything perfect."},
+              {init:"S",name:"Sarah Chen",role:"Freelance Developer",text:"I needed a Snake game for my client's product launch. Krypton AI built it in 45 seconds — with dark theme and mobile controls. Client loved it."},
+              {init:"R",name:"Rahul Sharma",role:"Product Designer",text:"The AI editing is what sold me. I said 'make the header dark' — it updated exactly that and nothing else. Memory system is incredibly smart."},
+            ].map(t=>(
+              <div key={t.name} className="reveal testi-card" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:26,transition:"all .25s"}}>
+                <div style={{color:"#F59E0B",fontSize:12,marginBottom:14,letterSpacing:2}}>★★★★★</div>
+                <p style={{fontSize:14,color:C.text,lineHeight:1.75,marginBottom:20,fontStyle:"italic"}}>"{t.text}"</p>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:36,height:36,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:14,color:"#040610",background:C.grad,flexShrink:0}}>{t.init}</div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700}}>{t.name}</div>
+                    <div style={{fontSize:11,color:C.sub,marginTop:2}}>{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section id="pricing" style={{padding:"0 0 100px"}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <p className="reveal" style={{fontSize:11,fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:C.sub,marginBottom:14,textAlign:"center"}}>Simple pricing</p>
+          <h2 className="reveal" style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:"clamp(28px,4vw,48px)",letterSpacing:"-.02em",marginBottom:56,textAlign:"center"}}>
+            Start free,<br/>
+            <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>scale as you grow</span>
+          </h2>
+          <div className="pricing-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:18,maxWidth:900,margin:"0 auto"}}>
+            {[
+              {name:"Free",price:"$0",period:"forever",featured:false,features:["20 Generations / Day","Website Generator","App Generator","Game Generator","Live Preview","Download HTML"],cta:"Get Started Free",href:"/signup"},
+              {name:"Pro",price:"$25",period:"per month",featured:true,badge:"Most Popular",features:["100 Generations / Month","Everything in Free","Save Projects","Faster Generation","Better AI Quality","Premium Templates","Email Support"],cta:"Upgrade to Pro →",href:"/signup"},
+              {name:"Premium",price:"$69",period:"per month",featured:false,features:["300 Generations / Month","Everything in Pro","Fastest AI Model","Version History","Team (5 Users)","Screenshot to App","Priority Support"],cta:"Upgrade to Premium",href:"/signup"},
+            ].map(p=>(
+              <div key={p.name} className="reveal price-card" style={{background:p.featured?C.card2:C.card,border:`1px solid ${p.featured?"rgba(240,242,245,.25)":C.border}`,borderRadius:18,padding:32,transition:"all .25s",position:"relative"}}>
+                {p.badge&&<div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:C.grad,color:"#040610",fontSize:10,fontWeight:700,padding:"3px 14px",borderRadius:999,letterSpacing:".08em",textTransform:"uppercase",whiteSpace:"nowrap"}}>{p.badge}</div>}
+                <div style={{fontFamily:"Syne,sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>{p.name}</div>
+                <div style={{fontFamily:"Syne,sans-serif",fontSize:42,fontWeight:800,letterSpacing:"-.03em",marginBottom:4,background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>{p.price}</div>
+                <div style={{fontSize:13,color:C.sub,marginBottom:24}}>{p.period}</div>
+                <ul style={{listStyle:"none",display:"flex",flexDirection:"column",gap:10,marginBottom:28}}>
+                  {p.features.map(f=>(
+                    <li key={f} style={{fontSize:13,display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{color:"#4CAF8A",fontWeight:700,fontSize:12}}>✓</span>{f}
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={()=>router.push(p.href)}
+                  style={{width:"100%",padding:13,borderRadius:10,fontFamily:"DM Sans,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer",border:p.featured?"none":`1px solid ${C.border}`,background:p.featured?C.grad:"rgba(255,255,255,.07)",color:p.featured?"#040610":C.text,transition:"all .2s"}}>
+                  {p.cta}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section style={{padding:"0 0 100px"}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <div className="reveal" style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:24,padding:"clamp(48px,8vw,80px)",textAlign:"center",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center,rgba(255,255,255,.04),transparent 70%)",pointerEvents:"none"}}/>
+            <h2 className="display" style={{fontFamily:"Syne,sans-serif",fontSize:"clamp(28px,5vw,52px)",fontWeight:800,letterSpacing:"-.02em",marginBottom:16,position:"relative"}}>
+              Ready to build<br/>
+              <span style={{background:C.grad,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>something amazing?</span>
+            </h2>
+            <p style={{fontSize:16,color:C.sub,marginBottom:36,maxWidth:440,marginLeft:"auto",marginRight:"auto",position:"relative"}}>
+              Join thousands of creators. Free to start — no credit card required.
+            </p>
+            <div style={{display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap",position:"relative"}}>
+              <button className="btn-primary" onClick={()=>router.push("/signup")}
+                style={{background:C.grad,color:"#040610",border:"none",padding:"14px 32px",borderRadius:10,fontFamily:"DM Sans,sans-serif",fontWeight:700,fontSize:15,cursor:"pointer",transition:"all .2s"}}>
                 Start Building Free →
               </button>
-            </div>
-          </Reveal>
-        </section>
-
-        <footer style={{ padding: "56px clamp(20px,4vw,48px) 32px", borderTop: `1px solid ${BORDER}` }}>
-          <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-            <div style={{ display: "grid", gridTemplateColumns: isWide ? "1.4fr repeat(4,1fr)" : "repeat(2,1fr)", gap: isWide ? 32 : 24, marginBottom: 32, paddingBottom: 32, borderBottom: `1px solid ${BORDER}` }}>
-              <div style={{ maxWidth: 260, gridColumn: isWide ? "auto" : "1 / -1" }}>
-                <KryptonLogo size={26} showText animated={false} />
-                <p style={{ fontSize: 12.5, color: MUTED, marginTop: 12, lineHeight: 1.6 }}>The operating system for AI product creation.</p>
-              </div>
-
-              <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 14 }}>Product</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <button onClick={() => goto("features")} className="nav-link" style={{ padding: 0 }}>Features</button>
-                  <button onClick={() => router.push("/billing")} className="nav-link" style={{ padding: 0 }}>Pricing</button>
-                  <button onClick={() => router.push("/templates")} className="nav-link" style={{ padding: 0 }}>Templates</button>
-                  <button onClick={() => router.push("/faq")} className="nav-link" style={{ padding: 0 }}>FAQ</button>
-                </div>
-              </div>
-
-              <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 14 }}>Resources</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <button onClick={() => router.push("/docs")} className="nav-link" style={{ padding: 0 }}>Documentation</button>
-                  <button onClick={() => router.push("/changelog")} className="nav-link" style={{ padding: 0 }}>Changelog</button>
-                  <button onClick={() => router.push("/blog")} className="nav-link" style={{ padding: 0 }}>Blog</button>
-                  <button onClick={() => router.push("/support")} className="nav-link" style={{ padding: 0 }}>Support</button>
-                </div>
-              </div>
-
-              <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 14 }}>Legal</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <button onClick={() => router.push("/privacy")} className="nav-link" style={{ padding: 0 }}>Privacy Policy</button>
-                  <button onClick={() => router.push("/privacy/terms")} className="nav-link" style={{ padding: 0 }}>Terms & Conditions</button>
-                  <button onClick={() => router.push("/refund")} className="nav-link" style={{ padding: 0 }}>Refund Policy</button>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: isWide ? "row" : "column", justifyContent: "space-between", alignItems: isWide ? "center" : "flex-start", gap: 12 }}>
-              <p style={{ fontSize: 12, color: MUTED }}>© 2026 Krypton AI. All rights reserved.</p>
-              <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                <a href="mailto:support@kryptonai.tech" style={{ fontSize: 12, color: MUTED, textDecoration: "none" }}>support@kryptonai.tech</a>
-                <a href="https://twitter.com/kryptonai" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: MUTED, textDecoration: "none" }}>X</a>
-                <a href="https://linkedin.com/company/kryptonai" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: MUTED, textDecoration: "none" }}>LinkedIn</a>
-                <a href="https://github.com/jangeersinghktm-design/Magic-Krypton-ai-" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: MUTED, textDecoration: "none" }}>GitHub</a>
-              </div>
+              <a href="#how" className="btn-outline"
+                style={{background:"transparent",color:C.text,border:`1px solid ${C.border}`,padding:"14px 32px",borderRadius:10,fontFamily:"DM Sans,sans-serif",fontWeight:600,fontSize:15,cursor:"pointer",transition:"all .2s",textDecoration:"none",display:"inline-flex",alignItems:"center"}}>
+                See How It Works
+              </a>
             </div>
           </div>
-        </footer>
-      </main>
-    </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{padding:"clamp(48px,6vw,80px) 0 28px",borderTop:`1px solid ${C.border}`}}>
+        <div style={{maxWidth:1160,margin:"0 auto",padding:"0 clamp(20px,5vw,60px)"}}>
+          <div className="footer-grid" style={{display:"grid",gridTemplateColumns:"1.4fr 1fr 1fr 1fr",gap:48,marginBottom:48}}>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}><Logo/><span style={{fontFamily:"Syne,sans-serif",fontWeight:800,fontSize:16}}>Krypton AI</span></div>
+              <p style={{fontSize:13,color:C.sub,lineHeight:1.75,maxWidth:220}}>Build websites, apps, and games with AI — in seconds.</p>
+            </div>
+            {[
+              {title:"Product",links:[["#how","How It Works"],["#features","Features"],["#pricing","Pricing"],["/create","Try Now"]]},
+              {title:"Build",links:[["/create","Websites"],["/create","Games"],["/create","Dashboards"],["/create","Landing Pages"]]},
+              {title:"Account",links:[["/login","Login"],["/signup","Sign Up"],["/billing","Billing"],["mailto:support@kryptonai.tech","Support"]]},
+            ].map(col=>(
+              <div key={col.title}>
+                <h4 style={{fontSize:11,fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:C.muted,marginBottom:14}}>{col.title}</h4>
+                <ul style={{listStyle:"none",display:"flex",flexDirection:"column",gap:9}}>
+                  {col.links.map(([href,label])=>(
+                    <li key={label}><a href={href} style={{fontSize:13,color:C.sub,textDecoration:"none",transition:"color .15s"}}
+                      onMouseEnter={e=>e.currentTarget.style.color=C.text} onMouseLeave={e=>e.currentTarget.style.color=C.sub}>{label}</a></li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",paddingTop:24,borderTop:`1px solid ${C.border}`,flexWrap:"wrap",gap:12}}>
+            <p style={{fontSize:12,color:C.muted}}>&copy; 2026 Krypton AI. All rights reserved.</p>
+            <p style={{fontSize:12,color:C.muted}}>Powered by Krypton Intelligence Engine</p>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }
