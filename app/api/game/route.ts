@@ -22,8 +22,8 @@ import {
   type ProjectBlueprint,
 } from "@/lib/completion-engine";
 
-export const runtime    = "edge";
-export const maxDuration = 120;
+export const runtime    = "nodejs"; // FIXED: edge → nodejs (was causing 25s timeout)
+export const maxDuration = 300;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
