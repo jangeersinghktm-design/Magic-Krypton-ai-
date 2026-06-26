@@ -2310,16 +2310,12 @@ function computeQualityScoreV2(html: string, niche: NicheProfile, gate: any): {
 // via kryptonGenerate, so reliability is unchanged.
 // ═══════════════════════════════════════════════════════════════════════
 
-const FORCE_RULES = `
-MANDATORY OUTPUT REQUIREMENTS — NON-NEGOTIABLE:
-✓ PRODUCTION READY — this ships to a real visitor today, not a draft
-✓ COMPLETE — every section fully written, zero shortcuts
-✓ NO PLACEHOLDERS — never "[Your text here]", never "Lorem ipsum"
-✓ NO TODO / NO COMMENTS LIKE "add more here later" — finish it now
-✓ FULLY RESPONSIVE — works correctly at 375px, 768px, 1440px
-✓ REQUIRED SECTIONS: Navbar, Hero, Features/Value, Social Proof, CTA, Footer
-✓ ANIMATIONS — scroll-reveal on sections, hover states on every interactive element
-This is not a guideline — incomplete output will be rejected by the quality gate.`;
+const FORCE_RULES = `PRODUCTION REQUIREMENTS (enforced by quality gate):
+• Complete HTML/CSS/JS — no placeholders, no TODO, no Lorem ipsum
+• Responsive: 375px + 768px + 1440px all work correctly
+• Must include: Navbar + Hero + Features + CTA + Footer (minimum)
+• Scroll-reveal animations + hover states on all interactive elements
+• Real copy specific to the user's niche — not generic filler`;
 
 // ── Stage 1: Blueprint ──────────────────────────────────────────────────
 // Lightweight planning pass — locks in the exact section list, key
@@ -2497,9 +2493,14 @@ window.addEventListener('scroll',()=>{
 // off for genuinely complex builds. Keeps simple-site experience fast while
 // reserving the deeper pipeline for where it actually improves quality.
 function assessComplexity(prompt: string, projectType: string): "simple" | "complex" {
-  // On Hobby plan (60s Node.js limit), 4-stage pipeline (4 AI calls × ~20s = ~80s)
-  // exceeds the limit. Force simple single-pass path until Pro plan is active.
-  // TODO: Change back to full complexity logic when upgrading to Pro plan (300s limit).
+  // Pro plan active (300s) — smart routing restored.
+  // Simple path: ~30-60s (single AI call, fast for quick sites)
+  // Complex path: ~90-150s (4-stage pipeline, better quality for serious projects)
+  const p = prompt.toLowerCase();
+  const complexSignals = /\b(saas|dashboard|platform|marketplace|booking|e-?commerce|admin\s*panel|crm|portfolio|agency|real\s*estate|restaurant|fitness|gym|coaching|multi)\b/.test(p);
+  const wordCount = prompt.trim().split(/\s+/).length;
+  // Complex if: has complex keywords OR prompt is detailed (>15 words) OR is dashboard/app type
+  if (complexSignals || wordCount > 15 || projectType === "dashboard" || projectType === "app") return "complex";
   return "simple";
 }
 
@@ -2515,37 +2516,42 @@ async function generateComponentContent(
   const tone = niche.tone || "default";
   const categories: ComponentCategory[] = projectType === "dashboard"
     ? ["navbar", "dashboard", "footer"]
-    : ["navbar", "hero", "features", "pricing", "cta", "footer"];
+    : projectType === "ecommerce" || projectType === "store"
+    ? ["navbar", "hero", "ecommerce", "testimonials", "cta", "footer"]
+    : projectType === "portfolio"
+    ? ["navbar", "hero", "portfolio", "testimonials", "cta", "footer"]
+    : ["navbar", "hero", "features", "testimonials", "pricing", "faq", "cta", "footer"];
 
   const variantOptions = categories.map(c => `${c}: [${listVariants(c).join(", ")}]`).join("\n");
 
-  const system = `You are Krypton AI's content specialist. Output ONLY valid JSON (no markdown fences, no explanation). You write real, specific marketing copy — never placeholders.`;
-  const user = `User request: "${userPrompt}"
+  const system = `You are Krypton AI's content specialist. Output ONLY valid JSON — no markdown fences, no preamble. Write real, specific copy for the user's niche.`;
+  const user = `Build content for: "${userPrompt}"
 Niche: ${niche.industry} (${niche.marketLevel} tier, ${tone} tone)
-Blueprint: ${blueprint}
+Blueprint context: ${blueprint.slice(0, 400)}
 
-Pick ONE variant per category from these REAL options (do not invent new variant names):
+Choose ONE variant per section from these options:
 ${variantOptions}
 
-Output this exact JSON shape (omit "dashboard" key if not applicable):
-{
-  "variants": { "navbar":"...", "hero":"...", "features":"...", "pricing":"...", "cta":"...", "footer":"...", "dashboard":"..." },
-  "navbar": { "logoText":"...", "links":[{"label":"...","href":"#..."}], "cta":{"text":"...","href":"#..."} },
-  "hero": { "badge":"...", "headline":"...", "subheadline":"...", "ctaPrimary":{"text":"...","href":"#..."}, "ctaSecondary":{"text":"...","href":"#..."}, "benefits":[{"text":"..."}] },
-  "features": { "eyebrow":"...", "headline":"...", "items":[{"icon":"emoji","title":"...","desc":"...","stat":"e.g. 98%"}] },
-  "pricing": { "eyebrow":"...", "headline":"...", "tiers":[{"name":"...","price":"$X","period":"month","features":["..."],"cta":{"text":"...","href":"#"},"highlighted":false}] },
-  "cta": { "headline":"...", "subheadline":"...", "ctaPrimary":{"text":"...","href":"#..."} },
-  "footer": { "logoText":"...", "tagline":"...", "columns":[{"title":"...","links":[{"label":"...","href":"#..."}]}], "socialLinks":[{"label":"Twitter","href":"#"}], "copyrightName":"..." },
-  "dashboard": { "title":"...", "navItems":[{"label":"...","icon":"emoji","active":false}], "stats":[{"label":"...","value":"...","trend":"+12%","trendUp":true}], "tableHeaders":["..."], "tableRows":[{"cells":["...","..."]}] }
-}
+Return JSON only (no \`\`\`json):
+{"variants":{"navbar":"...","hero":"...","features":"...","pricing":"...","cta":"...","footer":"..."},"navbar":{"logoText":"Brand","links":[{"label":"Home","href":"#hero"},{"label":"Features","href":"#features"},{"label":"Pricing","href":"#pricing"}],"cta":{"text":"Get Started","href":"#cta"}},"hero":{"badge":"Tagline","headline":"Specific headline for ${niche.industry}","subheadline":"2-sentence value prop","ctaPrimary":{"text":"Start Free","href":"#cta"},"benefits":[{"text":"Key benefit 1"},{"text":"Key benefit 2"},{"text":"Key benefit 3"}]},"features":{"eyebrow":"Why Us","headline":"Why Choose Us","items":[{"icon":"⚡","title":"Feature 1","desc":"Specific description","stat":"stat"}]},"pricing":{"eyebrow":"Pricing","headline":"Simple Pricing","tiers":[{"name":"Starter","price":"$0","period":"month","features":["Feature A","Feature B"],"cta":{"text":"Start Free","href":"#"},"highlighted":false},{"name":"Pro","price":"$29","period":"month","features":["Everything in Starter","Feature C","Feature D"],"cta":{"text":"Get Pro","href":"#"},"highlighted":true}]},"cta":{"headline":"Ready to start?","subheadline":"Join thousands of users","ctaPrimary":{"text":"Get Started Free","href":"#"}},"footer":{"logoText":"Brand","tagline":"Tagline","columns":[{"title":"Product","links":[{"label":"Features","href":"#"},{"label":"Pricing","href":"#"}]},{"title":"Company","links":[{"label":"About","href":"#"},{"label":"Contact","href":"#"}]}],"socialLinks":[{"label":"Twitter","href":"#"}],"copyrightName":"Brand"}}
 
-Real, specific copy for ${niche.industry} — never "[Your text here]" or generic filler.`;
+Make ALL copy specific to ${niche.industry} — real headlines, real benefits, real feature names.`;
 
   try {
     const { text } = await kryptonGenerate(system, user);
     const cleaned = text.replace(/\`\`\`json|\`\`\`/g, "").trim();
-    const parsed = JSON.parse(cleaned);
-    return parsed;
+    // Try direct parse first
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (parsed.variants && parsed.hero) return parsed;
+    } catch {}
+    // Try extracting JSON from response
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.variants && parsed.hero) return parsed;
+    }
+    return null;
   } catch {
     return null; // caller falls back to raw HTML generation
   }
@@ -2573,7 +2579,11 @@ function assembleFromComponentLibrary(
     const items = (content.features.items || []).map((it: any) => ({ ...it, imageUrl: it.imageUrl || nextImg() }));
     html += renderComponent("features", v.features || getDefaultVariant("features", tone), ctx, { ...content.features, items });
   }
+  if (content.testimonials) html += renderComponent("testimonials", v.testimonials || getDefaultVariant("testimonials", tone), ctx, content.testimonials);
   if (content.pricing) html += renderComponent("pricing", v.pricing || getDefaultVariant("pricing", tone), ctx, content.pricing);
+  if (content.faq) html += renderComponent("faq", v.faq || getDefaultVariant("faq", tone), ctx, content.faq);
+  if (content.portfolio) html += renderComponent("portfolio", v.portfolio || getDefaultVariant("portfolio", tone), ctx, content.portfolio);
+  if (content.ecommerce) html += renderComponent("ecommerce", v.ecommerce || getDefaultVariant("ecommerce", tone), ctx, content.ecommerce);
   if (content.cta) html += renderComponent("cta", v.cta || getDefaultVariant("cta", tone), ctx, content.cta);
   if (content.footer) html += renderComponent("footer", v.footer || getDefaultVariant("footer", tone), ctx, content.footer);
 
