@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   if (!code) {
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/settings?tab=github&error=no_code`
+      `${process.env.NEXT_PUBLIC_SITE_URL || "https://kryptonai.tech"}/settings?tab=github&error=no_code`
     );
   }
 
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     if (tokenData.error) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_SITE_URL}/settings?tab=github&error=${tokenData.error}`
+        `${process.env.NEXT_PUBLIC_SITE_URL || "https://kryptonai.tech"}/settings?tab=github&error=${tokenData.error}`
       );
     }
 
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     // Save GitHub token to profiles
     // We use a cookie to pass session - redirect with token in URL params
     const redirectUrl = new URL(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/settings`
+      `${process.env.NEXT_PUBLIC_SITE_URL || "https://kryptonai.tech"}/settings`
     );
     redirectUrl.searchParams.set("tab", "github");
     redirectUrl.searchParams.set("github_token", accessToken);
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 
   } catch (err: any) {
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/settings?tab=github&error=${err.message}`
+      `${process.env.NEXT_PUBLIC_SITE_URL || "https://kryptonai.tech"}/settings?tab=github&error=${err.message}`
     );
   }
 }
