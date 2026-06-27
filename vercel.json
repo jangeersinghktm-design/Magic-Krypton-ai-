@@ -29,15 +29,6 @@
     },
     "app/api/reverse-engineer/status/[jobId]/route.ts": {
       "maxDuration": 30
-    },
-    "app/api/game/route.ts": {
-      "maxDuration": 300
-    },
-    "app/api/screenshot-review/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/admin/ai-engineer/sessions/route.ts": {
-      "maxDuration": 300
     }
   },
   "crons": [
