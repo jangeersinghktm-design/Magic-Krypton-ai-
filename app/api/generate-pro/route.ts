@@ -6,8 +6,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const maxDuration = 120;
-export const runtime     = "edge";
+export const maxDuration = 300;
+export const runtime = "nodejs"; // P0 FIX: edge→nodejs
 
 // ── AI Providers ─────────────────────────────────────────────────
 async function callClaude(system: string, prompt: string, maxTokens = 12000): Promise<string> {
@@ -509,7 +509,6 @@ Build a stunning portfolio website.
    - Hover overlay: "View Project" + "GitHub" buttons
    - Filter tabs: All / Web / Mobile / Design
    - Featured project: extra large card spanning 2 columns
-
 6. **EXPERIENCE TIMELINE**:
    - Vertical timeline with left/right alternating cards
    - Each: Company, Role, Duration, 2-3 bullet points
