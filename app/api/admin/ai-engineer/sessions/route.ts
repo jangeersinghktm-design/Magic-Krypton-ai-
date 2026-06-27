@@ -6,8 +6,8 @@ import { NextRequest } from "next/server";
 import { requireAdmin, supabaseAdmin } from "@/lib/admin-ai/supabase-admin";
 import { runAgentSession } from "@/lib/admin-ai/agent";
 
-export const runtime = "edge";
-export const maxDuration = 120;
+export const runtime = "nodejs"; // P1 FIX: streams AI agent results
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
