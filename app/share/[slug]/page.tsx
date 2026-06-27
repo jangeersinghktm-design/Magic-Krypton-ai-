@@ -1,12 +1,15 @@
 // app/share/[slug]/page.tsx
+// P0 FIX: was using service_role key directly — replaced with anon client
+// Share pages only need public read access (is_public = true filter handles security)
 import { createClient } from "@supabase/supabase-js";
 import KryptonLogo from "@/components/branding/KryptonLogo";
 import { notFound } from "next/navigation";
 
 export default async function SharePage({ params }: { params: { slug: string } }) {
+  // Use anon key — RLS policy on project_shares ensures only is_public=true rows are visible
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
   // Get share record
