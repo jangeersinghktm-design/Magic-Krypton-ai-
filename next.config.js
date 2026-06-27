@@ -6,7 +6,7 @@ const nextConfig = {
 
   // Images
   images: {
-    domains: ["kryptonai.tech", "images.unsplash.com"],
+    domains: ["kryptonai.tech", "images.unsplash.com", "via.placeholder.com"],
     formats: ["image/webp", "image/avif"],
   },
 
@@ -20,8 +20,6 @@ const nextConfig = {
           { key: "X-Content-Type-Options",  value: "nosniff" },
           { key: "Referrer-Policy",         value: "strict-origin-when-cross-origin" },
           { key: "X-XSS-Protection",        value: "1; mode=block" },
-          { key: "Content-Security-Policy",  value: "frame-ancestors 'none';" },
-          { key: "Permissions-Policy",       value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
       {
