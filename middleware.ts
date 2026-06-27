@@ -18,6 +18,8 @@ const PROTECTED_ROUTES = [
   "/onboarding",
   "/profile",
   "/analytics",
+  "/admin",        // P0 FIX: admin pages were completely unprotected
+  "/admin-login",  // P0 FIX
 ];
 
 // Routes that require Pro+ plan
@@ -122,8 +124,11 @@ export async function middleware(req: NextRequest) {
     return res;
 
   } catch (err) {
-    // On error, allow request (fail open for UX)
-    return res;
+    // P0 FIX: fail-closed — on auth error, redirect to login
+    // Fail-open was a security hole: any Supabase outage exposed protected routes
+    const loginUrl = new URL("/auth/login", req.url);
+    loginUrl.searchParams.set("redirect", req.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
   }
 }
 
