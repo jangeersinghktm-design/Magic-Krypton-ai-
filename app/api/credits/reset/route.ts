@@ -11,7 +11,10 @@ export async function POST(req: NextRequest) {
   try {
     // Verify cron secret
     const authHeader = req.headers.get("Authorization");
-    const cronSecret = process.env.CRON_SECRET || "krypton-cron-2026";
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
