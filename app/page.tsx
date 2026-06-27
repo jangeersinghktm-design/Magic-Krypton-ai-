@@ -285,17 +285,20 @@ export default function HomePage() {
                         borderBottom:`1px solid ${C.border}`, position:"relative", overflow:"hidden",
                       }}>
                         {p.html_code ? (
+                          // P1 FIX: iframes were loading full HTML for each card thumbnail
+                          // Replaced with lightweight CSS color extraction — no iframe overhead
                           <div style={{
-                            width:"400%", height:"400%", transform:"scale(0.25)",
-                            transformOrigin:"top left", pointerEvents:"none",
+                            width:"100%", height:"100%",
+                            background: (() => {
+                              const bgMatch = p.html_code.match(/background(?:-color)?:\s*(#[0-9a-fA-F]{3,6}|rgba?\([^)]+\))/);
+                              const gradMatch = p.html_code.match(/linear-gradient\([^)]+\)/);
+                              return gradMatch ? gradMatch[0] : bgMatch ? bgMatch[1] : "linear-gradient(135deg,#0C1020,#040610)";
+                            })(),
+                            display:"flex", alignItems:"center", justifyContent:"center",
+                            flexDirection:"column", gap:8, pointerEvents:"none",
                           }}>
-                            <iframe
-                              srcDoc={p.html_code}
-                              style={{width:"100%", height:"100%", border:"none", display:"block"}}
-                              sandbox="allow-scripts allow-same-origin"
-                              loading="lazy"
-                              title={name}
-                            />
+                            <div style={{fontSize:36, opacity:0.6}}>{tc.icon}</div>
+                            <div style={{fontSize:10, color:"rgba(255,255,255,0.4)", textAlign:"center", padding:"0 8px", lineHeight:1.4, maxWidth:"90%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{name}</div>
                           </div>
                         ) : (
                           <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}>
