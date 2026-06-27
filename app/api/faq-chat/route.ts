@@ -4,8 +4,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime    = "edge";
-export const maxDuration = 20;
+export const runtime = "nodejs"; // P0 FIX: edge→nodejs
+export const maxDuration = 60;
 
 const FAQ_SYSTEM = `You are the Krypton AI support assistant, answering questions on the public FAQ page.
 
