@@ -102,10 +102,19 @@ export async function POST(req: NextRequest) {
       case "subscription.activated": {
         const subId = event.payload?.subscription?.entity?.id;
         const userId = notes.user_id;
+        const planId = notes.plan_id || notes.planId;
         if (userId) {
+          // P1 FIX: also update profiles.plan as backup if verify route failed
           await supabase.from("subscriptions")
             .update({ status: "active", razorpay_subscription_id: subId })
             .eq("user_id", userId);
+          if (planId) {
+            const PLAN_CREDITS: Record<string,number> = { pro: 100, premium: 300, business: 1000 };
+            const credits = PLAN_CREDITS[planId] || 100;
+            await supabase.from("profiles")
+              .update({ plan: planId, total_credits: credits })
+              .eq("id", userId);
+          }
         }
         break;
       }
