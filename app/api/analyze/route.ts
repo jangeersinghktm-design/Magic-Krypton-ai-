@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs"; // P0 FIX: edge→nodejs (AI calls need >25s)
+export const maxDuration = 60;
 
 const SCHEMA = `{
   "score": <number 0-100>,
