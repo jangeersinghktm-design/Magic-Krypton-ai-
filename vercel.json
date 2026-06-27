@@ -15,6 +15,6 @@
     "app/api/admin/ai-engineer/sessions/route.ts": { "maxDuration": 300 }
   },
   "crons": [
-    { "path": "/api/credits", "schedule": "0 0 * * *" }
+    { "path": "/api/credits/reset", "schedule": "0 0 * * *" }
   ]
 }
