@@ -16,6 +16,7 @@ import { CTA_VARIANTS, CTAVariant, CTASectionContent } from "./cta";
 import { FOOTER_VARIANTS, FooterVariant, FooterContent } from "./footer";
 import { PRICING_VARIANTS, PricingVariant, PricingContent } from "./pricing";
 import { DASHBOARD_VARIANTS, DashboardVariant, DashboardContent } from "./dashboard";
+import { CONTACT_VARIANTS, ContactVariant, ContactContent } from "./contact";
 import { TESTIMONIALS_VARIANTS, TestimonialsVariant, TestimonialsContent } from "./testimonials";
 import { FAQ_VARIANTS, FAQVariant, FAQContent } from "./faq";
 import { PORTFOLIO_VARIANTS, PortfolioVariant, PortfolioContent } from "./portfolio";
@@ -33,8 +34,9 @@ export * from "./testimonials";
 export * from "./faq";
 export * from "./portfolio";
 export * from "./ecommerce";
+export * from "./contact";
 
-export type ComponentCategory = "hero" | "navbar" | "features" | "cta" | "footer" | "pricing" | "dashboard" | "testimonials" | "faq" | "portfolio" | "ecommerce";
+export type ComponentCategory = "hero" | "navbar" | "features" | "cta" | "footer" | "pricing" | "dashboard" | "testimonials" | "faq" | "portfolio" | "ecommerce" | "contact";
 
 // ── Sensible default variant per niche marketLevel/tone — used when the
 // Blueprint stage doesn't specify a variant explicitly. Keeps generation
@@ -152,6 +154,10 @@ export function renderComponent(
       const fn = ECOMMERCE_VARIANTS[variant as EcommerceVariant] || ECOMMERCE_VARIANTS["product-grid"];
       return fn(ctx, content as EcommerceContent);
     }
+    case "contact": {
+      const fn = CONTACT_VARIANTS[variant as ContactVariant] || CONTACT_VARIANTS["full-form"];
+      return fn(ctx, content as ContactContent);
+    }
     default:
       return "";
   }
@@ -172,13 +178,14 @@ export function listVariants(category: ComponentCategory): string[] {
     case "faq":           return Object.keys(FAQ_VARIANTS);
     case "portfolio":     return Object.keys(PORTFOLIO_VARIANTS);
     case "ecommerce":     return Object.keys(ECOMMERCE_VARIANTS);
+    case "contact":       return Object.keys(CONTACT_VARIANTS);
     default:              return [];
   }
 }
 
 export const COMPONENT_LIBRARY_STATS = {
-  totalComponents: 46,
-  categories: 11,
+  totalComponents: 48,
+  categories: 12,
   breakdown: {
     hero: 4, navbar: 4, features: 4, cta: 4, footer: 4, pricing: 5, dashboard: 5,
     testimonials: 4, faq: 4, portfolio: 4, ecommerce: 4,
