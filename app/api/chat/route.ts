@@ -3,11 +3,65 @@
 // Smart Code Editing: Read → Diff → Patch → Rebuild
 
 import { NextRequest, NextResponse } from "next/server";
+import {
+  renderComponent, getDefaultVariant, buildComponentContext,
+  buildRootTokens, type ComponentCategory,
+} from "@/lib/component-library";
 
 export const runtime = "nodejs";
 export const maxDuration = 120; // raised from 60s — edits now use 24k max_tokens (was 8k)
 
 // ── System Prompt ────────────────────────────────────────────────
+// ── V6: Detect content-only edits ───────────────────────────────────────
+// Content edits: change headline, update CTA text, edit pricing, update copy.
+// Structural edits: change colors, add animations, fix layout, debug, upgrade.
+// Only content edits use the component JSON path — structural edits use full HTML.
+function detectContentEdit(message: string): boolean {
+  const m = message.toLowerCase();
+  const contentSignals = [
+    "headline", "heading", "title", "tagline",
+    "cta text", "button text", "call to action",
+    "pricing", "plan name", "tier", "feature list",
+    "testimonial", "quote", "review",
+    "faq", "question", "answer",
+    "update the text", "change the text", "change the copy",
+    "update the copy", "rewrite the", "change the headline",
+    "update headline", "update cta", "change cta",
+    "subheadline", "description", "paragraph",
+    "update the pricing", "change pricing",
+  ];
+  const structuralSignals = [
+    "color", "background", "dark", "light", "theme",
+    "animation", "animate", "transition", "fade",
+    "layout", "spacing", "padding", "margin",
+    "font size", "responsive", "mobile",
+    "add section", "remove section", "add a new",
+    "debug", "fix", "broken", "error", "issue",
+    "upgrade", "improve", "add feature",
+    "menu", "navbar", "navigation",
+  ];
+  const hasContent    = contentSignals.some(s => m.includes(s));
+  const hasStructural = structuralSignals.some(s => m.includes(s));
+  return hasContent && !hasStructural;
+}
+
+// ── V6: Component content edit system prompt ─────────────────────────────
+const CONTENT_EDIT_SYSTEM = `You are Krypton AI's content editor. You update website copy — NEVER HTML.
+
+Input: JSON object with component content (hero, features, pricing, etc.)
+Task: Update ONLY the fields the user asks to change.
+Output: A JSON patch with ONLY the changed fields.
+
+RULES:
+- Return ONLY valid JSON — no markdown, no explanation, no HTML
+- Include ONLY the fields you are changing
+- Preserve all other fields exactly as they are
+- If adding a new FAQ item, include the full items array
+- Never output HTML, CSS, or JavaScript
+
+OUTPUT FORMAT (only changed fields):
+{"hero":{"headline":"new headline here"}}`;
+
 const CHAT_SYSTEM = `You are Krypton AI — an elite senior software engineer with 20 years of experience.
 You are the AI assistant inside a code editor. You have full context of the user's project.
 
@@ -205,6 +259,30 @@ RULES:
 Return: <code_changes>{"index.html": "complete upgraded content"}</code_changes>`;
 
 // ── Main Route ───────────────────────────────────────────────────
+// ── V6 helpers ──────────────────────────────────────────────────────────
+function deepMerge(base: Record<string,any>, patch: Record<string,any>): Record<string,any> {
+  const result = { ...base };
+  for (const key of Object.keys(patch)) {
+    if (patch[key] && typeof patch[key] === "object" && !Array.isArray(patch[key]) &&
+        base[key] && typeof base[key] === "object" && !Array.isArray(base[key])) {
+      result[key] = deepMerge(base[key], patch[key]);
+    } else {
+      result[key] = patch[key];
+    }
+  }
+  return result;
+}
+
+// Minimal inline JS for component-rebuilt pages
+const STATIC_JS_INLINE = `
+document.querySelectorAll('.hamburger').forEach(b=>b.addEventListener('click',()=>document.querySelectorAll('.nav-links').forEach(n=>n.classList.toggle('open'))));
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{var t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}}));
+var ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('visible');ro.unobserve(x.target);}});},{threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
+document.querySelectorAll('.faq-question').forEach(q=>{q.addEventListener('click',()=>{var a=q.nextElementSibling;var open=q.classList.contains('active');document.querySelectorAll('.faq-question').forEach(oq=>{oq.classList.remove('active');var oa=oq.nextElementSibling;if(oa)oa.classList.remove('open');});if(!open&&a){q.classList.add('active');a.classList.add('open');}});});
+window.addEventListener('scroll',()=>document.querySelectorAll('nav').forEach(n=>n.classList.toggle('scrolled',window.scrollY>50)),{passive:true});
+`.trim();
+
 export async function POST(req: NextRequest) {
   try {
     const {
@@ -216,6 +294,8 @@ export async function POST(req: NextRequest) {
       projectId,
       projectContext = "", // Krypton Project Memory
       gameMemory = null,  // GameProjectMemory object for game edits
+      componentContent = null, // V6: component JSON from generation (if available)
+      niche = null,            // V6: NicheProfile for re-render
       message,
     } = await req.json();
 
@@ -227,6 +307,77 @@ export async function POST(req: NextRequest) {
     const actualMessage = userMessage || message || "";
     if (!actualMessage?.trim()) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    }
+
+    // ── V6: Component-level content edit (if componentContent available) ──
+    const isContentEdit = !isGameEdit && !isDebugMode && !isUpgradeMode
+                        && !!componentContent && !!niche
+                        && detectContentEdit(actualMessage);
+
+    if (isContentEdit) {
+      // Route: AI patches JSON → renderComponent() rebuilds HTML
+      const patchMessages = [
+        ...historyMessages,
+        {
+          role: "user" as const,
+          content: `Current component content JSON:
+${JSON.stringify(componentContent, null, 2).slice(0, 6000)}
+
+Edit request: ${actualMessage}
+
+Return ONLY the changed fields as JSON.`,
+        },
+      ];
+
+      let patchText = "";
+      let patchProvider = "claude";
+      for (const p of [
+        { name: "claude",  fn: () => callClaude(patchMessages,  CONTENT_EDIT_SYSTEM) },
+        { name: "openai",  fn: () => callOpenAI(patchMessages,  CONTENT_EDIT_SYSTEM) },
+        { name: "gemini",  fn: () => callGemini(patchMessages,  CONTENT_EDIT_SYSTEM) },
+      ]) {
+        try { patchText = await p.fn(); patchProvider = p.name; break; } catch {}
+      }
+
+      if (patchText) {
+        try {
+          const raw     = patchText.replace(/```json|```/g, "").trim();
+          const patch   = JSON.parse(raw.match(/\{[\s\S]+\}/)?.[0] || raw);
+          // Deep-merge patch into componentContent
+          const updated = deepMerge(componentContent as Record<string, any>, patch);
+
+          // Re-render affected components only
+          const nicheProfile = niche as any;
+          const ctx          = buildComponentContext(nicheProfile?.palette?.primary || "#6366F1");
+          const tone         = nicheProfile?.tone || "default";
+          let   rebuiltSections = "";
+
+          const order: ComponentCategory[] = [
+            "navbar","hero","features","testimonials","pricing","faq",
+            "portfolio","ecommerce","cta","footer",
+          ];
+          for (const cat of order) {
+            const content = (updated as any)[cat];
+            if (!content) continue;
+            rebuiltSections += renderComponent(cat, getDefaultVariant(cat, tone), ctx, content);
+          }
+
+          if (rebuiltSections && rebuiltSections.length > 100) {
+            const rootTokens = buildRootTokens(nicheProfile);
+            const newHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>${rootTokens}</style></head><body>${rebuiltSections}<script>${STATIC_JS_INLINE}</script></body></html>`;
+            return NextResponse.json({
+              text:             `Updated ${Object.keys(patch).join(", ")} in your website.`,
+              reply:            `Updated ${Object.keys(patch).join(", ")} in your website.`,
+              codeChanges:      { "index.html": newHtml },
+              updatedComponent: updated,
+              provider:         patchProvider,
+            });
+          }
+        } catch (e) {
+          console.warn("[Chat V6] Component patch failed, falling back to HTML edit:", e);
+          // Fall through to standard HTML edit below
+        }
+      }
     }
 
     // Build code context — full file content, no artificial truncation.
