@@ -136,4 +136,3 @@ Clean, modern aesthetic. ${type === "background" ? "Very subtle, not distracting
     cacheKey: `${authedUserId}:${type}:${sitePrompt.slice(0, 30)}`,
   });
 }
-
