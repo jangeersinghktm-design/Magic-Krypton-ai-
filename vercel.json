@@ -1,20 +1,40 @@
 {
   "functions": {
-    "app/api/orchestrate/route.ts": { "maxDuration": 300 },
-    "app/api/generate/route.ts":    { "maxDuration": 300 },
-    "app/api/chat/route.ts":        { "maxDuration": 120 },
-    "app/api/game/route.ts":        { "maxDuration": 300 },
-    "app/api/screenshot-review/route.ts": { "maxDuration": 60 },
-    "app/api/agent/route.ts":       { "maxDuration": 120 },
-    "app/api/project-manager/route.ts": { "maxDuration": 60 },
-    "app/api/screenshot/route.ts":  { "maxDuration": 60 },
-    "app/api/deploy/vercel/route.ts": { "maxDuration": 60 },
-    "app/api/deploy/netlify/route.ts": { "maxDuration": 60 },
-    "app/api/reverse-engineer/route.ts": { "maxDuration": 120 },
-    "app/api/reverse-engineer/status/[jobId]/route.ts": { "maxDuration": 30 },
-    "app/api/admin/ai-engineer/sessions/route.ts": { "maxDuration": 300 }
+    "app/api/generate/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/orchestrate/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/chat/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/agent/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/project-manager/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/screenshot/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/deploy/vercel/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/deploy/netlify/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/reverse-engineer/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/reverse-engineer/status/[jobId]/route.ts": {
+      "maxDuration": 30
+    }
   },
   "crons": [
-    { "path": "/api/credits/reset", "schedule": "0 0 * * *" }
+    {
+      "path": "/api/credits/reset",
+      "schedule": "0 0 * * *"
+    }
   ]
 }
