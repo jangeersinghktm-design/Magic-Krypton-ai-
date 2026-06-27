@@ -448,7 +448,7 @@ function CreatePageInner() {
     if (usePid) {
       await supabase.from("projects").update({ name, title:name, conversation_history:historyPayload, updated_at:new Date().toISOString() }).eq("id",usePid);
     } else {
-      const {data} = await supabase.from("projects").insert({ user_id:session.user.id, name, title:name, html_code:html, prompt:promptRef.current, conversation_history:historyPayload, status:"completed", created_at:new Date().toISOString(), updated_at:new Date().toISOString() }).select("id").single();
+      const {data} = await supabase.from("projects").insert({ user_id:session.user.id, name, title:name, html_code:html, prompt:promptRef.current, conversation_history:historyPayload, project_memory:projectMemory||null, game_memory:gameMemory||null, status:"completed", created_at:new Date().toISOString(), updated_at:new Date().toISOString() }).select("id").single();
       if (data?.id) { setProjectId(data.id); window.history.replaceState({},"",`/create?id=${data.id}`); }
     }
     setSaved(true); setSaving(false); setTimeout(()=>setSaved(false),2500);
@@ -641,7 +641,7 @@ function CreatePageInner() {
         let finalPid=pidToUse;
         const historyPayload = messages.map(m=>({role:m.role,type:m.type,content:m.content}));
         if(!finalPid){
-          const {data:proj}=await supabase.from("projects").insert({user_id:s.user.id,name:pName,title:pName,html_code:html,prompt:promptRef.current,conversation_history:historyPayload,status:"completed",created_at:new Date().toISOString(),updated_at:new Date().toISOString()}).select("id").single();
+          const {data:proj}=await supabase.from("projects").insert({user_id:s.user.id,name:pName,title:pName,html_code:html,prompt:promptRef.current,conversation_history:historyPayload,project_memory:newProjMem||null,game_memory:newGameMem||null,status:"completed",created_at:new Date().toISOString(),updated_at:new Date().toISOString()}).select("id").single();
           if(proj?.id){finalPid=proj.id;setProjectId(proj.id);window.history.replaceState({},"",`/create?id=${proj.id}`);}
         } else {
           await supabase.from("projects").update({conversation_history:historyPayload}).eq("id",finalPid);
@@ -1352,3 +1352,5 @@ export default function CreatePage() {
     </Suspense>
   );
 }
+
+                 
