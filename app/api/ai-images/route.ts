@@ -121,12 +121,14 @@ Clean, modern aesthetic. ${type === "background" ? "Very subtle, not distracting
     .update({ used_credits: (profile?.used_credits || 0) + 1 })
     .eq("id", authedUserId);
 
-  await supabase.from("credit_transactions").insert({
-    user_id:     authedUserId,
-    type:        "debit",
-    amount:      1,
-    description: `AI image (${type})`,
-  }).catch(() => {});
+  try {
+    await supabase.from("credit_transactions").insert({
+      user_id:     authedUserId,
+      type:        "debit",
+      amount:      1,
+      description: `AI image (${type})`,
+    });
+  } catch {}
 
   return NextResponse.json({
     url:      imageUrl,
