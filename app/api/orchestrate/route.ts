@@ -3235,7 +3235,7 @@ ${JSON.stringify(componentContent, null, 2).slice(0, 3000)}`;
             } catch { /* keep original content */ }
             // Re-render from component library with updated content
             // V3+V4 FIX: Uses buildStaticCSS + buildStaticJS (no AI calls)
-            const repairedSections = assembleFromComponentLibrary(_niche, updatedContent, resolvedImages["main"] || []);
+            const repairedSections = assembleFromComponentLibrary(_niche, updatedContent ?? {}, resolvedImages["main"] || []);
             const repairedHtml = enforceResponsiveHeadings(enforceLuxuryPalette(
               combineOutput(repairedSections, buildStaticCSS(_niche), buildStaticJS(), _niche, nicheDetectPrompt.slice(0,60)),
               _niche
