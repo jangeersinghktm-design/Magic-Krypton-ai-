@@ -34,8 +34,7 @@ export * from "./faq";
 export * from "./portfolio";
 export * from "./ecommerce";
 
-export type ComponentCategory = "hero" | "navbar" | "features" | "cta" | "footer" | "pricing" | "dashboard" | "testimonials" | "faq" | "portfolio" | "ecommerce";
-
+export type ComponentCategory = "hero" | "navbar" | "features" | "cta" | "footer" | "pricing" | "dashboard" | "testimonials" | "faq" | "portfolio" | "ecommerce" | "contact";
 // ── Sensible default variant per niche marketLevel/tone — used when the
 // Blueprint stage doesn't specify a variant explicitly. Keeps generation
 // fast (no extra decision needed) while still picking something fitting.
