@@ -317,7 +317,10 @@ export async function POST(req: NextRequest) {
     if (isContentEdit) {
       // Route: AI patches JSON → renderComponent() rebuilds HTML
       const patchMessages = [
-        ...historyMessages,
+        ...history.slice(-8).map((m: any) => ({
+          role: m.role as "user" | "assistant",
+          content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+        })),
         {
           role: "user" as const,
           content: `Current component content JSON:
