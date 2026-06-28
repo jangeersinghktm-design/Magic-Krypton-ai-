@@ -93,7 +93,6 @@ export default function MonitorPage() {
 
   return (
     <>
-    <style>{`@keyframes pulse{0%,100%{opacity:.3;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}`}</style>
     <div style={{ display: "flex", minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "system-ui" }}>
 
       {/* ── Left Sidebar ── */}
