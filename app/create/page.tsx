@@ -619,7 +619,7 @@ function CreatePageInner() {
       addMsg({ role:"ai", type:"text", content:`🖼️ ${imageType || "Image"} inserted! Check preview.` });
     } else {
       // Fallback: show URL for manual use
-      addMsg({ role:"assistant", type:"text", content:`🖼️ Image ready: ${imageUrl.slice(0, 60)}...` });
+      addMsg({ role:"ai", type:"text", content:`🖼️ Image ready: ${imageUrl.slice(0, 60)}...` });
     }
   };
 
