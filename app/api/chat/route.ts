@@ -128,7 +128,7 @@ async function callClaude(messages: any[], system: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-6",
-      max_tokens: 24000,
+      max_tokens: 16000,
       system,
       messages,
     }),
@@ -154,7 +154,7 @@ async function callOpenAI(messages: any[], system: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "gpt-4o",
-      max_tokens: 24000,
+      max_tokens: 16000,
       messages: [{ role: "system", content: system }, ...messages],
     }),
     signal: AbortSignal.timeout(95000),
@@ -183,7 +183,7 @@ async function callGemini(messages: any[], system: string): Promise<string> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: combined,
-        generationConfig: { maxOutputTokens: 24000, temperature: 0.5 },
+        generationConfig: { maxOutputTokens: 16000, temperature: 0.5 },
       }),
       signal: AbortSignal.timeout(95000),
     }
