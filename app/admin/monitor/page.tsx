@@ -1,6 +1,6 @@
 "use client";
 // app/admin/monitor/page.tsx
-// Real-time generation error monitor — shows all website/app/game generation logs
+// Real-time generation error monitor - shows all website/app/game generation logs
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -79,23 +79,23 @@ export default function MonitorPage() {
   const completed  = logs.filter(l => l.status === "completed").length;
   const timeouts   = logs.filter(l => l.status === "timeout").length;
   const started    = logs.filter(l => l.status === "started").length;
-  const successRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const successRate = total > 0 ? Math.round(completed * 100 / total) : 0;
   // Avg duration (completed only)
   const completedWithDuration = logs.filter(l => l.status === "completed" && l.duration_ms);
   const avgDuration = completedWithDuration.length > 0
-    ? Math.round(completedWithDuration.reduce((s,l) => s + (l.duration_ms||0), 0) / completedWithDuration.length * 0.001)
+    ? Math.round(completedWithDuration.reduce((s,l) => s + (l.duration_ms||0), 0) * 0.001 / completedWithDuration.length)
     : 0;
   // Estimated cost ($0.10 avg per generation)
   const totalCredits = logs.reduce((s,l) => s + (l.credits_used||0), 0);
 
-  const [expandedId, setExpandedId] = useState<string|null>(null);
+  const [expandedId, setExpandedId] = useState(null as string|null);
   const filtered = filter === "all" ? logs : logs.filter(l => l.status === filter);
 
   return (
     <>
     <div style={{ display: "flex", minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "system-ui" }}>
 
-      {/* ── Left Sidebar ── */}
+      {/* Left Sidebar */}
       <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.06)", padding: "24px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", letterSpacing: 1, marginBottom: 8 }}>ADMIN TOOLS</div>
 
@@ -110,7 +110,7 @@ export default function MonitorPage() {
           >
             <div style={{ fontSize: 22, marginBottom: 6 }}>🔬</div>
             <div style={{ fontWeight: 700, fontSize: 13, color: "#fff", marginBottom: 4 }}>Debug Test</div>
-            <div style={{ fontSize: 11, color: "#6B7280", lineHeight: 1.4 }}>System health check — DB, APIs, Credits</div>
+            <div style={{ fontSize: 11, color: "#6B7280", lineHeight: 1.4 }}>System health check - DB, APIs, Credits</div>
           </div>
         </a>
 
@@ -130,7 +130,7 @@ export default function MonitorPage() {
         </a>
       </div>
 
-      {/* ── Main Content ── */}
+      {/* Main Content */}
       <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
 
       {/* Header */}
@@ -150,7 +150,7 @@ export default function MonitorPage() {
               )}
             </h1>
             <p style={{ color: T.muted, fontSize: 12, marginTop: 4 }}>
-              Real-time generation logs — {total} total, {successRate}% success rate
+              Real-time generation logs - {total} total, {successRate}% success rate
             </p>
           </div>
         </div>
@@ -179,7 +179,7 @@ export default function MonitorPage() {
           { label: "Failed", value: failed + timeouts, color: T.red, icon: "❌" },
           { label: "Running", value: started, color: T.orange, icon: "⏳" },
           { label: "Success Rate", value: `${successRate}%`, color: successRate > 80 ? T.green : successRate > 60 ? T.orange : T.red, icon: "📈" },
-          { label: "Avg Time", value: avgDuration > 0 ? `${avgDuration}s` : "—", color: avgDuration > 120 ? T.red : avgDuration > 60 ? T.orange : T.muted, icon: "⏱" },
+          { label: "Avg Time", value: avgDuration > 0 ? `${avgDuration}s` : "-", color: avgDuration > 120 ? T.red : avgDuration > 60 ? T.orange : T.muted, icon: "⏱" },
           { label: "Credits Used", value: totalCredits, color: T.gold, icon: "⚡" },
         ].map(s => (
           <div key={s.label} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16 }}>
