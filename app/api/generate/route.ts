@@ -589,8 +589,7 @@ async function generatePageCopy(
     : ["navbar", "hero", "features", "testimonials", "pricing", "faq", "cta", "footer"];
 
   const tone = niche.tone || "clean";
-  const variantOptions = categories.map(c => `${c}: [${listVariants(c).join(", ")}]`).join("
-");
+  const variantOptions = categories.map(c => `${c}: [${listVariants(c).join(", ")}]`).join(", ");
 
   const ANTHROPIC = process.env.ANTHROPIC_API_KEY;
   const OPENAI    = process.env.OPENAI_API_KEY;
