@@ -315,7 +315,7 @@ export default function LandingPage() {
           </h2>
           <div className="types-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14}}>
             {[
-              {icon:"🌐",name:"Websites",desc:"Business sites, agencies, SaaS — fully responsive and SEO-ready.",prompt:"Modern SaaS landing page with pricing"},
+      {icon:"🌐",name:"Websites",desc:"Business sites, agencies, SaaS — fully responsive and SEO-ready.",prompt:"Modern SaaS landing page with pricing"},
               {icon:"🎮",name:"Games",desc:"Browser games — Snake, Platformer, Shooter — fully playable instantly.",prompt:"Snake game with dark neon theme"},
               {icon:"📊",name:"Dashboards",desc:"Admin panels, analytics boards with real data visualization.",prompt:"Analytics dashboard with charts"},
               {icon:"🛒",name:"E-Commerce",desc:"Product showcases, luxury stores — ready to integrate payments.",prompt:"Luxury perfume e-commerce store"},
