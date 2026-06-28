@@ -452,9 +452,9 @@ export default function LandingPage() {
           </h2>
           <div className="pricing-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:18,maxWidth:900,margin:"0 auto"}}>
             {[
-              {name:"Free",price:"$0",period:"forever",featured:false,features:["20 Generations / Day","Website Generator","App Generator","Game Generator","Live Preview","Download HTML"],cta:"Get Started Free",href:"/signup"},
-              {name:"Pro",price:"$25",period:"per month",featured:true,badge:"Most Popular",features:["100 Generations / Month","Everything in Free","Save Projects","Faster Generation","Better AI Quality","Premium Templates","Email Support"],cta:"Upgrade to Pro →",href:"/signup"},
-              {name:"Premium",price:"$69",period:"per month",featured:false,features:["300 Generations / Month","Everything in Pro","Fastest AI Model","Version History","Team (5 Users)","Screenshot to App","Priority Support"],cta:"Upgrade to Premium",href:"/signup"},
+              {name:"Starter",price:"Free",period:"Forever free",featured:false,features:["5 generations/month","Websites, games, apps","Download HTML","AI chat editing","46+ components"],cta:"Get Started Free",href:"/signup"},
+              {name:"Pro",price:"₹999",period:"per month",featured:true,badge:"Most Popular",features:["100 generations/month","Priority Krypton AI","Vision review system","Premium templates","Version history","Early access"],cta:"Start Pro →",href:"/signup"},
+              {name:"Agency",price:"₹2499",period:"per month",featured:false,features:["Unlimited generations","Team collaboration","White-label export","API access","Priority support","Custom templates"],cta:"Contact Sales",href:"/signup"},
             ].map(p=>(
               <div key={p.name} className="reveal price-card" style={{background:p.featured?C.card2:C.card,border:`1px solid ${p.featured?"rgba(240,242,245,.25)":C.border}`,borderRadius:18,padding:32,transition:"all .25s",position:"relative"}}>
                 {p.badge&&<div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:C.grad,color:"#040610",fontSize:10,fontWeight:700,padding:"3px 14px",borderRadius:999,letterSpacing:".08em",textTransform:"uppercase",whiteSpace:"nowrap"}}>{p.badge}</div>}
