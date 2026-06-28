@@ -3002,7 +3002,7 @@ const activeGenerations = new Set<string>();
         try {
           genLogId = await logGeneration(supabase, {
             user_id: authedUserId,
-            type:    projectType || "website",
+            type:    (forceType || "website").replace("-page","").replace("-",""),
             prompt:  prompt?.slice(0, 500),
             status:  "started",
             metadata: { userAgent: req.headers.get("user-agent")?.slice(0, 100) },
