@@ -422,7 +422,7 @@ DEPLOY:
     .update({ used_credits: (profile?.used_credits||0)+2 }).eq("id", uid);
   await supabase.from("credit_transactions")
     .insert({ user_id:uid, type:"debit", amount:2, description:`Multi-page (${pages.length+1}p)` })
-    .catch(()=>{});
+    ;
 
   const slug = prompt.slice(0,30).replace(/[^a-z0-9]/gi,"-").toLowerCase();
   return new NextResponse(zip, {
