@@ -3395,7 +3395,7 @@ ${JSON.stringify(componentContent, null, 2).slice(0, 3000)}`;
         const isTimeout = errMsg.includes("timeout") || errMsg.includes("Timeout");
         // Log failed generation
         await logGeneration(supabase, {
-          id:            genLogId || undefined,
+          id:            undefined,
           status:        isTimeout ? "timeout" : "failed",
           error_message: errMsg.slice(0, 500),
           error_code:    isTimeout ? "TIMEOUT" : "GENERATION_ERROR",
