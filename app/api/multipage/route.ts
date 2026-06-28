@@ -425,7 +425,7 @@ DEPLOY:
     ;
 
   const slug = prompt.slice(0,30).replace(/[^a-z0-9]/gi,"-").toLowerCase();
-  return new NextResponse(zip, {
+  return new NextResponse(new Uint8Array(zip), {
     status: 200,
     headers: {
       "Content-Type":        "application/zip",
