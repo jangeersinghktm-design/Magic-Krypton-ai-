@@ -43,7 +43,7 @@ const STATUS_ICON: Record<string, string> = {
 
 export default function MonitorPage() {
   const supabase = createClient();
-  const [logs, setLogs]         = useState<GenLog[]>([]);
+  const [logs, setLogs]         = useState([] as GenLog[]);
   const [loading, setLoading]   = useState(true);
   const [filter, setFilter]     = useState("all"); // all | failed | completed | started
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -79,11 +79,11 @@ export default function MonitorPage() {
   const completed  = logs.filter(l => l.status === "completed").length;
   const timeouts   = logs.filter(l => l.status === "timeout").length;
   const started    = logs.filter(l => l.status === "started").length;
-  const successRate = total > 0 ? Math.round(completed * 100 / total) : 0;
+  const successRate = total === 0 ? 0 : Math.round(completed * (100 / Math.max(1, total)));
   // Avg duration (completed only)
   const completedWithDuration = logs.filter(l => l.status === "completed" && l.duration_ms);
   const avgDuration = completedWithDuration.length > 0
-    ? Math.round(completedWithDuration.reduce((s,l) => s + (l.duration_ms||0), 0) * 0.001 / completedWithDuration.length)
+    ? Math.round(completedWithDuration.reduce((s,l) => s + (l.duration_ms||0), 0) * 0.001 / Math.max(completedWithDuration.length, 1))
     : 0;
   // Estimated cost ($0.10 avg per generation)
   const totalCredits = logs.reduce((s,l) => s + (l.credits_used||0), 0);
