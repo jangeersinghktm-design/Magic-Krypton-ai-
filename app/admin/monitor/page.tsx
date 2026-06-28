@@ -83,7 +83,7 @@ export default function MonitorPage() {
   // Avg duration (completed only)
   const completedWithDuration = logs.filter(l => l.status === "completed" && l.duration_ms);
   const avgDuration = completedWithDuration.length > 0
-    ? Math.round(completedWithDuration.reduce((s,l) => s + (l.duration_ms||0), 0) / completedWithDuration.length / 1000)
+    ? Math.round(completedWithDuration.reduce((s,l) => s + (l.duration_ms||0), 0) / completedWithDuration.length * 0.001)
     : 0;
   // Estimated cost ($0.10 avg per generation)
   const totalCredits = logs.reduce((s,l) => s + (l.credits_used||0), 0);
@@ -93,6 +93,7 @@ export default function MonitorPage() {
 
   return (
     <>
+    <style>{`@keyframes pulse{0%,100%{opacity:.3;transform:scale(.9)}50%{opacity:1;transform:scale(1.1)}}`}</style>
     <div style={{ display: "flex", minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "system-ui" }}>
 
       {/* ── Left Sidebar ── */}
@@ -276,14 +277,14 @@ export default function MonitorPage() {
                   </div>
                   {log.duration_ms && (
                     <div style={{ fontSize: 11, color: log.duration_ms > 25000 ? T.orange : T.muted }}>
-                      ⏱ {(log.duration_ms / 1000).toFixed(1)}s
+                      ⏱ {(log.duration_ms * 0.001).toFixed(1)}s
                     </div>
                   )}
                   {log.credits_used > 0 && (
                     <div style={{ fontSize: 11, color: T.gold }}>⚡ {log.credits_used} cr</div>
                   )}
                   {log.html_length && (
-                    <div style={{ fontSize: 11, color: T.muted }}>📄 {(log.html_length / 1000).toFixed(1)}k chars</div>
+                    <div style={{ fontSize: 11, color: T.muted }}>📄 {(log.html_length * 0.001).toFixed(1)}k chars</div>
                   )}
                 </div>
               </div>
