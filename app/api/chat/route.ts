@@ -3,116 +3,57 @@
 // Smart Code Editing: Read → Diff → Patch → Rebuild
 
 import { NextRequest, NextResponse } from "next/server";
-import {
-  renderComponent, getDefaultVariant, buildComponentContext,
-  buildRootTokens, type ComponentCategory,
-} from "@/lib/component-library";
 
 export const runtime = "nodejs";
 export const maxDuration = 120; // raised from 60s — edits now use 24k max_tokens (was 8k)
 
 // ── System Prompt ────────────────────────────────────────────────
-// ── V6: Detect content-only edits ───────────────────────────────────────
-// Content edits: change headline, update CTA text, edit pricing, update copy.
-// Structural edits: change colors, add animations, fix layout, debug, upgrade.
-// Only content edits use the component JSON path — structural edits use full HTML.
-function detectContentEdit(message: string): boolean {
-  const m = message.toLowerCase();
-  const contentSignals = [
-    "headline", "heading", "title", "tagline",
-    "cta text", "button text", "call to action",
-    "pricing", "plan name", "tier", "feature list",
-    "testimonial", "quote", "review",
-    "faq", "question", "answer",
-    "update the text", "change the text", "change the copy",
-    "update the copy", "rewrite the", "change the headline",
-    "update headline", "update cta", "change cta",
-    "subheadline", "description", "paragraph",
-    "update the pricing", "change pricing",
-  ];
-  const structuralSignals = [
-    "color", "background", "dark", "light", "theme",
-    "animation", "animate", "transition", "fade",
-    "layout", "spacing", "padding", "margin",
-    "font size", "responsive", "mobile",
-    "add section", "remove section", "add a new",
-    "debug", "fix", "broken", "error", "issue",
-    "upgrade", "improve", "add feature",
-    "menu", "navbar", "navigation",
-  ];
-  const hasContent    = contentSignals.some(s => m.includes(s));
-  const hasStructural = structuralSignals.some(s => m.includes(s));
-  return hasContent && !hasStructural;
-}
+const CHAT_SYSTEM = `You are Krypton AI — an elite website editor. You receive a website's full HTML and a user's edit request in English, Hindi, or Hinglish. You return the complete updated HTML.
 
-// ── V6: Component content edit system prompt ─────────────────────────────
-const CONTENT_EDIT_SYSTEM = `You are Krypton AI's content editor. You update website copy — NEVER HTML.
+## UNDERSTANDING EDIT REQUESTS:
+Users may write in English, Hindi, or mixed (Hinglish). Always understand the intent:
 
-Input: JSON object with component content (hero, features, pricing, etc.)
-Task: Update ONLY the fields the user asks to change.
-Output: A JSON patch with ONLY the changed fields.
+### COLOR CHANGES:
+- "background change karo golden" → change background-color/background to gold (#D4A853 or golden gradient)
+- "button golden bana do" → change button background to gold color  
+- "text white kar do" → change text color to #FFFFFF
+- "dark theme karo" → change background to dark (#050816 or similar)
+- "gradient lagao" → add a linear-gradient background
+- Any color name (red/lal, blue/neela, green/hara, golden/sona, white/safed, black/kala) → apply that color
 
-RULES:
-- Return ONLY valid JSON — no markdown, no explanation, no HTML
-- Include ONLY the fields you are changing
-- Preserve all other fields exactly as they are
-- If adding a new FAQ item, include the full items array
-- Never output HTML, CSS, or JavaScript
+### SIZE/TYPOGRAPHY:
+- "heading bada karo" → increase h1/h2 font-size by 20-30%
+- "font size badhao" → increase body font-size
+- "text chhota karo" → decrease font-size
+- "bold karo" → add font-weight: 700 or 800
 
-OUTPUT FORMAT (only changed fields):
-{"hero":{"headline":"new headline here"}}`;
+### LAYOUT/SPACING:
+- "spacing badha do" → increase padding/margin
+- "full width karo" → make section width 100%
+- "center karo" → add text-align: center or margin: auto
 
-const CHAT_SYSTEM = `You are Krypton AI — an elite senior software engineer with 20 years of experience.
-You are the AI assistant inside a code editor. You have full context of the user's project.
-
-## YOUR CAPABILITIES:
-- Read and understand any code instantly
-- Make precise, surgical edits without breaking existing functionality
-- Add new features seamlessly
-- Fix bugs and optimize performance
-- Improve design and UX
-- Explain technical concepts clearly
-
-## HOW TO HANDLE EDIT REQUESTS:
-
-### For CODE CHANGES ("change button color", "add animation", "fix the navigation"):
-1. Identify the exact lines/sections that need changing
-2. Return the COMPLETE updated file — not partial snippets
-3. Wrap code in: <code_changes>{"filename": "complete updated content"}</code_changes>
-4. Explain what you changed in 1-2 sentences
-
-### For QUESTIONS ("how does this work", "explain the structure"):
-- Answer concisely and technically
-- No code_changes block needed
-
-### For FEATURE ADDITIONS ("add dark mode", "add a login page", "add animations"):
-- Plan the feature briefly
-- Return full updated code with the new feature integrated
-- Wrap in <code_changes> block
-
-## EDIT PRINCIPLES:
-- NEVER break existing functionality  
-- If KRYPTON PROJECT MEMORY is provided: treat it as absolute truth about the existing design
-- ALWAYS preserve: colors, fonts, CSS variables, layout structure, existing sections
-- ONLY change what the user explicitly requested — nothing more
-- New elements must match the existing design system perfectly
-- When in doubt, preserve existing design over introducing new patterns
-- Make the minimum change needed to achieve the goal
-- Improve code quality opportunistically (fix obvious issues)
-- Keep consistent naming conventions and code style
-
-## LANGUAGE RULE:
-- ALL generated content MUST be in English
-- Never output non-English text in code
+### STYLE EFFECTS:
+- "animation lagao" → add CSS transitions/keyframes
+- "shadow lagao" → add box-shadow
+- "border lagao" → add border
+- "rounded karo" → add border-radius
+- "glassmorphism" → add backdrop-filter: blur + semi-transparent background
 
 ## RESPONSE FORMAT:
-For code changes:
-[Brief 1-2 line explanation of what you changed]
-<code_changes>{"index.html": "complete html file content here"}</code_changes>
+1. Make the edit in the HTML
+2. Return the COMPLETE updated HTML
+3. Wrap in: <code_changes>{"index.html": "complete updated html"}</code_changes>
+4. One line explanation of what changed
 
-For questions: Just answer clearly. No code block needed.
-
-Be concise, professional, and precise. You are a senior engineer — not a chatbot.`;
+## CRITICAL RULES:
+- ALWAYS return the complete HTML — never partial
+- Preserve ALL existing sections, content, and functionality
+- Only change what was requested
+- If color requested: change ONLY those color properties
+- If size requested: change ONLY those size properties
+- Never remove sections unless explicitly asked
+- Keep all existing CSS variables in :root
+- New styles should match the existing design quality`;
 
 // ── Provider Calls ───────────────────────────────────────────────
 async function callClaude(messages: any[], system: string): Promise<string> {
@@ -183,7 +124,7 @@ async function callGemini(messages: any[], system: string): Promise<string> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: combined,
-        generationConfig: { maxOutputTokens: 16000, temperature: 0.5 },
+        generationConfig: { maxOutputTokens: 24000, temperature: 0.5 },
       }),
       signal: AbortSignal.timeout(95000),
     }
@@ -259,30 +200,6 @@ RULES:
 Return: <code_changes>{"index.html": "complete upgraded content"}</code_changes>`;
 
 // ── Main Route ───────────────────────────────────────────────────
-// ── V6 helpers ──────────────────────────────────────────────────────────
-function deepMerge(base: Record<string,any>, patch: Record<string,any>): Record<string,any> {
-  const result = { ...base };
-  for (const key of Object.keys(patch)) {
-    if (patch[key] && typeof patch[key] === "object" && !Array.isArray(patch[key]) &&
-        base[key] && typeof base[key] === "object" && !Array.isArray(base[key])) {
-      result[key] = deepMerge(base[key], patch[key]);
-    } else {
-      result[key] = patch[key];
-    }
-  }
-  return result;
-}
-
-// Minimal inline JS for component-rebuilt pages
-const STATIC_JS_INLINE = `
-document.querySelectorAll('.hamburger').forEach(b=>b.addEventListener('click',()=>document.querySelectorAll('.nav-links').forEach(n=>n.classList.toggle('open'))));
-document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{var t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}}));
-var ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('visible');ro.unobserve(x.target);}});},{threshold:0.1});
-document.querySelectorAll('.reveal').forEach(el=>ro.observe(el));
-document.querySelectorAll('.faq-question').forEach(q=>{q.addEventListener('click',()=>{var a=q.nextElementSibling;var open=q.classList.contains('active');document.querySelectorAll('.faq-question').forEach(oq=>{oq.classList.remove('active');var oa=oq.nextElementSibling;if(oa)oa.classList.remove('open');});if(!open&&a){q.classList.add('active');a.classList.add('open');}});});
-window.addEventListener('scroll',()=>document.querySelectorAll('nav').forEach(n=>n.classList.toggle('scrolled',window.scrollY>50)),{passive:true});
-`.trim();
-
 export async function POST(req: NextRequest) {
   try {
     const {
@@ -294,8 +211,6 @@ export async function POST(req: NextRequest) {
       projectId,
       projectContext = "", // Krypton Project Memory
       gameMemory = null,  // GameProjectMemory object for game edits
-      componentContent = null, // V6: component JSON from generation (if available)
-      niche = null,            // V6: NicheProfile for re-render
       message,
     } = await req.json();
 
@@ -309,80 +224,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // ── V6: Component-level content edit (if componentContent available) ──
-    const isContentEdit = !isGameEdit && !isDebugMode && !isUpgradeMode
-                        && !!componentContent && !!niche
-                        && detectContentEdit(actualMessage);
-
-    if (isContentEdit) {
-      // Route: AI patches JSON → renderComponent() rebuilds HTML
-      const patchMessages = [
-        ...history.slice(-8).map((m: any) => ({
-          role: m.role as "user" | "assistant",
-          content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
-        })),
-        {
-          role: "user" as const,
-          content: `Current component content JSON:
-${JSON.stringify(componentContent, null, 2).slice(0, 6000)}
-
-Edit request: ${actualMessage}
-
-Return ONLY the changed fields as JSON.`,
-        },
-      ];
-
-      let patchText = "";
-      let patchProvider = "claude";
-      for (const p of [
-        { name: "claude",  fn: () => callClaude(patchMessages,  CONTENT_EDIT_SYSTEM) },
-        { name: "openai",  fn: () => callOpenAI(patchMessages,  CONTENT_EDIT_SYSTEM) },
-        { name: "gemini",  fn: () => callGemini(patchMessages,  CONTENT_EDIT_SYSTEM) },
-      ]) {
-        try { patchText = await p.fn(); patchProvider = p.name; break; } catch {}
-      }
-
-      if (patchText) {
-        try {
-          const raw     = patchText.replace(/```json|```/g, "").trim();
-          const patch   = JSON.parse(raw.match(/\{[\s\S]+\}/)?.[0] || raw);
-          // Deep-merge patch into componentContent
-          const updated = deepMerge(componentContent as Record<string, any>, patch);
-
-          // Re-render affected components only
-          const nicheProfile = niche as any;
-          const ctx          = buildComponentContext(nicheProfile?.palette?.primary || "#6366F1");
-          const tone         = nicheProfile?.tone || "default";
-          let   rebuiltSections = "";
-
-          const order: ComponentCategory[] = [
-            "navbar","hero","features","testimonials","pricing","faq",
-            "portfolio","ecommerce","cta","footer",
-          ];
-          for (const cat of order) {
-            const content = (updated as any)[cat];
-            if (!content) continue;
-            rebuiltSections += renderComponent(cat, getDefaultVariant(cat, tone), ctx, content);
-          }
-
-          if (rebuiltSections && rebuiltSections.length > 100) {
-            const rootTokens = buildRootTokens(nicheProfile);
-            const newHtml = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><style>${rootTokens}</style></head><body>${rebuiltSections}<script>${STATIC_JS_INLINE}</script></body></html>`;
-            return NextResponse.json({
-              text:             `Updated ${Object.keys(patch).join(", ")} in your website.`,
-              reply:            `Updated ${Object.keys(patch).join(", ")} in your website.`,
-              codeChanges:      { "index.html": newHtml },
-              updatedComponent: updated,
-              provider:         patchProvider,
-            });
-          }
-        } catch (e) {
-          console.warn("[Chat V6] Component patch failed, falling back to HTML edit:", e);
-          // Fall through to standard HTML edit below
-        }
-      }
-    }
-
     // Build code context — full file content, no artificial truncation.
     // PREVIOUS BUG: this was capped at 5000 chars/file + 8000 chars total.
     // Generated sites are now routinely 25,000-50,000+ chars (Component
@@ -390,10 +231,11 @@ Return ONLY the changed fields as JSON.`,
     // BLIND to most of the actual file, then returning a "complete updated
     // file" that hallucinated the unseen portions — causing the Build/
     // Validation/Runtime/Mobile gates to all fail after nearly every edit.
-    const codeContext = Object.entries(currentCode as Record<string, string>)
-      .map(([file, code]) => `### ${file}\n\`\`\`\n${code.slice(0, 60000)}\n\`\`\``)
+    const // Send max 25k chars — enough for full HTML while avoiding timeouts
+      codeContext = Object.entries(currentCode as Record<string, string>)
+      .map(([file, code]) => `### ${file}\n\`\`\`\n${code.slice(0, 25000)}\n\`\`\``)
       .join("\n")
-      .slice(0, 100000);
+      .slice(0, 30000);
 
     // Build conversation history
     const historyMessages = history.slice(-8).map((m: any) => ({
