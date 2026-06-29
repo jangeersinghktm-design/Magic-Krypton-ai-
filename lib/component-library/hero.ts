@@ -110,7 +110,7 @@ export function heroMinimalStatement(ctx: ComponentContext, c: HeroContent): str
       </a>` : ""}
     </div>
   </div>`;
-  return wrapSection("hero", inner, "padding:0;position:relative;overflow:hidden;min-height:90vh;display:flex;align-items:center;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(212,168,83,0.06) 0%,transparent 60%),var(--bg);");
+  return wrapSection("hero", inner, { extraStyle: "padding:0;position:relative;overflow:hidden;min-height:90vh;display:flex;align-items:center;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(212,168,83,0.06) 0%,transparent 60%),var(--bg);" });
 }
 
 
