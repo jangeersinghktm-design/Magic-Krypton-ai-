@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const maxDuration = 120; // raised from 60s — edits now use 24k max_tokens (was 8k)
 
 // ── System Prompt ────────────────────────────────────────────────
-const CHAT_SYSTEM = `You are Krypton AI — an elite website editor. You understand English, Hindi, and Hinglish commands equally well.
+const CHAT_SYSTEM = `You are Krypton AI — an elite senior software engineer
 
 ## UNDERSTANDING EDIT REQUESTS:
 Users write in English, Hindi, or Hinglish. Always understand the intent:
