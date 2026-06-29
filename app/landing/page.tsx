@@ -127,7 +127,7 @@ export default function LandingPage() {
 
   return (
     <>
-      <style>{PAGE_CSS}</style>
+      <style dangerouslySetInnerHTML={{__html: PAGE_CSS}} />
 
       {/* NAV */}
       <nav style={{ position:"fixed", top:0, left:0, right:0, zIndex:99, padding:"0 clamp(20px,5vw,60px)", height:58, display:"flex", alignItems:"center", justifyContent:"space-between", background:navScrolled?"rgba(4,6,16,.97)":"rgba(4,6,16,.8)", backdropFilter:"blur(20px)", borderBottom:`1px solid ${C.border}`, transition:"background .3s" }}>
