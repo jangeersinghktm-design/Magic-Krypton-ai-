@@ -222,9 +222,9 @@ export async function POST(req: NextRequest) {
     // file" that hallucinated the unseen portions — causing the Build/
     // Validation/Runtime/Mobile gates to all fail after nearly every edit.
     const codeContext = Object.entries(currentCode as Record<string, string>)
-      .map(([file, code]) => `### ${file}\n\`\`\`\n${code.slice(0, 12000)}\n\`\`\``)
+      .map(([file, code]) => `### ${file}\n\`\`\`\n${code.slice(0, 8000)}\n\`\`\``)
       .join("\n")
-      .slice(0, 15000);
+      .slice(0, 10000);
 
     // Build conversation history
     const historyMessages = history.slice(-8).map((m: any) => ({
@@ -279,10 +279,10 @@ ${isGameEdit ? "GAME EDIT REQUEST" : "Edit Request"}: ${actualMessage}`
 
     if (!responseText) {
       return NextResponse.json({
-        text: "I'm having trouble connecting right now. Please try again in a moment.",
-        reply: "I'm having trouble connecting right now. Please try again in a moment.",
+        text: "Edit is taking too long. Try a simpler change like 'make background dark' or 'change button color to red'.",
+        reply: "Edit is taking too long. Try a simpler change like 'make background dark' or 'change button color to red'.",
         codeChanges: null,
-      });
+      }, { status: 200 });
     }
 
     // ── Parse Code Changes ────────────────────────────────────
