@@ -8,52 +8,42 @@ export const runtime = "nodejs";
 export const maxDuration = 120; // raised from 60s — edits now use 24k max_tokens (was 8k)
 
 // ── System Prompt ────────────────────────────────────────────────
-const CHAT_SYSTEM = `You are Krypton AI — an elite website editor. You receive a website's full HTML and a user's edit request in English, Hindi, or Hinglish. You return the complete updated HTML.
+const CHAT_SYSTEM = `You are Krypton AI — an elite website editor. You understand English, Hindi, and Hinglish commands equally well.
 
 ## UNDERSTANDING EDIT REQUESTS:
-Users may write in English, Hindi, or mixed (Hinglish). Always understand the intent:
+Users write in English, Hindi, or Hinglish. Always understand the intent:
 
-### COLOR CHANGES:
-- "background change karo golden" → change background-color/background to gold (#D4A853 or golden gradient)
-- "button golden bana do" → change button background to gold color  
-- "text white kar do" → change text color to #FFFFFF
-- "dark theme karo" → change background to dark (#050816 or similar)
-- "gradient lagao" → add a linear-gradient background
-- Any color name (red/lal, blue/neela, green/hara, golden/sona, white/safed, black/kala) → apply that color
+COLOR CHANGES:
+- "background golden karo" / "background change karo golden" → change background to gold (#D4A853 or golden gradient)
+- "button golden bana do" → change button background/color to gold
+- "text white kar do" → change color to #FFFFFF
+- "dark theme karo" → background #050816 or similar dark
+- "red karo" / "lal karo" → apply red color
+- Any color name in any language → apply that color
 
-### SIZE/TYPOGRAPHY:
-- "heading bada karo" → increase h1/h2 font-size by 20-30%
-- "font size badhao" → increase body font-size
-- "text chhota karo" → decrease font-size
-- "bold karo" → add font-weight: 700 or 800
+SIZE / TYPOGRAPHY:
+- "heading bada karo" / "font bada karo" → increase font-size
+- "text chhota karo" → decrease font-size  
+- "bold karo" → font-weight: 700 or 800
 
-### LAYOUT/SPACING:
-- "spacing badha do" → increase padding/margin
-- "full width karo" → make section width 100%
-- "center karo" → add text-align: center or margin: auto
-
-### STYLE EFFECTS:
-- "animation lagao" → add CSS transitions/keyframes
+STYLE EFFECTS:
+- "animation lagao" → add CSS transitions or keyframes
 - "shadow lagao" → add box-shadow
-- "border lagao" → add border
+- "gradient lagao" → add linear-gradient background
 - "rounded karo" → add border-radius
-- "glassmorphism" → add backdrop-filter: blur + semi-transparent background
 
-## RESPONSE FORMAT:
-1. Make the edit in the HTML
-2. Return the COMPLETE updated HTML
-3. Wrap in: <code_changes>{"index.html": "complete updated html"}</code_changes>
-4. One line explanation of what changed
+## HOW TO RESPOND:
+1. Find what needs changing in the HTML
+2. Make ONLY that change — preserve everything else
+3. Return the COMPLETE updated HTML
+4. Wrap in: <code_changes>{"index.html": "complete updated html here"}</code_changes>
+5. One line explanation of what changed
 
-## CRITICAL RULES:
-- ALWAYS return the complete HTML — never partial
-- Preserve ALL existing sections, content, and functionality
-- Only change what was requested
-- If color requested: change ONLY those color properties
-- If size requested: change ONLY those size properties
-- Never remove sections unless explicitly asked
-- Keep all existing CSS variables in :root
-- New styles should match the existing design quality`;
+## RULES:
+- NEVER break existing sections or functionality
+- ONLY change what was requested
+- Preserve all CSS variables, fonts, colors, layout
+- Return complete HTML always — never partial`;
 
 // ── Provider Calls ───────────────────────────────────────────────
 async function callClaude(messages: any[], system: string): Promise<string> {
@@ -69,11 +59,11 @@ async function callClaude(messages: any[], system: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-6",
-      max_tokens: 16000,
+      max_tokens: 8000,
       system,
       messages,
     }),
-    signal: AbortSignal.timeout(95000),
+    signal: AbortSignal.timeout(25000),
   });
 
   if (!res.ok) throw new Error(`Claude ${res.status}`);
@@ -95,10 +85,10 @@ async function callOpenAI(messages: any[], system: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "gpt-4o",
-      max_tokens: 16000,
+      max_tokens: 8000,
       messages: [{ role: "system", content: system }, ...messages],
     }),
-    signal: AbortSignal.timeout(95000),
+    signal: AbortSignal.timeout(22000),
   });
 
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
@@ -126,7 +116,7 @@ async function callGemini(messages: any[], system: string): Promise<string> {
         contents: combined,
         generationConfig: { maxOutputTokens: 24000, temperature: 0.5 },
       }),
-      signal: AbortSignal.timeout(95000),
+      signal: AbortSignal.timeout(18000),
     }
   );
 
@@ -231,11 +221,10 @@ export async function POST(req: NextRequest) {
     // BLIND to most of the actual file, then returning a "complete updated
     // file" that hallucinated the unseen portions — causing the Build/
     // Validation/Runtime/Mobile gates to all fail after nearly every edit.
-    const // Send max 25k chars — enough for full HTML while avoiding timeouts
-      codeContext = Object.entries(currentCode as Record<string, string>)
-      .map(([file, code]) => `### ${file}\n\`\`\`\n${code.slice(0, 25000)}\n\`\`\``)
+    const codeContext = Object.entries(currentCode as Record<string, string>)
+      .map(([file, code]) => `### ${file}\n\`\`\`\n${code.slice(0, 12000)}\n\`\`\``)
       .join("\n")
-      .slice(0, 30000);
+      .slice(0, 15000);
 
     // Build conversation history
     const historyMessages = history.slice(-8).map((m: any) => ({
