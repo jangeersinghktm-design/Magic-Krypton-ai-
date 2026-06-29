@@ -300,7 +300,6 @@ async function claudeWithBackoff(
 
       if (i < maxRetries - 1) {
         // Exponential backoff: 1s, 2s, 4s
-        console.log("[Chat Debug]", usedProvider, "len:", responseText.length, "preview:", responseText.slice(0, 400));
         const delay = Math.pow(2, i) * 1000;
         await new Promise(r => setTimeout(r, delay));
       }
