@@ -54,7 +54,7 @@ const PRODUCT_TABS = [
 
 const FEATURES = [
   { title: "Natural Language Engine",   desc: "Describe your product in plain English. Krypton AI translates intent into production-grade architecture.", icon: "◇" },
-  { title: "Three-Model Intelligence",  desc: "Claude, GPT-4o, and Gemini run in concert with automatic failover - generation never stops.", icon: "◆" },
+  { title: "Enterprise-Grade AI Pipeline",  desc: "Multi-model AI with automatic failover — generation never stops, quality never drops.", icon: "◆" },
   { title: "Design System Aware",       desc: "Every output ships with consistent typography, spacing, and color systems - not templated guesswork.", icon: "▣" },
   { title: "Instant Deployment",        desc: "Production-ready HTML, CSS, and JavaScript - deployable to Vercel, Netlify, or your own infrastructure.", icon: "▲" },
   { title: "Continuous Engineering",    desc: "Edit, debug, refactor, and optimize the same project for months - Krypton AI remembers context.", icon: "◈" },
