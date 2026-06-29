@@ -85,7 +85,7 @@ async function callOpenAI(messages: any[], system: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "gpt-4o",
-      max_tokens: 8000,
+      max_tokens: 12000,
       messages: [{ role: "system", content: system }, ...messages],
     }),
     signal: AbortSignal.timeout(22000),
