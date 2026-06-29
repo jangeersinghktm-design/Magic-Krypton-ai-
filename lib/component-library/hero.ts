@@ -73,16 +73,46 @@ export function heroProductShowcase(ctx: ComponentContext, c: HeroContent): stri
 // ── Variant 4: Minimal Statement — typography-led, no image, ultra-premium (luxury/editorial) ──
 export function heroMinimalStatement(ctx: ComponentContext, c: HeroContent): string {
   const inner = `
-  <div style="text-align:center;max-width:880px;margin:0 auto;padding:${SPACING.xl} 0;">
-    ${c.badge ? `<p style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-2);margin-bottom:${SPACING.md};">${c.badge}</p>` : ""}
-    <h1 style="font-family:var(--heading-font);font-weight:var(--heading-weight);letter-spacing:var(--heading-spacing);font-size:clamp(36px,7vw,80px);line-height:1.05;color:var(--text);margin-bottom:${SPACING.md};">${c.headline}</h1>
-    <p style="font-size:16px;color:var(--text-2);line-height:1.8;max-width:460px;margin:0 auto ${SPACING.lg};">${c.subheadline}</p>
+  <div style="position:relative;text-align:center;max-width:900px;margin:0 auto;padding:clamp(80px,14vw,160px) 0 clamp(60px,10vw,120px);">
+
+    ${c.badge ? `
+    <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:32px;">
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--primary);"></div>
+      <p style="font-size:11px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--text-2);margin:0;">${c.badge}</p>
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--primary);"></div>
+    </div>` : ""}
+
+    <h1 style="font-family:var(--heading-font);font-weight:var(--heading-weight);font-size:clamp(42px,8vw,110px);letter-spacing:var(--heading-spacing);line-height:1.01;color:var(--text);margin-bottom:24px;">
+      ${c.headline}
+    </h1>
+
+    <div style="width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--primary),transparent);margin:0 auto 28px;"></div>
+
+    <p style="font-size:clamp(15px,2vw,20px);color:var(--text-2);line-height:1.8;max-width:520px;margin:0 auto 48px;font-weight:300;letter-spacing:0.02em;">
+      ${c.subheadline || ""}
+    </p>
+
     <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
-      ${renderButton(c.ctaPrimary, "primary", ctx)}
+      ${c.ctaPrimary ? `
+      <a href="${c.ctaPrimary.href || "#"}"
+        style="display:inline-flex;align-items:center;gap:10px;background:var(--text);color:var(--bg);padding:16px 40px;border-radius:2px;font-weight:700;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;text-decoration:none;transition:all .3s;box-shadow:0 8px 32px rgba(255,255,255,0.15);"
+        onmouseenter="this.style.background='var(--grad)';this.style.color='#fff';this.style.transform='translateY(-2px)';this.style.boxShadow='0 16px 48px rgba(212,168,83,0.4)';"
+        onmouseleave="this.style.background='var(--text)';this.style.color='var(--bg)';this.style.transform='none';this.style.boxShadow='0 8px 32px rgba(255,255,255,0.15)';">
+        ${c.ctaPrimary.text}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>` : ""}
+      ${c.ctaSecondary ? `
+      <a href="${c.ctaSecondary.href || "#"}"
+        style="display:inline-flex;align-items:center;gap:8px;color:var(--text-2);padding:16px 32px;border:1px solid rgba(255,255,255,0.12);border-radius:2px;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;transition:all .3s;"
+        onmouseenter="this.style.color='var(--text)';this.style.borderColor='rgba(255,255,255,0.4)';"
+        onmouseleave="this.style.color='var(--text-2)';this.style.borderColor='rgba(255,255,255,0.12)';">
+        ${c.ctaSecondary.text}
+      </a>` : ""}
     </div>
   </div>`;
-  return wrapSection("hero", inner, { extraStyle: "padding-top:140px;text-align:center;" });
+  return wrapSection("hero", inner, "padding:0;position:relative;overflow:hidden;min-height:90vh;display:flex;align-items:center;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(212,168,83,0.06) 0%,transparent 60%),var(--bg);");
 }
+
 
 export const HERO_VARIANTS = {
   "split-image":        heroSplitImage,
