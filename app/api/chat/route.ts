@@ -43,7 +43,9 @@ STYLE EFFECTS:
 - NEVER break existing sections or functionality
 - ONLY change what was requested
 - Preserve all CSS variables, fonts, colors, layout
-- Return complete HTML always — never partial`;
+- Return complete HTML always — never partial
+- ALWAYS include <code_changes> block — never return text-only for edit requests
+- Start your response with the <code_changes> block, then explain`;
 
 // ── Provider Calls ───────────────────────────────────────────────
 async function callClaude(messages: any[], system: string): Promise<string> {
@@ -85,7 +87,7 @@ async function callOpenAI(messages: any[], system: string): Promise<string> {
     },
     body: JSON.stringify({
       model: "gpt-4o",
-      max_tokens: 12000,
+      max_tokens: 8000,
       messages: [{ role: "system", content: system }, ...messages],
     }),
     signal: AbortSignal.timeout(22000),
@@ -239,14 +241,39 @@ export async function POST(req: NextRequest) {
 
     const memCtx = gameCtx || (projectContext ? projectContext + "\n\n" : "");
 
-    const userContent = codeContext
-      ? `${memCtx}Project: ${projectName} (${isGameEdit ? "browser game" : framework})
+    // ── CSS-fast-path: for style edits, send only CSS + ask for CSS patch ─
+    const msg = actualMessage.toLowerCase();
+    const isCssEdit = !isGameEdit && !isDebugMode && !isUpgradeMode && (
+      /color|colour|background|bg|font|size|spacing|padding|margin|border|shadow|gradient|dark|light|white|black|red|blue|green|golden|round|bold|italic|opacity|theme|style/i.test(msg)
+    ) && !/add|remove|delete|new section|contact form|pricing|navbar|footer|hero/i.test(msg);
+
+    let userContent: string;
+
+    if (isCssEdit && codeContext && !isGameEdit) {
+      // Extract only the <style> block — much smaller than full HTML
+      const styleMatch = codeContext.match(/<style[\s\S]*?<\/style>/i);
+      const cssOnly = styleMatch ? styleMatch[0].slice(0, 3000) : codeContext.slice(0, 3000);
+      userContent = `${memCtx}Project: ${projectName}
+
+CSS TO EDIT:
+${cssOnly}
+
+STYLE EDIT REQUEST: ${actualMessage}
+
+Return ONLY a CSS property change in this format (no full HTML):
+<code_changes>{"index.html": "FULL_UPDATED_HTML_HERE"}</code_changes>
+
+IMPORTANT: In the code_changes block, return the COMPLETE updated HTML with ONLY the requested style change applied. Keep all content and structure identical.`;
+    } else {
+      userContent = codeContext
+        ? `${memCtx}Project: ${projectName} (${isGameEdit ? "browser game" : framework})
 
 ${isGameEdit ? "GAME CODE (preserve all mechanics):" : "Current Code:"}
 ${codeContext}
 
 ${isGameEdit ? "GAME EDIT REQUEST" : "Edit Request"}: ${actualMessage}`
-      : actualMessage;
+        : actualMessage;
+    }
 
     const messages = [
       ...historyMessages,
