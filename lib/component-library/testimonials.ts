@@ -25,8 +25,27 @@ function stars(n: number = 5): string {
 }
 
 function avatar(t: TestimonialItem): string {
-  const initials = t.avatar || t.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-  return `<div style="width:44px;height:44px;border-radius:${RADIUS.full};background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0;" aria-hidden="true">${initials}</div>`;
+  // Safe initials — never undefined image paths
+  const initials = t.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+  const colors = [
+    "linear-gradient(135deg,#D4A853,#B8935A)",
+    "linear-gradient(135deg,#7C3AED,#6D28D9)",
+    "linear-gradient(135deg,#2563EB,#1E40AF)",
+    "linear-gradient(135deg,#059669,#047857)",
+  ];
+  const grad = colors[t.name.charCodeAt(0) % colors.length];
+  return `<div style="position:relative;flex-shrink:0;">
+    <div style="width:50px;height:50px;border-radius:${RADIUS.full};background:${grad};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#fff;letter-spacing:.02em;border:2px solid rgba(255,255,255,0.12);">${initials}</div>
+    <div style="position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;border-radius:${RADIUS.full};background:var(--primary);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;">
+      <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>`;
+}
+
+function starRating(rating: number): string {
+  return Array.from({length: 5}, (_: unknown, i: number) =>
+    `<svg width="13" height="13" viewBox="0 0 24 24" fill="${i < (rating||5) ? "#F59E0B" : "rgba(255,255,255,0.15)"}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`
+  ).join("");
 }
 
 function sectionHeader(c: TestimonialsContent): string {
