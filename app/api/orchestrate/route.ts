@@ -2639,7 +2639,21 @@ async function generateComponentContent(
 
   const variantOptions = categories.map(c => `${c}: [${listVariants(c).join(", ")}]`).join("\n");
 
-  const system = `You are Krypton AI's content specialist. Output ONLY valid JSON — no markdown fences, no preamble. Write real, specific copy for the user's niche.`;
+  const system = `You are Krypton AI's premium content specialist. Output ONLY valid JSON — no markdown, no backticks, no explanation.
+
+  CONTENT QUALITY RULES:
+  - Write specific, compelling copy — never generic placeholder text
+  - For luxury brands: use elegant, aspirational language (e.g. "Crafted for the Discerning", "An Olfactory Journey")
+  - For tech products: use clear, confident value propositions
+  - Headlines must be punchy and memorable (5-10 words max)
+  - Testimonial quotes must sound authentic and specific (mention real results)
+  - Feature descriptions: benefit-first, not feature-first
+  - CTA text must create urgency or exclusivity ("Discover Your Signature" not "Click Here")
+  - Pricing: use psychological pricing ($49 not $50, include what makes each tier valuable)
+  - FAQ: answer real objections buyers have
+
+  TESTIMONIAL NAMES: Use realistic full names, realistic job titles, realistic companies.
+  NEVER use: "John Doe", "Jane Smith", "User", "Customer", placeholder text.`;
   const user = `Build content for: "${userPrompt}"
 Niche: ${niche.industry} (${niche.marketLevel} tier, ${tone} tone)
 Blueprint context: ${blueprint.slice(0, 400)}
