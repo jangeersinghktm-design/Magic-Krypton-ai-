@@ -383,8 +383,23 @@ export async function POST(req: NextRequest) {
   }
 
   // ── STEP 3: Assemble pages from component library — 0 AI calls ──
+  // Sync index.html's navbar to the same shared nav used on every other
+  // page, so cross-page links (about.html, pricing.html, ...) work from
+  // the home page too — not just from the generated subpages.
+  const niche0 = makeNiche(brand);
+  const ctx0   = buildComponentContext(brand.primaryColor);
+  const sharedNavHtml = renderComponent("navbar", getDefaultVariant("navbar", "default"), ctx0, {
+    logoText: copy.nav.logoText,
+    links:    copy.nav.links,
+    cta:      copy.nav.cta,
+  });
+  const existingNavMatch = homeHtml.match(/<nav[^>]*>[\s\S]*?<\/nav>/i);
+  const syncedHomeHtml = existingNavMatch
+    ? homeHtml.replace(existingNavMatch[0], sharedNavHtml)
+    : homeHtml.replace(/<body[^>]*>/i, (m) => `${m}\n${sharedNavHtml}`);
+
   const zipFiles: {name:string;content:string}[] = [
-    { name: "index.html", content: homeHtml },
+    { name: "index.html", content: syncedHomeHtml },
   ];
 
   for (const page of pages) {
@@ -420,9 +435,10 @@ DEPLOY:
   // Deduct credits
   await supabase.from("profiles")
     .update({ used_credits: (profile?.used_credits||0)+2 }).eq("id", uid);
-  await supabase.from("credit_transactions")
-    .insert({ user_id:uid, type:"debit", amount:2, description:`Multi-page (${pages.length+1}p)` })
-    ;
+  try {
+    await supabase.from("credit_transactions")
+      .insert({ user_id:uid, type:"debit", amount:2, description:`Multi-page (${pages.length+1}p)` });
+  } catch {}
 
   const slug = prompt.slice(0,30).replace(/[^a-z0-9]/gi,"-").toLowerCase();
   return new NextResponse(new Uint8Array(zip), {
