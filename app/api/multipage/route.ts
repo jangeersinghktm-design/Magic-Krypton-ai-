@@ -396,8 +396,7 @@ export async function POST(req: NextRequest) {
   const existingNavMatch = homeHtml.match(/<nav[^>]*>[\s\S]*?<\/nav>/i);
   const syncedHomeHtml = existingNavMatch
     ? homeHtml.replace(existingNavMatch[0], sharedNavHtml)
-    : homeHtml.replace(/<body[^>]*>/i, (m) => `${m}\n${sharedNavHtml}`);
-
+    : homeHtml.replace(/<body[^>]*>/i, (m: string) => `${m}\n${sharedNavHtml}`);
   const zipFiles: {name:string;content:string}[] = [
     { name: "index.html", content: syncedHomeHtml },
   ];
