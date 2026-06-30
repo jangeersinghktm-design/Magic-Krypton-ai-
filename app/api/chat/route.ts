@@ -880,8 +880,6 @@ export async function POST(req: NextRequest) {
     // ── Detect intent ────────────────────────────────────────────
     const intent = detectIntent(actualMessage, false, isDebugMode);
     log.intent = intent;
-      "hasStyleBlock:", fullHtml.includes("<style"),
-      "sections:", fullHtml.match(/<section[^>]*id=/gi)?.length || 0);
 
     // ── Run intent handler (Claude primary) ──────────────────────
     let patchedHtml = "";
@@ -979,13 +977,6 @@ export async function POST(req: NextRequest) {
     log.patchSize  = patchedHtml.length - fullHtml.length;
     log.validation = validation;
     log.durationMs = Date.now() - startMs;
-
-    // DEBUG LOG — full edit trace
-      "attempts:", attempts, "repairRan:", log.repairRan,
-      "patchedHtml.length:", patchedHtml.length,
-      "validation.valid:", validation.valid,
-      "validation.errors:", JSON.stringify(validation.errors),
-      "durationMs:", Date.now() - startMs);
 
     const explanation = (() => {
       switch (intent) {
