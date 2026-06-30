@@ -407,6 +407,16 @@ Return ONLY the complete updated <style>...</style> block.`;
     4000
   );
 
+  // DEBUG LOGS — remove after root cause identified
+  console.log("[KAI Debug] STYLE_EDIT provider:claude attempts:", attempts);
+  console.log("[KAI Debug] responseText.length:", text.length);
+  console.log("[KAI Debug] first 1000:", text.slice(0, 1000));
+  console.log("[KAI Debug] last 1000:", text.slice(-1000));
+  console.log("[KAI Debug] has <style>:", text.includes("<style"));
+  console.log("[KAI Debug] has </style>:", text.includes("</style>"));
+  console.log("[KAI Debug] has <code_changes>:", text.includes("<code_changes>"));
+  console.log("[KAI Debug] has </code_changes>:", text.includes("</code_changes>"));
+
   // Extract style block from response
   const updated = text.match(/<style[\s\S]*?<\/style>/i)?.[0];
   if (!updated) throw new Error("No <style> block in Claude response");
@@ -624,6 +634,15 @@ async function openAIFallback(
     8000
   );
 
+  // DEBUG LOGS — remove after root cause identified
+  console.log("[KAI Debug] openAIFallback intent:", intent);
+  console.log("[KAI Debug] OpenAI responseText.length:", text.length);
+  console.log("[KAI Debug] OpenAI first 1000:", text.slice(0, 1000));
+  console.log("[KAI Debug] OpenAI last 1000:", text.slice(-1000));
+  console.log("[KAI Debug] OpenAI has <code_changes>:", text.includes("<code_changes>"));
+  console.log("[KAI Debug] OpenAI has </code_changes>:", text.includes("</code_changes>"));
+  console.log("[KAI Debug] OpenAI has <style>:", text.includes("<style"));
+
   // Try to extract a style block first
   const updatedStyle = text.match(/<style[\s\S]*?<\/style>/i)?.[0];
   if (updatedStyle && intent === "STYLE_EDIT") {
@@ -655,6 +674,8 @@ async function geminiFallback(
     [{ role: "user" as const, content: `Project: ${projName}\n\nCSS:\n${styleBlock}\n\nEdit: ${message}\n\nReturn ONLY updated <style>...</style> block.` }],
     STYLE_SYSTEM
   );
+  console.log("[KAI Debug] Gemini responseText.length:", text.length);
+  console.log("[KAI Debug] Gemini first 500:", text.slice(0, 500));
   const updated = text.match(/<style[\s\S]*?<\/style>/i)?.[0];
   if (updated) return patchStyle(fullHtml, updated);
   throw new Error("Gemini produced no usable output");
@@ -804,6 +825,10 @@ export async function POST(req: NextRequest) {
     // ── Detect intent ────────────────────────────────────────────
     const intent = detectIntent(actualMessage, false, isDebugMode);
     log.intent = intent;
+    console.log("[KAI Debug] message:", actualMessage.slice(0, 100), "→ intent:", intent);
+    console.log("[KAI Debug] fullHtml.length:", fullHtml.length,
+      "hasStyleBlock:", fullHtml.includes("<style"),
+      "sections:", fullHtml.match(/<section[^>]*id=/gi)?.length || 0);
 
     // ── Run intent handler (Claude primary) ──────────────────────
     let patchedHtml = "";
@@ -902,6 +927,14 @@ export async function POST(req: NextRequest) {
     log.validation = validation;
     log.durationMs = Date.now() - startMs;
 
+    // DEBUG LOG — full edit trace
+    console.log("[KAI Debug] EDIT COMPLETE — intent:", intent, "provider:", provider,
+      "attempts:", attempts, "repairRan:", log.repairRan,
+      "patchedHtml.length:", patchedHtml.length,
+      "validation.valid:", validation.valid,
+      "validation.errors:", JSON.stringify(validation.errors),
+      "durationMs:", Date.now() - startMs);
+
     const explanation = (() => {
       switch (intent) {
         case "STYLE_EDIT":     return `Style updated: ${actualMessage}`;
@@ -930,3 +963,4 @@ export async function POST(req: NextRequest) {
     });
   }
 }
+  
