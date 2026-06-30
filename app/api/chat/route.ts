@@ -152,45 +152,6 @@ function detectTargetSection(message: string, html: string): string | null {
   return null;
 }
 
-function extractStyleBlock(html: string): string {
-  return html.match(/<style[\s\S]*?<\/style>/i)?.[0] || "";
-}
-
-function extractSection(html: string, id: string): string {
-  const re = new RegExp(
-    `<section[^>]*id=["']${id}["'][^>]*>[\\s\\S]*?</section>`,
-    "i"
-  );
-  return html.match(re)?.[0] || "";
-}
-
-function extractAllSections(html: string): string[] {
-  return [...html.matchAll(/<section[^>]*id=["']([^"']+)["'][^>]*>/gi)]
-    .map(m => m[1]);
-}
-
-function detectTargetSection(message: string): string | null {
-  const map: Record<string, string[]> = {
-    hero:         ["hero","header","banner","headline","tagline","main section","top section"],
-    features:     ["feature","benefit","service","why us","why choose","what we do"],
-    pricing:      ["pricing","price","plan","tier","cost","subscription"],
-    testimonials: ["testimonial","review","feedback","customer","client","social proof"],
-    faq:          ["faq","question","answer","frequently asked"],
-    cta:          ["cta","call to action","get started","signup","sign up"],
-    footer:       ["footer","copyright","bottom","links"],
-    navbar:       ["nav","menu","navigation","header menu","hamburger","top bar"],
-    contact:      ["contact","form","reach us","get in touch","message"],
-    about:        ["about","story","team","mission","vision","who we are"],
-    gallery:      ["gallery","photo","image","portfolio grid","showcase"],
-    stats:        ["stats","metric","number","achievement","counter"],
-  };
-  const m = message.toLowerCase();
-  for (const [id, keywords] of Object.entries(map)) {
-    if (keywords.some(k => m.includes(k))) return id;
-  }
-  return null;
-}
-
 // ── HTML Validation ───────────────────────────────────────────────
 function validateHtml(html: string, originalHtml: string): ValidationResult {
   const errors:   string[] = [];
@@ -556,6 +517,10 @@ Return: <layout_update>{"action":"add|remove","position":"before-footer","sectio
 
   const match = text.match(/<layout_update>([\s\S]*?)<\/layout_update>/i);
   if (!match) throw new Error("No layout_update in response");
+
+  let parsed: { action: string; sectionId?: string; html?: string; position?: string };
+  try { parsed = JSON.parse(match[1].trim()); }
+  catch { throw new Error("Invalid layout_update JSON"); }
 
   let parsed: { action: string; sectionId?: string; html?: string; position?: string };
   try { parsed = JSON.parse(match[1].trim()); }
