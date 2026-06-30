@@ -41,24 +41,130 @@ interface ValidationResult {
   warnings: string[];
 }
 
+// ── Section Registry — built ONCE, before any AI call ────────────────────
+// Deterministic source of truth for "what sections exist and where".
+// Every handler resolves its target against THIS, never against AI guesses.
+interface SectionEntry {
+  sectionId: string;       // data-section value (or id fallback)
+  component: string;       // data-component value (or sectionId fallback)
+  outerHTML: string;       // exact current HTML of this <section>...</section>
+  hash:      string;       // cheap content fingerprint, used to verify only
+                            // the target changed and nothing else did
+}
+
+function hashHtml(s: string): string {
+  // Non-cryptographic, fast, deterministic — only used to detect "did this
+  // exact block of HTML change", not for security.
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; }
+  return `${s.length}:${h}`;
+}
+
+function buildSectionRegistry(html: string): SectionEntry[] {
+  const matches = [...html.matchAll(/<section\b[^>]*>[\s\S]*?<\/section>/gi)];
+  const entries: SectionEntry[] = [];
+  for (const m of matches) {
+    const outer = m[0];
+    const openTag = outer.match(/<section\b[^>]*>/i)?.[0] || "";
+    const dataSection = openTag.match(/data-section=["']([^"']+)["']/i)?.[1];
+    const dataComponent = openTag.match(/data-component=["']([^"']+)["']/i)?.[1];
+    const idAttr = openTag.match(/\bid=["']([^"']+)["']/i)?.[1];
+    const sectionId = dataSection || idAttr;
+    if (!sectionId) continue; // unidentifiable section — never a valid edit target
+    entries.push({
+      sectionId,
+      component: dataComponent || sectionId,
+      outerHTML: outer,
+      hash:      hashHtml(outer),
+    });
+  }
+  return entries;
+}
+
+// SECTION_KEYWORDS: human phrasing → canonical sectionId. Used ONLY to match
+// against sections that ACTUALLY EXIST in the registry — never to invent a
+// target that isn't really on the page.
+const SECTION_KEYWORDS: Record<string, string[]> = {
+  hero:         ["hero","header image","banner","headline","tagline","main section","top section","hero image","hero background"],
+  features:     ["feature","benefit","service","why us","why choose","what we do"],
+  pricing:      ["pricing","price","plan","tier","cost","subscription"],
+  testimonials: ["testimonial","review","feedback","customer","client","social proof"],
+  faq:          ["faq","question","answer","frequently asked"],
+  cta:          ["cta button","call to action","get started button","cta section"],
+  footer:       ["footer","copyright","footer logo"],
+  navbar:       ["navbar","nav menu","navigation","header menu","hamburger","top bar"],
+  contact:      ["contact form","reach us","get in touch"],
+  about:        ["about section","our story","team section","mission","vision","who we are"],
+  gallery:      ["gallery","photo grid","image gallery","portfolio grid","showcase"],
+  stats:        ["stats section","metric","achievement counter"],
+};
+
+// Deterministic resolver: only ever returns a sectionId that is PRESENT in
+// the registry. If the message names something not on the page, returns
+// null — caller must treat that as "needs a real new section" (LAYOUT_EDIT)
+// or report it can't find the target, never silently edit the wrong one.
+function resolveSectionTarget(message: string, registry: SectionEntry[]): SectionEntry | null {
+  const m = message.toLowerCase();
+  const presentIds = new Set(registry.map(e => e.sectionId));
+
+  // Direct match: message literally names a present sectionId or component
+  for (const entry of registry) {
+    if (m.includes(entry.sectionId.toLowerCase())) return entry;
+    if (m.includes(entry.component.toLowerCase())) return entry;
+  }
+
+  // Keyword match: only against sections that exist
+  for (const [canonicalId, keywords] of Object.entries(SECTION_KEYWORDS)) {
+    if (!presentIds.has(canonicalId)) continue;
+    if (keywords.some(k => m.includes(k))) {
+      return registry.find(e => e.sectionId === canonicalId) || null;
+    }
+  }
+
+  // "CTA button" special case: most pages have no standalone id="cta"
+  // section — the primary CTA usually lives INSIDE hero. If the message
+  // says "cta"/"button" and hero exists, target hero (where renderButton()
+  // actually renders it) instead of failing.
+  if ((m.includes("cta") || m.includes("button")) && presentIds.has("hero")) {
+    return registry.find(e => e.sectionId === "hero") || null;
+  }
+
+  return null;
+}
+
 // ── Intent Detection ─────────────────────────────────────────────
 function detectIntent(
-  message: string,
-  isGame:  boolean,
-  isDebug: boolean
+  message:  string,
+  isGame:   boolean,
+  isDebug:  boolean,
+  registry: SectionEntry[]
 ): EditIntent {
   if (isGame)  return "GAME_EDIT";
   if (isDebug) return "DEBUG_EDIT";
 
   const m = message.toLowerCase();
+  const target = resolveSectionTarget(message, registry);
 
-  // LAYOUT: adding/removing/moving whole sections
-  if (/\b(add|remove|delete|insert|move|reorder|include)\b.{0,30}\b(section|page|component|block|navbar|footer|hero|pricing|faq|testimonial|contact|gallery|team|blog|portfolio|stats)\b/i.test(message) ||
-      /\b(navbar|footer|hero|pricing|faq|testimonial|contact form|gallery|team section|blog section)\b.{0,20}\b(add|remove|delete|include)\b/i.test(message)) {
-    return "LAYOUT_EDIT";
-  }
+  // ── KEY FIX ────────────────────────────────────────────────────────
+  // Previously: "add image to hero section" matched the LAYOUT_EDIT regex
+  // purely on the words "add" + "hero" + "section", and LAYOUT_EDIT always
+  // inserts a brand-new section before the footer — regardless of which
+  // section the user actually named. That's why "add X to hero" silently
+  // modified the footer.
+  //
+  // Fix: if the message resolves to a section that ALREADY EXISTS in the
+  // registry, this is never a LAYOUT_EDIT (you don't "add a new section"
+  // to something that's already there) — it's a CONTENT_EDIT (adding an
+  // image/element WITHIN that section). LAYOUT_EDIT is reserved for
+  // genuinely new sections (target === null) or explicit "remove section".
 
-  // COMPONENT: changing a specific component variant
+  const isExplicitRemove = /\b(remove|delete)\b.{0,20}\b(section)\b/i.test(message);
+  const isExplicitAddNew = /\b(add|insert|include)\b.{0,20}\b(a |an |new )?(section)\b/i.test(message) && !target;
+
+  if (isExplicitRemove && target) return "LAYOUT_EDIT";
+  if (isExplicitAddNew)           return "LAYOUT_EDIT";
+
+  // COMPONENT: changing a specific component's variant/layout
   if (/\b(change|swap|replace|use|switch)\b.{0,20}\b(layout|variant|style|version|type)\b.{0,30}\b(hero|navbar|footer|pricing|features|testimonial)\b/i.test(message)) {
     return "COMPONENT_EDIT";
   }
@@ -68,20 +174,22 @@ function detectIntent(
     return "DEBUG_EDIT";
   }
 
-  // CONTENT: changing text/copy only
-  if (/\b(change|update|replace|edit|rewrite)\b.{0,30}\b(text|heading|title|copy|content|tagline|description|paragraph|cta text|button text|label|name|logo text)\b/i.test(message) ||
+  // CONTENT: adding/changing something WITHIN an existing, resolved section
+  // ("add image to hero", "change hero heading", "update testimonial text")
+  if (target && /\b(add|change|update|replace|edit|rewrite|insert)\b/i.test(m)) {
+    return "CONTENT_EDIT";
+  }
+  if (/\b(change|update|replace|edit|rewrite)\b.{0,30}\b(text|heading|title|copy|content|tagline|description|paragraph|cta text|button text|label|name|logo text|image)\b/i.test(message) ||
       /\b(heading|title|tagline|copy|content)\b.{0,20}\b(change|update|replace|badlo|badal)\b/i.test(message)) {
     return "CONTENT_EDIT";
   }
 
-  // STYLE: colors, fonts, spacing, animations — most common
-  // Catches English, Hindi, Hinglish
+  // STYLE: colors, fonts, spacing, animations
   if (/color|colour|background|bg|font|size|spacing|padding|margin|border|shadow|gradient|dark|light|theme|animate|animation|transition|rounded|bold|italic|opacity|glow|blur|white|black|red|blue|green|golden|yellow|purple|pink|gray|karo|kar do|bana do|badao|lagao|change to/i.test(message)) {
     return "STYLE_EDIT";
   }
 
-  // Default: treat as style edit (most common, safest)
-  return "STYLE_EDIT";
+  return "STYLE_EDIT"; // safest default
 }
 
 // ── HTML Extraction Utilities ─────────────────────────────────────
@@ -105,51 +213,6 @@ function extractSection(html: string, id: string): string {
 function extractAllSections(html: string): string[] {
   return [...html.matchAll(/<section[^>]*id=["']([^"']+)["'][^>]*>/gi)]
     .map(m => m[1]);
-}
-
-// ── Deterministic section resolver ───────────────────────────────
-// PRIORITY 1: match against data-section attributes ACTUALLY present
-// in this HTML (works for any project generated after the data-section
-// fix — zero guessing).
-// PRIORITY 2: keyword map fallback for older projects without
-// data-section attributes (backward compatibility — never breaks
-// existing saved projects).
-const SECTION_KEYWORDS: Record<string, string[]> = {
-  hero:         ["hero","header image","banner","headline","tagline","main section","top section","hero image","hero background"],
-  features:     ["feature","benefit","service","why us","why choose","what we do"],
-  pricing:      ["pricing","price","plan","tier","cost","subscription"],
-  testimonials: ["testimonial","review","feedback","customer","client","social proof"],
-  faq:          ["faq","question","answer","frequently asked"],
-  cta:          ["cta","call to action","cta button","get started button"],
-  footer:       ["footer","copyright","bottom","footer logo"],
-  navbar:       ["nav","menu","navigation","header menu","hamburger","top bar"],
-  contact:      ["contact","contact form","reach us","get in touch","message"],
-  about:        ["about","story","team","mission","vision","who we are"],
-  gallery:      ["gallery","photo","image gallery","portfolio grid","showcase"],
-  stats:        ["stats","metric","number","achievement","counter"],
-};
-
-function getAvailableSections(html: string): string[] {
-  return [...html.matchAll(/data-section=["']([^"']+)["']/gi)].map(m => m[1]);
-}
-
-function detectTargetSection(message: string, html: string): string | null {
-  const m = message.toLowerCase();
-  const available = getAvailableSections(html);
-
-  // PRIORITY 1 — deterministic: only consider sections that actually exist
-  if (available.length > 0) {
-    for (const sectionId of available) {
-      const keywords = SECTION_KEYWORDS[sectionId] || [sectionId];
-      if (keywords.some(k => m.includes(k))) return sectionId;
-    }
-  }
-
-  // PRIORITY 2 — fallback for projects without data-section (pre-fix)
-  for (const [id, keywords] of Object.entries(SECTION_KEYWORDS)) {
-    if (keywords.some(k => m.includes(k))) return id;
-  }
-  return null;
 }
 
 // ── HTML Validation ───────────────────────────────────────────────
@@ -204,6 +267,46 @@ function validateHtml(html: string, originalHtml: string): ValidationResult {
 }
 
 // ── Patch style block into full HTML ─────────────────────────────
+// ── Targeted-edit validation ──────────────────────────────────────────
+// Requirement: after patching, verify the requested component actually
+// changed AND unrelated sections did not. Uses the same registry hashes
+// computed before the AI call — no re-guessing, just a direct comparison.
+interface TargetedValidation {
+  targetChanged:   boolean;
+  unrelatedIntact: boolean;
+  unrelatedChanged: string[]; // sectionIds that changed but should not have
+}
+
+function validateTargetedEdit(
+  beforeRegistry: SectionEntry[],
+  patchedHtml:    string,
+  targetId:       string | null
+): TargetedValidation {
+  const afterRegistry = buildSectionRegistry(patchedHtml);
+  const afterMap = new Map(afterRegistry.map(e => [e.sectionId, e.hash]));
+
+  let targetChanged = !targetId; // global/theme edits have no single target — always pass
+  const unrelatedChanged: string[] = [];
+
+  for (const before of beforeRegistry) {
+    const afterHash = afterMap.get(before.sectionId);
+    const changed = afterHash !== undefined && afterHash !== before.hash;
+
+    if (before.sectionId === targetId) {
+      if (changed) targetChanged = true;
+    } else if (changed) {
+      unrelatedChanged.push(before.sectionId);
+    }
+  }
+
+  return {
+    targetChanged,
+    unrelatedIntact: unrelatedChanged.length === 0,
+    unrelatedChanged,
+  };
+}
+
+
 function patchStyle(fullHtml: string, updatedStyle: string): string {
   if (!updatedStyle.includes("<style")) return fullHtml;
   const result = fullHtml.replace(/<style[\s\S]*?<\/style>/i, updatedStyle);
@@ -420,8 +523,46 @@ async function handleStyleEdit(
   fullHtml: string,
   message:  string,
   memCtx:   string,
-  projName: string
+  projName: string,
+  target:   SectionEntry | null
 ): Promise<{ raw: string; patchedHtml: string; attempts: number }> {
+  // ── KEY FIX ────────────────────────────────────────────────────────
+  // The component library renders colors/spacing/shadows as INLINE
+  // style="" attributes (e.g. background:var(--grad) on buttons), not
+  // CSS classes. Patching only the global <style> block can never change
+  // an inline-styled element — that's why "CTA button dark yellow karo"
+  // visually did nothing. When a specific section is the target, send
+  // and patch THAT section's actual HTML (inline styles included), the
+  // same deterministic mechanism CONTENT_EDIT already uses successfully.
+  if (target) {
+    const userContent = `${memCtx}Project: ${projName}
+
+Current HTML of the "${target.sectionId}" section (edit ONLY colors/spacing/visual styles here — both inline style="" attributes AND any CSS — do not change text content or structure):
+${target.outerHTML.slice(0, 6000)}
+
+Style edit request: ${message}
+
+Return the updated section wrapped in: <section_update>UPDATED_SECTION_HTML</section_update>`;
+
+    const { text, attempts } = await claudeWithBackoff(
+      [{ role: "user" as const, content: userContent }],
+      CONTENT_SYSTEM,
+      4500
+    );
+
+    const match   = text.match(/<section_update>([\s\S]*?)<\/section_update>/i);
+    const updated = match?.[1]?.trim() || text.match(/<section[\s\S]*?<\/section>/i)?.[0] || "";
+    if (!updated) throw new Error("No section_update in style response");
+
+    return {
+      raw:         updated,
+      patchedHtml: patchSection(fullHtml, target.sectionId, updated),
+      attempts,
+    };
+  }
+
+  // No specific section resolved — global theme-level edit (e.g. "dark theme
+  // karo" with no named section): patch the shared <style> block as before.
   const styleBlock = extractStyleBlock(fullHtml);
   if (!styleBlock) throw new Error("No <style> block in HTML");
 
@@ -440,9 +581,6 @@ Return ONLY the complete updated <style>...</style> block.`;
     4000
   );
 
-  // DEBUG LOGS — remove after root cause identified
-
-  // Extract style block from response
   const updated = text.match(/<style[\s\S]*?<\/style>/i)?.[0];
   if (!updated) throw new Error("No <style> block in Claude response");
 
@@ -457,17 +595,24 @@ async function handleContentEdit(
   fullHtml: string,
   message:  string,
   memCtx:   string,
-  projName: string
+  projName: string,
+  target:   SectionEntry | null
 ): Promise<{ raw: string; patchedHtml: string; attempts: number }> {
-  const targetId = detectTargetSection(message, fullHtml);
-  const section  = targetId ? extractSection(fullHtml, targetId) : "";
-  const ctx      = section || (fullHtml.match(/<section[\s\S]*?<\/section>/i)?.[0] || fullHtml.slice(0, 5000));
-  const activeId = targetId || "hero";
+  // ── KEY FIX ────────────────────────────────────────────────────────
+  // Previously this silently fell back to "hero" when no section matched
+  // — a guess, exactly what this architecture exists to eliminate. Now:
+  // target was already resolved deterministically from the registry
+  // BEFORE this handler was even called. If it's null, the requested
+  // section genuinely doesn't exist on the page — fail loudly so the
+  // caller can report that clearly, instead of editing a random section.
+  if (!target) {
+    throw new Error("Could not determine which section to edit — the named section was not found on this page");
+  }
 
   const userContent = `${memCtx}Project: ${projName}
 
-Current section HTML:
-${ctx.slice(0, 5000)}
+Current section HTML ("${target.sectionId}"):
+${target.outerHTML.slice(0, 5000)}
 
 Content edit: ${message}
 
@@ -485,7 +630,7 @@ Return the updated section wrapped in: <section_update>HTML</section_update>`;
 
   return {
     raw:         updated,
-    patchedHtml: patchSection(fullHtml, activeId, updated),
+    patchedHtml: patchSection(fullHtml, target.sectionId, updated),
     attempts,
   };
 }
@@ -521,7 +666,7 @@ Return: <layout_update>{"action":"add|remove","position":"before-footer","sectio
   let parsed: { action: string; sectionId?: string; html?: string; position?: string };
   try { parsed = JSON.parse(match[1].trim()); }
   catch { throw new Error("Invalid layout_update JSON"); }
- 
+
   let patched = fullHtml;
   if (parsed.action === "add" && parsed.html) {
     const footer = fullHtml.match(/<section[^>]*id=["']footer["'][^>]*>[\s\S]*?<\/section>/i)?.[0] || "";
@@ -540,11 +685,12 @@ async function handleComponentEdit(
   fullHtml: string,
   message:  string,
   memCtx:   string,
-  projName: string
+  projName: string,
+  target:   SectionEntry | null
 ): Promise<{ raw: string; patchedHtml: string; attempts: number }> {
   // Component edit = targeted section replacement with specific variant request
   // Treat same as content edit with section context
-  return handleContentEdit(fullHtml, message, memCtx, projName);
+  return handleContentEdit(fullHtml, message, memCtx, projName, target);
 }
 
 async function handleDebugEdit(
@@ -638,9 +784,9 @@ async function openAIFallback(
 ): Promise<string> {
   // For OpenAI, always send style block or compressed section
   // Never send full HTML
-  const styleBlock = extractStyleBlock(fullHtml).slice(0, 5000);
-  const targetId   = detectTargetSection(message, fullHtml);
-  const section    = targetId ? extractSection(fullHtml, targetId).slice(0, 5000) : "";
+  const styleBlock  = extractStyleBlock(fullHtml).slice(0, 5000);
+  const fallbackTarget = resolveSectionTarget(message, buildSectionRegistry(fullHtml));
+  const section      = fallbackTarget ? fallbackTarget.outerHTML.slice(0, 5000) : "";
 
   let system = STYLE_SYSTEM;
   let ctx    = styleBlock;
@@ -668,8 +814,8 @@ async function openAIFallback(
   }
   // Try section update
   const sectionMatch = text.match(/<section_update>([\s\S]*?)<\/section_update>/i);
-  if (sectionMatch && targetId) {
-    return patchSection(fullHtml, targetId, sectionMatch[1].trim());
+  if (sectionMatch && fallbackTarget) {
+    return patchSection(fullHtml, fallbackTarget.sectionId, sectionMatch[1].trim());
   }
   // Try code_changes
   const codeMatch = text.match(/<code_changes>([\s\S]*?)<\/code_changes>/i);
@@ -838,8 +984,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ text: "Game edit failed.", reply: "Game edit failed.", codeChanges: null });
     }
 
+    // ── Build Section Registry — deterministic, built ONCE before any AI call ──
+    const registry = buildSectionRegistry(fullHtml);
+    const target    = resolveSectionTarget(actualMessage, registry);
+
     // ── Detect intent ────────────────────────────────────────────
-    const intent = detectIntent(actualMessage, false, isDebugMode);
+    const intent = detectIntent(actualMessage, false, isDebugMode, registry);
     log.intent = intent;
 
     // ── Run intent handler (Claude primary) ──────────────────────
@@ -853,22 +1003,22 @@ export async function POST(req: NextRequest) {
 
       switch (intent) {
         case "STYLE_EDIT":
-          result = await handleStyleEdit(fullHtml, actualMessage, memCtx, projectName);
+          result = await handleStyleEdit(fullHtml, actualMessage, memCtx, projectName, target);
           break;
         case "CONTENT_EDIT":
-          result = await handleContentEdit(fullHtml, actualMessage, memCtx, projectName);
+          result = await handleContentEdit(fullHtml, actualMessage, memCtx, projectName, target);
           break;
         case "LAYOUT_EDIT":
           result = await handleLayoutEdit(fullHtml, actualMessage, memCtx, projectName);
           break;
         case "COMPONENT_EDIT":
-          result = await handleComponentEdit(fullHtml, actualMessage, memCtx, projectName);
+          result = await handleComponentEdit(fullHtml, actualMessage, memCtx, projectName, target);
           break;
         case "DEBUG_EDIT":
           result = await handleDebugEdit(fullHtml, actualMessage, history, memCtx, projectName);
           break;
         default:
-          result = await handleStyleEdit(fullHtml, actualMessage, memCtx, projectName);
+          result = await handleStyleEdit(fullHtml, actualMessage, memCtx, projectName, target);
       }
 
       patchedHtml = result.patchedHtml;
@@ -882,6 +1032,21 @@ export async function POST(req: NextRequest) {
     // ── Validate (if Claude succeeded) ──────────────────────────
     let validation = validateHtml(patchedHtml, fullHtml);
 
+    // ── Targeted-edit validation ──────────────────────────────────────
+    // Confirms the requested section actually changed and no unrelated
+    // section was touched. A section-targeted edit that silently changed
+    // the WRONG section (the original bug) is treated the same as any
+    // other validation failure — repair, then fallback if repair fails.
+    if (patchedHtml && validation.valid && target) {
+      const targeted = validateTargetedEdit(registry, patchedHtml, target.sectionId);
+      if (!targeted.targetChanged || !targeted.unrelatedIntact) {
+        const reasons: string[] = [];
+        if (!targeted.targetChanged) reasons.push(`The "${target.sectionId}" section was not actually modified`);
+        if (!targeted.unrelatedIntact) reasons.push(`Unrelated sections were changed: ${targeted.unrelatedChanged.join(", ")} (only "${target.sectionId}" should change)`);
+        validation = { valid: false, errors: reasons, warnings: validation.warnings };
+      }
+    }
+
     if (patchedHtml && !validation.valid) {
       // Ask Claude to repair before falling back
       log.repairRan = true;
@@ -890,6 +1055,12 @@ export async function POST(req: NextRequest) {
         if (repaired && repaired.includes("<!DOCTYPE")) {
           patchedHtml = repaired;
           validation  = validateHtml(repaired, fullHtml);
+          if (validation.valid && target) {
+            const targetedRepair = validateTargetedEdit(registry, patchedHtml, target.sectionId);
+            if (!targetedRepair.targetChanged || !targetedRepair.unrelatedIntact) {
+              validation = { valid: false, errors: ["Repair did not correctly target the requested section"], warnings: [] };
+            }
+          }
           provider    = "claude";
         }
       } catch (repairErr: any) {
@@ -904,14 +1075,46 @@ export async function POST(req: NextRequest) {
         provider    = "openai";
         patchedHtml = await openAIFallback(intent, fullHtml, actualMessage, memCtx, projectName);
         validation  = validateHtml(patchedHtml, fullHtml);
+        // GAP FIX: fallback output must pass the SAME "only target section
+        // changed" check as the Claude path — applies to every edit, not
+        // just the primary engine.
+        if (validation.valid && target) {
+          const t = validateTargetedEdit(registry, patchedHtml, target.sectionId);
+          if (!t.targetChanged || !t.unrelatedIntact) {
+            validation = {
+              valid: false,
+              errors: [
+                ...(!t.targetChanged ? [`OpenAI fallback did not modify the "${target.sectionId}" section`] : []),
+                ...(!t.unrelatedIntact ? [`OpenAI fallback changed unrelated sections: ${t.unrelatedChanged.join(", ")}`] : []),
+              ],
+              warnings: [],
+            };
+          }
+        }
       } catch (openaiErr: any) {
         console.warn("[Chat] OpenAI fallback failed:", openaiErr.message);
+        validation = { valid: false, errors: [openaiErr.message], warnings: [] };
+      }
 
-        // ── Gemini emergency ─────────────────────────────────────
+      // ── Gemini emergency — only if OpenAI also failed or mis-targeted ──
+      if (!patchedHtml || !validation.valid) {
         try {
           provider    = "gemini";
           patchedHtml = await geminiFallback(fullHtml, actualMessage, projectName);
           validation  = validateHtml(patchedHtml, fullHtml);
+          if (validation.valid && target) {
+            const t = validateTargetedEdit(registry, patchedHtml, target.sectionId);
+            if (!t.targetChanged || !t.unrelatedIntact) {
+              validation = {
+                valid: false,
+                errors: [
+                  ...(!t.targetChanged ? [`Gemini did not modify the "${target.sectionId}" section`] : []),
+                  ...(!t.unrelatedIntact ? [`Gemini changed unrelated sections: ${t.unrelatedChanged.join(", ")}`] : []),
+                ],
+                warnings: [],
+              };
+            }
+          }
         } catch (geminiErr: any) {
           console.error("[Chat] All providers failed:", geminiErr.message);
           return NextResponse.json({
@@ -920,6 +1123,17 @@ export async function POST(req: NextRequest) {
             codeChanges: null,
           });
         }
+      }
+
+      // ── Final guard: no provider produced a correctly-targeted edit ────
+      // Never let a wrong-section edit reach the browser — fail clearly
+      // instead, exactly per the "wrong section must never be edited" rule.
+      if (!patchedHtml || !validation.valid) {
+        return NextResponse.json({
+          text:        "Could not apply the edit reliably. Please try again or rephrase the request.",
+          reply:       "Could not apply the edit reliably. Please try again or rephrase the request.",
+          codeChanges: null,
+        });
       }
     }
 
