@@ -521,11 +521,7 @@ Return: <layout_update>{"action":"add|remove","position":"before-footer","sectio
   let parsed: { action: string; sectionId?: string; html?: string; position?: string };
   try { parsed = JSON.parse(match[1].trim()); }
   catch { throw new Error("Invalid layout_update JSON"); }
-
-  let parsed: { action: string; sectionId?: string; html?: string; position?: string };
-  try { parsed = JSON.parse(match[1].trim()); }
-  catch { throw new Error("Invalid layout_update JSON"); }
-
+ 
   let patched = fullHtml;
   if (parsed.action === "add" && parsed.html) {
     const footer = fullHtml.match(/<section[^>]*id=["']footer["'][^>]*>[\s\S]*?<\/section>/i)?.[0] || "";
