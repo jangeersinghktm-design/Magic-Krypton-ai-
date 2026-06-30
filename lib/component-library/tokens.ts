@@ -78,9 +78,12 @@ export function renderBadge(text: string): string {
 
 // Mobile-first responsive section wrapper — guarantees every component
 // passes Quality Gate 2.0's spacing + breakpoint + overflow checks.
-export function wrapSection(id: string, inner: string, opts?: { bg?: string; extraStyle?: string }): string {
+export function wrapSection(id: string, inner: string, opts?: { bg?: string; extraStyle?: string; component?: string }): string {
   const bg = opts?.bg || "transparent";
-  return `<section id="${id}" style="padding:${SPACING.xl} ${SPACING.md};background:${bg};overflow-x:hidden;${opts?.extraStyle || ""}">
+  // Deterministic component identity — lets the edit pipeline resolve a
+  // target section without asking the AI to guess. Never removed by edits.
+  const componentName = opts?.component || id;
+  return `<section id="${id}" data-section="${id}" data-component="${componentName}" data-editable="true" style="padding:${SPACING.xl} ${SPACING.md};background:${bg};overflow-x:hidden;${opts?.extraStyle || ""}">
   <div class="container" style="max-width:1200px;margin:0 auto;">
     ${inner}
   </div>
