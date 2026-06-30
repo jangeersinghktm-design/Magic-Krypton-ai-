@@ -302,10 +302,6 @@ function CreatePageInner() {
   const [editingName, setEditingName] = useState(false);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
   const [device, setDevice]     = useState<Device>("desktop");
-  // Multi-page generation state
-  const [mpGenerating, setMpGenerating] = useState(false);
-  const [mpError, setMpError]           = useState("");
-  const [mpPages, setMpPages] = useState<string[]>(["about","services","pricing","contact"]);
   // Screenshot Vision states
   const [visionReviewing, setVisionReviewing] = useState(false);
   const [visionReview, setVisionReview] = useState<{score:number;issues:string[];passed:string[];autoFixInstructions:string}|null>(null);
@@ -450,7 +446,12 @@ function CreatePageInner() {
     // a project showed only the live preview but lost all prior chat messages.
     const historyPayload = messages.map(m => ({ role:m.role, type:m.type, content:m.content }));
     if (usePid) {
-      await supabase.from("projects").update({ name, title:name, conversation_history:historyPayload, updated_at:new Date().toISOString() }).eq("id",usePid);
+      // FIX: html_code was missing from this update — every successful edit
+      // updated the in-memory preview (setResult) and chat history, but the
+      // database row kept the ORIGINAL generated HTML forever. Reopening a
+      // project always re-read proj.html_code (L379), so edits silently
+      // reverted on reload. html_code must be written on every save.
+      await supabase.from("projects").update({ name, title:name, html_code:html, conversation_history:historyPayload, updated_at:new Date().toISOString() }).eq("id",usePid);
     } else {
       const {data} = await supabase.from("projects").insert({ user_id:session.user.id, name, title:name, html_code:html, prompt:promptRef.current, conversation_history:historyPayload, status:"completed", created_at:new Date().toISOString(), updated_at:new Date().toISOString() }).select("id").single();
       if (data?.id) { setProjectId(data.id); window.history.replaceState({},"",`/create?id=${data.id}`); }
@@ -698,7 +699,8 @@ function CreatePageInner() {
     const isLarge=codeLines>1500; // raised from 600 — Component Library output is 600-1200 lines normally
     const gCtx=isGameProject&&gameMemory?formatGameMemoryForAI(gameMemory):formatMemoryForAI(projectMemory);
     try {
-      // Strategy 1: Chat API (game-aware surgical edit)
+      // Strategy 1: Chat API (game-aware surgical edit, deterministic
+      // section-targeted patching with post-patch validation)
       const codeForChat=isLarge&&isGameProject
         ?result.slice(0,5000)+"\n\n/* ... MIDDLE SECTION PRESERVED ... */\n\n"+result.slice(-3000)
         :result;
@@ -707,7 +709,26 @@ function CreatePageInner() {
       newHtml=d1.codeChanges?.["index.html"]||"";
       if(!newHtml){const m=(d1.reply||"").match(/<!DOCTYPE[\s\S]*<\/html>/i);if(m)newHtml=m[0];}
 
-      // Strategy 2: Game API regenerate with memory (games only)
+      // RUNTIME FIX: when chat responds 200 OK but explicitly rejects the
+      // edit (codeChanges:null after validateTargetedEdit/validateHtml
+      // determined it couldn't be applied safely), that is NOT a failure
+      // to recover from — it is the architecture correctly refusing to
+      // apply a bad patch. Falling through to a full-page regenerate here
+      // was the actual bug: it silently rewrote every section (hero,
+      // footer, everything) and saved THAT as if it were the requested
+      // surgical edit, with zero relation to "hero" or "CTA button" the
+      // user actually asked for. The HTML must stay untouched and the
+      // real reason must be shown — never substitute a blind regenerate
+      // for a rejected patch.
+      if(!newHtml && r1.ok){
+        updateMsg(thinkId,{type:"error",content:d1.reply||d1.text||"Could not apply this edit reliably. Try rephrasing it.",isActive:false});
+        setLoading(false);
+        return;
+      }
+
+      // Strategy 2: Game API regenerate with memory (games only — a full
+      // game regenerate-with-memory is an intentional, accepted approach
+      // for games specifically, not a silent fallback for website edits)
       if(!newHtml&&isGameProject){
         const r2=await fetch("/api/game",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:editPrompt+" (EDIT: preserve all existing mechanics)",userId:session.user.id,accessToken:session.access_token,gameMemory}),signal:AbortSignal.timeout(110000)});
         if(r2.ok&&r2.body){
@@ -724,12 +745,17 @@ function CreatePageInner() {
         }
       }
 
-      // Strategy 3: Generate API (websites only)
-      if(!newHtml&&!isGameProject){
-        const ctx=isLarge?result.slice(0,6000)+"\n\n[...]\n\n"+result.slice(-3000):result.slice(0,10000);
-        const r3=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:`Apply ONLY: "${editPrompt}"\nPreserve design.\nCODE:\n${ctx}`,isEdit:true}),signal:AbortSignal.timeout(110000)});
-        const d3=await r3.json();if(d3.html)newHtml=d3.html;
-      }
+      // REMOVED: Strategy 3 (full-page /api/generate "Apply ONLY" fallback
+      // for websites) — this was the actual runtime bug. /api/generate has
+      // no concept of patching a single section; it regenerates the ENTIRE
+      // page via detectProjectNiche → generatePageCopy → assembleHtml,
+      // producing fresh AI-written copy for every section. Using it as a
+      // silent fallback for a rejected surgical edit is what caused "Hero
+      // edit went to Footer" and "CTA color change did not apply" — the
+      // whole page was being rebuilt from scratch, unrelated to the
+      // specific request. If Strategy 1 (and Strategy 2 for games) cannot
+      // safely apply the edit, the correct behavior is to report that
+      // clearly and leave the page unchanged — not regenerate it blindly.
 
       if(newHtml&&newHtml.length>500){
         await saveVersion(result,`Before: ${editPrompt.slice(0,40)}`);
@@ -841,59 +867,6 @@ function CreatePageInner() {
     r.start();
   };
   const restoreVersion=async(v:Version)=>{ const code=v.code_snapshot?.["index.html"];if(!code)return;await saveVersion(result,`Before restore`);setResult(code);(async()=>{try{await saveProject(code,projectName);}catch{}})();addMsg({role:"ai",type:"text",content:`✓ Restored to v${v.version_number}`}); };
-
-  // ── Multi-page generation ────────────────────────────────────────
-  const runMultiPage = async () => {
-    if (!result || mpGenerating) return;
-    setMpGenerating(true);
-    setMpError("");
-    try {
-      const { data: { session: s } } = await supabase.auth.getSession();
-      const res = await fetch("/api/multipage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          homeHtml: result,
-          prompt: promptRef.current || projectName,
-          accessToken: s?.access_token,
-          userId: s?.user?.id,
-          selectedPages: mpPages,
-        }),
-        signal: AbortSignal.timeout(280000),
-      });
-
-      if (!res.ok) {
-        // Requirement: show the EXACT error instead of failing silently.
-        let msg = `Multi-page generation failed (HTTP ${res.status}).`;
-        try {
-          const errJson = await res.json();
-          if (errJson?.error) msg = errJson.error;
-        } catch {}
-        setMpError(msg);
-        return;
-      }
-
-      const blob = await res.blob();
-      if (!blob || blob.size < 1000) {
-        setMpError("Generated ZIP was empty. Please try again.");
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${projectName.replace(/\s+/g,"-").toLowerCase() || "website"}-multipage.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setMpError(err?.name === "TimeoutError"
-        ? "Multi-page generation timed out. Please try again."
-        : (err?.message || "Multi-page generation failed. Please try again."));
-    } finally {
-      setMpGenerating(false);
-    }
-  };
 
   // ── Render ─────────────────────────────────────────────────────
   const RIGHT_TABS = [
@@ -1341,30 +1314,6 @@ function CreatePageInner() {
                   <div style={{textAlign:"left"}}><div style={{fontWeight:700}}>Download HTML File</div><div style={{fontSize:11,fontWeight:400,opacity:.7,marginTop:1}}>Single file, works offline</div></div>
                 </button>
 
-                {/* Multi-page Website */}
-                <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:16}}>
-                  <div style={{fontSize:13,fontWeight:700,marginBottom:4,color:C.text}}>🗂️ Multi-page Website</div>
-                  <div style={{fontSize:11,color:C.muted,marginBottom:12}}>Generate About, Services, Pricing, Contact — same design, shared navbar, packaged as ZIP</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-                    {["about","services","pricing","contact"].map(p=>(
-                      <button key={p} onClick={()=>setMpPages(prev=>prev.includes(p)?prev.filter(x=>x!==p):[...prev,p])}
-                        style={{padding:"4px 12px",borderRadius:20,border:`1px solid ${mpPages.includes(p)?"rgba(255,255,255,0.3)":C.border}`,background:mpPages.includes(p)?"rgba(255,255,255,0.1)":"transparent",color:mpPages.includes(p)?C.text:C.muted,fontSize:11,fontWeight:600,cursor:"pointer",textTransform:"capitalize",transition:"all .15s"}}>
-                        {mpPages.includes(p)?"✓ ":""}{p}
-                      </button>
-                    ))}
-                  </div>
-                  <button disabled={!result||mpGenerating||mpPages.length===0} onClick={runMultiPage}
-                    style={{width:"100%",padding:"11px",background:result&&!mpGenerating?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.03)",border:`1px solid ${result&&!mpGenerating?"rgba(255,255,255,0.2)":C.border}`,borderRadius:8,color:result&&!mpGenerating?C.text:C.muted,fontSize:12,fontWeight:700,cursor:result&&!mpGenerating&&mpPages.length>0?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                    {mpGenerating?(<><span style={{width:12,height:12,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.2)",borderTopColor:"#fff",animation:"spin .7s linear infinite",display:"inline-block"}}/>Generating pages...</>):"🗂️ Generate & Download ZIP"}
-                  </button>
-                  {mpError&&(
-                    <div style={{marginTop:10,padding:"10px 12px",borderRadius:8,background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",color:"#FCA5A5",fontSize:12,lineHeight:1.5}}>
-                      ⚠ {mpError}
-                    </div>
-                  )}
-                  <div style={{fontSize:10,color:C.muted,marginTop:8}}>Costs 2 credits — generates {mpPages.length+1} pages total</div>
-                </div>
-
                 {/* Hosting options */}
                 <div style={{fontSize:11,color:C.muted,marginBottom:10,letterSpacing:"0.06em",textTransform:"uppercase"}}>Deploy to hosting</div>
                 {[
@@ -1432,4 +1381,4 @@ export default function CreatePage() {
       <CreatePageInner/>
     </Suspense>
   );
-}
+}    
