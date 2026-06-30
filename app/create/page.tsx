@@ -39,10 +39,6 @@ const C = {
 type MsgRole  = "user" | "ai";
 type MsgType  = "text" | "thinking" | "summary" | "error";
 type RightTab = "preview" | "files" | "deploy" | "history";
-
-// Phase 2 — Multi-page + AI Images state types
-interface GeneratedPage { name: string; filename: string; html: string; }
-interface AIImage { type: string; url: string; prompt: string; }
 type Device   = "desktop" | "tablet" | "mobile";
 
 interface ChatMessage {
@@ -306,21 +302,14 @@ function CreatePageInner() {
   const [editingName, setEditingName] = useState(false);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
   const [device, setDevice]     = useState<Device>("desktop");
+  // Multi-page generation state
+  const [mpGenerating, setMpGenerating] = useState(false);
+  const [mpError, setMpError]           = useState("");
+  const [mpPages, setMpPages] = useState<string[]>(["about","services","pricing","contact"]);
   // Screenshot Vision states
   const [visionReviewing, setVisionReviewing] = useState(false);
   const [visionReview, setVisionReview] = useState<{score:number;issues:string[];passed:string[];autoFixInstructions:string}|null>(null);
   const [visionError, setVisionError] = useState("");
-
-  // Phase 2 — Multi-page states
-  const [multiPageGenerating, setMultiPageGenerating] = useState(false);
-  const [multiPageError, setMultiPageError] = useState("");
-  const [selectedPages, setSelectedPages] = useState<string[]>(["About","Services","Pricing","Contact"]);
-
-  // Phase 2 — AI Images states (per-type, cached)
-  const [aiImgLoading, setAiImgLoading] = useState<string|null>(null); // which type is loading
-  const [aiImgCache, setAiImgCache] = useState<Record<string,string>>({}); // type → url
-  const [aiImgError, setAiImgError] = useState("");
-  const [aiImgPanelOpen, setAiImgPanelOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   // Smart resize: "chat" = 50/50, "preview" = 35/65 default
   const [panelFocus, setPanelFocus] = useState<"chat"|"preview">("preview");
@@ -519,107 +508,6 @@ function CreatePageInner() {
       setVisionError(err.message || "Vision review failed. Try again.");
     } finally {
       setVisionReviewing(false);
-    }
-  };
-
-  // ── Multi-page Generation ────────────────────────────────────────
-  const runMultiPage = async () => {
-    if (!result || multiPageGenerating) return;
-    setMultiPageGenerating(true);
-    setMultiPageError("");
-    try {
-      const {data:{session}} = await supabase.auth.getSession();
-      const res = await fetch("/api/multipage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          homeHtml: result,
-          prompt: promptRef.current || projectName,
-          accessToken: session?.access_token,
-          userId: session?.user?.id,
-          selectedPages,
-        }),
-        signal: AbortSignal.timeout(300000),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Multi-page generation failed");
-      }
-
-      // Response is a ZIP blob — trigger download
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${projectName.replace(/\s+/g,"-").toLowerCase()}-multipage.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setMultiPageError(err.message || "Multi-page generation failed");
-    } finally {
-      setMultiPageGenerating(false);
-    }
-  };
-
-  // ── AI Image Generation — per type, cached ───────────────────────
-  const IMAGE_TYPES = [
-    { type:"hero",        label:"Hero Banner",    icon:"🌅" },
-    { type:"about",       label:"About Photo",    icon:"👥" },
-    { type:"feature",     label:"Feature Image",  icon:"⚡" },
-    { type:"gallery",     label:"Gallery Photo",  icon:"🖼️" },
-    { type:"product",     label:"Product Shot",   icon:"📦" },
-    { type:"background",  label:"Background",     icon:"🎨" },
-  ];
-
-  const generateSingleImage = async (imageType: string) => {
-    if (!result || aiImgLoading) return;
-    // Return cached version if exists
-    if (aiImgCache[imageType]) {
-      insertImageIntoSite(aiImgCache[imageType], imageType);
-      return;
-    }
-    setAiImgLoading(imageType);
-    setAiImgError("");
-    try {
-      const {data:{session}} = await supabase.auth.getSession();
-      const res = await fetch("/api/ai-images", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sitePrompt: promptRef.current || projectName,
-          imageType,
-          accessToken: session?.access_token,
-          userId: session?.user?.id,
-        }),
-        signal: AbortSignal.timeout(60000),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.url) throw new Error(data.error || "Image generation failed");
-      // Cache it
-      setAiImgCache(prev => ({ ...prev, [imageType]: data.url }));
-      insertImageIntoSite(data.url, imageType);
-    } catch (err: any) {
-      setAiImgError(err.message || "Image generation failed");
-    } finally {
-      setAiImgLoading(null);
-    }
-  };
-
-  const insertImageIntoSite = (imageUrl: string, imageType?: string) => {
-    if (!result) return;
-    let updated = result;
-    if (imageType === "background") {
-      updated = result.replace(/(background(?:-image)?:\s*url\()([^)]+)(\))/, `$1${imageUrl}$3`);
-    } else {
-      updated = result.replace(/(src=["'])([^"']+)(["'])/, `$1${imageUrl}$3`);
-    }
-    if (updated !== result) {
-      setResult(updated);
-      addMsg({ role:"ai", type:"text", content:`🖼️ ${imageType || "Image"} inserted! Check preview.` });
-    } else {
-      // Fallback: show URL for manual use
-      addMsg({ role:"ai", type:"text", content:`🖼️ Image ready: ${imageUrl.slice(0, 60)}...` });
     }
   };
 
@@ -953,6 +841,59 @@ function CreatePageInner() {
     r.start();
   };
   const restoreVersion=async(v:Version)=>{ const code=v.code_snapshot?.["index.html"];if(!code)return;await saveVersion(result,`Before restore`);setResult(code);(async()=>{try{await saveProject(code,projectName);}catch{}})();addMsg({role:"ai",type:"text",content:`✓ Restored to v${v.version_number}`}); };
+
+  // ── Multi-page generation ────────────────────────────────────────
+  const runMultiPage = async () => {
+    if (!result || mpGenerating) return;
+    setMpGenerating(true);
+    setMpError("");
+    try {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      const res = await fetch("/api/multipage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          homeHtml: result,
+          prompt: promptRef.current || projectName,
+          accessToken: s?.access_token,
+          userId: s?.user?.id,
+          selectedPages: mpPages,
+        }),
+        signal: AbortSignal.timeout(280000),
+      });
+
+      if (!res.ok) {
+        // Requirement: show the EXACT error instead of failing silently.
+        let msg = `Multi-page generation failed (HTTP ${res.status}).`;
+        try {
+          const errJson = await res.json();
+          if (errJson?.error) msg = errJson.error;
+        } catch {}
+        setMpError(msg);
+        return;
+      }
+
+      const blob = await res.blob();
+      if (!blob || blob.size < 1000) {
+        setMpError("Generated ZIP was empty. Please try again.");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${projectName.replace(/\s+/g,"-").toLowerCase() || "website"}-multipage.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setMpError(err?.name === "TimeoutError"
+        ? "Multi-page generation timed out. Please try again."
+        : (err?.message || "Multi-page generation failed. Please try again."));
+    } finally {
+      setMpGenerating(false);
+    }
+  };
 
   // ── Render ─────────────────────────────────────────────────────
   const RIGHT_TABS = [
@@ -1288,16 +1229,6 @@ function CreatePageInner() {
                     <button key={d.id} onClick={()=>setDevice(d.id)} style={{width:26,height:26,borderRadius:7,border:`1px solid ${device===d.id?"rgba(245,245,245,0.35)":C.border}`,background:device===d.id?"rgba(245,245,245,0.12)":"none",color:device===d.id?C.purple:C.muted,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{d.icon}</button>
                   ))}
                   <button onClick={()=>{if(!result)return;const b=new Blob([result],{type:"text/html"});window.open(URL.createObjectURL(b),"_blank");}} style={{width:26,height:26,borderRadius:7,border:`1px solid ${C.border}`,background:"none",color:C.muted,fontSize:11,cursor:"pointer",marginLeft:3}}>↗</button>
-                  {/* AI Images Panel Toggle */}
-                  <button
-                    onClick={()=>setAiImgPanelOpen(o=>!o)}
-                    disabled={!result}
-                    title="Generate AI images for your website (1 credit each)"
-                    style={{height:26,padding:"0 8px",borderRadius:7,border:`1px solid ${aiImgPanelOpen?"rgba(99,179,237,0.4)":Object.keys(aiImgCache).length>0?"rgba(99,179,237,0.3)":C.border}`,background:aiImgPanelOpen?"rgba(99,179,237,0.08)":Object.keys(aiImgCache).length>0?"rgba(99,179,237,0.05)":"none",color:aiImgPanelOpen?"#63B3ED":Object.keys(aiImgCache).length>0?"#63B3ED":C.muted,fontSize:10,fontWeight:600,cursor:!result?"default":"pointer",marginLeft:3,display:"flex",alignItems:"center",gap:4,letterSpacing:"0.05em"}}
-                  >
-                    🎨 AI Images{Object.keys(aiImgCache).length>0?` (${Object.keys(aiImgCache).length})`:""} 
-                  </button>
-
                   {/* Screenshot Vision Review Button */}
                   <button
                     onClick={runVisionReview}
@@ -1340,42 +1271,6 @@ function CreatePageInner() {
                       <div style={{fontSize:14,color:C.muted}}>Preview will appear here</div>
                     </div>
                 }
-              </div>
-            )}
-
-            {/* AI Images Panel */}
-            {aiImgPanelOpen && rightTab==="preview" && (
-              <div style={{borderTop:`1px solid ${C.border}`,background:C.surface,padding:"12px 16px",flexShrink:0}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                  <span style={{fontSize:12,fontWeight:700,color:C.text}}>🎨 AI Image Generator</span>
-                  <button onClick={()=>setAiImgPanelOpen(false)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
-                </div>
-                <div style={{fontSize:11,color:C.muted,marginBottom:10}}>Select image type → Generate (1 credit) → Click to insert</div>
-                {aiImgError&&<div style={{fontSize:11,color:C.red,marginBottom:8}}>{aiImgError}</div>}
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  {IMAGE_TYPES.map(({type,label,icon})=>{
-                    const hasCache = !!aiImgCache[type];
-                    const isLoading = aiImgLoading===type;
-                    return (
-                      <div key={type} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                        {hasCache && (
-                          <img src={aiImgCache[type]} alt={label} loading="lazy"
-                            onClick={()=>insertImageIntoSite(aiImgCache[type],type)}
-                            title="Click to insert"
-                            style={{width:72,height:48,objectFit:"cover",borderRadius:6,border:`1px solid rgba(99,179,237,0.4)`,cursor:"pointer",display:"block"}}/>
-                        )}
-                        <button
-                          onClick={()=>generateSingleImage(type)}
-                          disabled={!!aiImgLoading || !result}
-                          style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${hasCache?"rgba(99,179,237,0.3)":C.border}`,background:hasCache?"rgba(99,179,237,0.06)":"rgba(255,255,255,0.04)",color:isLoading?"#63B3ED":hasCache?"#63B3ED":C.sub,fontSize:10,fontWeight:600,cursor:aiImgLoading||!result?"default":"pointer",display:"flex",alignItems:"center",gap:4,transition:"all .15s"}}>
-                          {isLoading?<span style={{animation:"spin .7s linear infinite",display:"inline-block"}}>⏳</span>:icon}
-                          {isLoading?"...":hasCache?"Regen":label}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{fontSize:10,color:C.muted,marginTop:8}}>Generated images are cached — re-click free. Regenerate uses 1 credit.</div>
               </div>
             )}
 
@@ -1430,10 +1325,10 @@ function CreatePageInner() {
             {/* Deploy */}
             {rightTab==="deploy"&&(
               <div style={{flex:1,overflowY:"auto",padding:20}}>
-                <div style={{fontSize:15,fontWeight:700,marginBottom:4,fontFamily:"'Syne',sans-serif"}}>Export Project</div>
-                <div style={{fontSize:12,color:C.muted,marginBottom:20}}>Download as single page or full multi-page website</div>
+                <div style={{fontSize:15,fontWeight:700,marginBottom:4,fontFamily:"'Syne',sans-serif"}}>Deploy Project</div>
+                <div style={{fontSize:12,color:C.muted,marginBottom:20}}>Export your website and deploy anywhere</div>
 
-                {/* Download single page */}
+                {/* Download — primary CTA */}
                 <button disabled={!result} onClick={()=>{
                   if(!result)return;
                   const a=document.createElement("a");
@@ -1441,29 +1336,33 @@ function CreatePageInner() {
                   a.download=`${projectName.replace(/\s+/g,"-")}.html`;
                   a.click();
                 }}
-                  style={{width:"100%",padding:"12px 16px",background:result?"linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))":"rgba(255,255,255,0.03)",border:`1px solid ${result?"rgba(255,255,255,0.2)":C.border}`,borderRadius:12,color:result?C.text:C.muted,fontSize:13,fontWeight:700,cursor:result?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:12,transition:"all .2s"}}>
+                  style={{width:"100%",padding:"14px 16px",background:result?"linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))":"rgba(255,255,255,0.03)",border:`1px solid ${result?"rgba(255,255,255,0.2)":C.border}`,borderRadius:12,color:result?C.text:C.muted,fontSize:13,fontWeight:700,cursor:result?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:16,transition:"all .2s"}}>
                   <span style={{fontSize:18}}>⬇</span>
                   <div style={{textAlign:"left"}}><div style={{fontWeight:700}}>Download HTML File</div><div style={{fontSize:11,fontWeight:400,opacity:.7,marginTop:1}}>Single file, works offline</div></div>
                 </button>
 
-                {/* Multi-page generator */}
+                {/* Multi-page Website */}
                 <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginBottom:16}}>
-                  <div style={{fontSize:13,fontWeight:700,marginBottom:4}}>🗂️ Multi-page Website</div>
-                  <div style={{fontSize:11,color:C.muted,marginBottom:12}}>Generate all pages with matching design — download as ZIP</div>
-                  {/* Page selector */}
+                  <div style={{fontSize:13,fontWeight:700,marginBottom:4,color:C.text}}>🗂️ Multi-page Website</div>
+                  <div style={{fontSize:11,color:C.muted,marginBottom:12}}>Generate About, Services, Pricing, Contact — same design, shared navbar, packaged as ZIP</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-                    {["About","Services","Pricing","Contact"].map(p=>(
-                      <button key={p} onClick={()=>setSelectedPages(prev=>prev.includes(p)?prev.filter(x=>x!==p):[...prev,p])}
-                        style={{padding:"4px 12px",borderRadius:20,border:`1px solid ${selectedPages.includes(p)?"rgba(255,255,255,0.3)":C.border}`,background:selectedPages.includes(p)?"rgba(255,255,255,0.1)":"transparent",color:selectedPages.includes(p)?C.text:C.muted,fontSize:11,fontWeight:600,cursor:"pointer",transition:"all .15s"}}>
-                        {selectedPages.includes(p)?"✓ ":""}{p}
+                    {["about","services","pricing","contact"].map(p=>(
+                      <button key={p} onClick={()=>setMpPages(prev=>prev.includes(p)?prev.filter(x=>x!==p):[...prev,p])}
+                        style={{padding:"4px 12px",borderRadius:20,border:`1px solid ${mpPages.includes(p)?"rgba(255,255,255,0.3)":C.border}`,background:mpPages.includes(p)?"rgba(255,255,255,0.1)":"transparent",color:mpPages.includes(p)?C.text:C.muted,fontSize:11,fontWeight:600,cursor:"pointer",textTransform:"capitalize",transition:"all .15s"}}>
+                        {mpPages.includes(p)?"✓ ":""}{p}
                       </button>
                     ))}
                   </div>
-                  <button disabled={!result||multiPageGenerating||selectedPages.length===0} onClick={runMultiPage}
-                    style={{width:"100%",padding:"10px",background:result&&!multiPageGenerating?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.03)",border:`1px solid ${result&&!multiPageGenerating?"rgba(255,255,255,0.2)":C.border}`,borderRadius:8,color:result&&!multiPageGenerating?C.text:C.muted,fontSize:12,fontWeight:700,cursor:result&&!multiPageGenerating?"pointer":"not-allowed",transition:"all .2s"}}>
-                    {multiPageGenerating?"⏳ Generating pages...":"🗂️ Generate & Download ZIP"}
+                  <button disabled={!result||mpGenerating||mpPages.length===0} onClick={runMultiPage}
+                    style={{width:"100%",padding:"11px",background:result&&!mpGenerating?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.03)",border:`1px solid ${result&&!mpGenerating?"rgba(255,255,255,0.2)":C.border}`,borderRadius:8,color:result&&!mpGenerating?C.text:C.muted,fontSize:12,fontWeight:700,cursor:result&&!mpGenerating&&mpPages.length>0?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                    {mpGenerating?(<><span style={{width:12,height:12,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.2)",borderTopColor:"#fff",animation:"spin .7s linear infinite",display:"inline-block"}}/>Generating pages...</>):"🗂️ Generate & Download ZIP"}
                   </button>
-                  {multiPageError&&<div style={{fontSize:11,color:C.red,marginTop:8}}>{multiPageError}</div>}
+                  {mpError&&(
+                    <div style={{marginTop:10,padding:"10px 12px",borderRadius:8,background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",color:"#FCA5A5",fontSize:12,lineHeight:1.5}}>
+                      ⚠ {mpError}
+                    </div>
+                  )}
+                  <div style={{fontSize:10,color:C.muted,marginTop:8}}>Costs 2 credits — generates {mpPages.length+1} pages total</div>
                 </div>
 
                 {/* Hosting options */}
