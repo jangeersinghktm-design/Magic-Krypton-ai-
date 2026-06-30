@@ -90,6 +90,73 @@ function extractStyleBlock(html: string): string {
 }
 
 function extractSection(html: string, id: string): string {
+  // Match on data-section (deterministic, new projects) OR id (fallback, old projects)
+  const byDataSection = new RegExp(
+    `<section[^>]*data-section=["']${id}["'][^>]*>[\\s\\S]*?</section>`,
+    "i"
+  );
+  const byId = new RegExp(
+    `<section[^>]*\\bid=["']${id}["'][^>]*>[\\s\\S]*?</section>`,
+    "i"
+  );
+  return html.match(byDataSection)?.[0] || html.match(byId)?.[0] || "";
+}
+
+function extractAllSections(html: string): string[] {
+  return [...html.matchAll(/<section[^>]*id=["']([^"']+)["'][^>]*>/gi)]
+    .map(m => m[1]);
+}
+
+// ── Deterministic section resolver ───────────────────────────────
+// PRIORITY 1: match against data-section attributes ACTUALLY present
+// in this HTML (works for any project generated after the data-section
+// fix — zero guessing).
+// PRIORITY 2: keyword map fallback for older projects without
+// data-section attributes (backward compatibility — never breaks
+// existing saved projects).
+const SECTION_KEYWORDS: Record<string, string[]> = {
+  hero:         ["hero","header image","banner","headline","tagline","main section","top section","hero image","hero background"],
+  features:     ["feature","benefit","service","why us","why choose","what we do"],
+  pricing:      ["pricing","price","plan","tier","cost","subscription"],
+  testimonials: ["testimonial","review","feedback","customer","client","social proof"],
+  faq:          ["faq","question","answer","frequently asked"],
+  cta:          ["cta","call to action","cta button","get started button"],
+  footer:       ["footer","copyright","bottom","footer logo"],
+  navbar:       ["nav","menu","navigation","header menu","hamburger","top bar"],
+  contact:      ["contact","contact form","reach us","get in touch","message"],
+  about:        ["about","story","team","mission","vision","who we are"],
+  gallery:      ["gallery","photo","image gallery","portfolio grid","showcase"],
+  stats:        ["stats","metric","number","achievement","counter"],
+};
+
+function getAvailableSections(html: string): string[] {
+  return [...html.matchAll(/data-section=["']([^"']+)["']/gi)].map(m => m[1]);
+}
+
+function detectTargetSection(message: string, html: string): string | null {
+  const m = message.toLowerCase();
+  const available = getAvailableSections(html);
+
+  // PRIORITY 1 — deterministic: only consider sections that actually exist
+  if (available.length > 0) {
+    for (const sectionId of available) {
+      const keywords = SECTION_KEYWORDS[sectionId] || [sectionId];
+      if (keywords.some(k => m.includes(k))) return sectionId;
+    }
+  }
+
+  // PRIORITY 2 — fallback for projects without data-section (pre-fix)
+  for (const [id, keywords] of Object.entries(SECTION_KEYWORDS)) {
+    if (keywords.some(k => m.includes(k))) return id;
+  }
+  return null;
+}
+
+function extractStyleBlock(html: string): string {
+  return html.match(/<style[\s\S]*?<\/style>/i)?.[0] || "";
+}
+
+function extractSection(html: string, id: string): string {
   const re = new RegExp(
     `<section[^>]*id=["']${id}["'][^>]*>[\\s\\S]*?</section>`,
     "i"
@@ -184,11 +251,16 @@ function patchStyle(fullHtml: string, updatedStyle: string): string {
 
 // ── Patch section into full HTML ─────────────────────────────────
 function patchSection(fullHtml: string, sectionId: string, updatedSection: string): string {
-  const re = new RegExp(
-    `<section[^>]*id=["']${sectionId}["'][^>]*>[\\s\\S]*?</section>`,
+  const byDataSection = new RegExp(
+    `<section[^>]*data-section=["']${sectionId}["'][^>]*>[\\s\\S]*?</section>`,
     "i"
   );
-  const result = fullHtml.replace(re, updatedSection);
+  const byId = new RegExp(
+    `<section[^>]*\\bid=["']${sectionId}["'][^>]*>[\\s\\S]*?</section>`,
+    "i"
+  );
+  let result = fullHtml.replace(byDataSection, updatedSection);
+  if (result === fullHtml) result = fullHtml.replace(byId, updatedSection);
   return result !== fullHtml ? result : fullHtml;
 }
 
@@ -408,14 +480,6 @@ Return ONLY the complete updated <style>...</style> block.`;
   );
 
   // DEBUG LOGS — remove after root cause identified
-  console.log("[KAI Debug] STYLE_EDIT provider:claude attempts:", attempts);
-  console.log("[KAI Debug] responseText.length:", text.length);
-  console.log("[KAI Debug] first 1000:", text.slice(0, 1000));
-  console.log("[KAI Debug] last 1000:", text.slice(-1000));
-  console.log("[KAI Debug] has <style>:", text.includes("<style"));
-  console.log("[KAI Debug] has </style>:", text.includes("</style>"));
-  console.log("[KAI Debug] has <code_changes>:", text.includes("<code_changes>"));
-  console.log("[KAI Debug] has </code_changes>:", text.includes("</code_changes>"));
 
   // Extract style block from response
   const updated = text.match(/<style[\s\S]*?<\/style>/i)?.[0];
@@ -434,7 +498,7 @@ async function handleContentEdit(
   memCtx:   string,
   projName: string
 ): Promise<{ raw: string; patchedHtml: string; attempts: number }> {
-  const targetId = detectTargetSection(message);
+  const targetId = detectTargetSection(message, fullHtml);
   const section  = targetId ? extractSection(fullHtml, targetId) : "";
   const ctx      = section || (fullHtml.match(/<section[\s\S]*?<\/section>/i)?.[0] || fullHtml.slice(0, 5000));
   const activeId = targetId || "hero";
@@ -614,7 +678,7 @@ async function openAIFallback(
   // For OpenAI, always send style block or compressed section
   // Never send full HTML
   const styleBlock = extractStyleBlock(fullHtml).slice(0, 5000);
-  const targetId   = detectTargetSection(message);
+  const targetId   = detectTargetSection(message, fullHtml);
   const section    = targetId ? extractSection(fullHtml, targetId).slice(0, 5000) : "";
 
   let system = STYLE_SYSTEM;
@@ -635,13 +699,6 @@ async function openAIFallback(
   );
 
   // DEBUG LOGS — remove after root cause identified
-  console.log("[KAI Debug] openAIFallback intent:", intent);
-  console.log("[KAI Debug] OpenAI responseText.length:", text.length);
-  console.log("[KAI Debug] OpenAI first 1000:", text.slice(0, 1000));
-  console.log("[KAI Debug] OpenAI last 1000:", text.slice(-1000));
-  console.log("[KAI Debug] OpenAI has <code_changes>:", text.includes("<code_changes>"));
-  console.log("[KAI Debug] OpenAI has </code_changes>:", text.includes("</code_changes>"));
-  console.log("[KAI Debug] OpenAI has <style>:", text.includes("<style"));
 
   // Try to extract a style block first
   const updatedStyle = text.match(/<style[\s\S]*?<\/style>/i)?.[0];
@@ -674,8 +731,6 @@ async function geminiFallback(
     [{ role: "user" as const, content: `Project: ${projName}\n\nCSS:\n${styleBlock}\n\nEdit: ${message}\n\nReturn ONLY updated <style>...</style> block.` }],
     STYLE_SYSTEM
   );
-  console.log("[KAI Debug] Gemini responseText.length:", text.length);
-  console.log("[KAI Debug] Gemini first 500:", text.slice(0, 500));
   const updated = text.match(/<style[\s\S]*?<\/style>/i)?.[0];
   if (updated) return patchStyle(fullHtml, updated);
   throw new Error("Gemini produced no usable output");
@@ -825,8 +880,6 @@ export async function POST(req: NextRequest) {
     // ── Detect intent ────────────────────────────────────────────
     const intent = detectIntent(actualMessage, false, isDebugMode);
     log.intent = intent;
-    console.log("[KAI Debug] message:", actualMessage.slice(0, 100), "→ intent:", intent);
-    console.log("[KAI Debug] fullHtml.length:", fullHtml.length,
       "hasStyleBlock:", fullHtml.includes("<style"),
       "sections:", fullHtml.match(/<section[^>]*id=/gi)?.length || 0);
 
@@ -928,7 +981,6 @@ export async function POST(req: NextRequest) {
     log.durationMs = Date.now() - startMs;
 
     // DEBUG LOG — full edit trace
-    console.log("[KAI Debug] EDIT COMPLETE — intent:", intent, "provider:", provider,
       "attempts:", attempts, "repairRan:", log.repairRan,
       "patchedHtml.length:", patchedHtml.length,
       "validation.valid:", validation.valid,
@@ -963,4 +1015,3 @@ export async function POST(req: NextRequest) {
     });
   }
 }
-  
