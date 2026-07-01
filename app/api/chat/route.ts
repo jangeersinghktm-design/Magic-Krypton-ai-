@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime    = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 800;
 
 // ── Types ────────────────────────────────────────────────────────
 type EditIntent =
