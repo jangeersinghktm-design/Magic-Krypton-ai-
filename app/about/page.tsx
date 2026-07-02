@@ -50,7 +50,6 @@ export default function AboutPage() {
             {[
               { icon: "🌐", title: "Websites", desc: "Landing pages, portfolios, business sites" },
               { icon: "📱", title: "Web Apps", desc: "Dashboards, tools, SaaS products" },
-              { icon: "🎮", title: "Games", desc: "Browser games, puzzles, arcade" },
               { icon: "🛠", title: "Tools", desc: "Utilities, converters, generators" },
             ].map(item => (
               <div key={item.title} style={{ background: "#0D0D0D", border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px" }}>
