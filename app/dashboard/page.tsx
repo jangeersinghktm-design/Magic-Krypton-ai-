@@ -327,7 +327,6 @@ export default function DashboardPage() {
   const QUICK_ACTIONS = [
     { icon: "🌐", label: "New Website", prompt: "Build a professional business website", type: "Website" },
     { icon: "📱", label: "New App",     prompt: "Build a web app with dashboard",       type: "App" },
-    { icon: "🎮", label: "New Game",    prompt: "Build a browser game",                 type: "Game" },
     { icon: "🛠",  label: "New Tool",   prompt: "Build a productivity tool",             type: "Tool" },
   ];
 
@@ -786,7 +785,7 @@ export default function DashboardPage() {
                       cursor: a.projectId ? "pointer" : "default",
                       transition: "background .15s",
                     }}
-                    onMouseEnter={e => { if (a.projectId) e.currentTarget.style.background = "#0B1020"; }}
+                     onMouseEnter={e => { if (a.projectId) e.currentTarget.style.background = "#0B1020"; }}
                     onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
                   >
                     <span style={{ fontSize: 14, flexShrink: 0 }}>{a.icon}</span>
