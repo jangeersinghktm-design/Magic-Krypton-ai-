@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 const SITE_URL = "https://kryptonai.tech";
 const SITE_NAME = "Krypton AI";
-const SITE_TITLE = "Krypton AI — Build Websites, Apps & Games with AI";
+const SITE_TITLE = "Krypton AI — AI Website & Web App Builder";
 const SITE_DESC  = "Build professional websites, web apps, and browser games with AI in seconds. No coding needed. Powered by Krypton Intelligence Engine.";
 
 export const metadata: Metadata = {
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   description: SITE_DESC,
   keywords: [
-    "AI website builder", "AI app generator", "AI game builder",
+    "AI website builder", "AI app generator", "AI web builder",
     "no code website", "Krypton AI", "AI web design", "generate website",
     "AI landing page", "build with AI", "website generator",
   ],
