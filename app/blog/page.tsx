@@ -12,9 +12,6 @@ const POSTS = [
   { id:1, tag:"Tutorial", emoji:"⚡", title:"Build a Full SaaS Landing Page with AI in 60 Seconds", date:"June 8, 2026", readTime:"4 min read",
     desc:"Learn how to use Krypton AI to generate a complete, production-ready SaaS landing page with pricing, testimonials, and animations — all from a single prompt.",
     author:"Krypton Team" },
-  { id:2, tag:"Guide", emoji:"🎮", title:"How to Build Browser Games with Krypton AI", date:"June 5, 2026", readTime:"6 min read",
-    desc:"From Snake to 2048, Krypton AI can generate fully playable browser games with keyboard controls, scoring, and animations. Here's how to get the best results.",
-    author:"Krypton Team" },
   { id:3, tag:"Tips", emoji:"🚀", title:"10 Prompts That Generate Premium Websites", date:"June 1, 2026", readTime:"3 min read",
     desc:"The secret to getting great output from Krypton AI is a great prompt. We've tested hundreds — here are the top 10 that consistently produce stunning results.",
     author:"Krypton Team" },
@@ -139,5 +136,3 @@ export default function BlogPage() {
     </div>
   );
 }
-
-      
