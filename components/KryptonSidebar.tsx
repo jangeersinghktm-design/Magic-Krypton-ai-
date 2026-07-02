@@ -6,102 +6,134 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-// ── Icons ──────────────────────────────────────────────────────────
-const icons = {
-  home:     (<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>),
-  create:   (<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>),
-  templates:(<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>),
-  analytics:(<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16l4-6 4 4 4-8"/></svg>),
-  dashboard:(<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>),
-  settings: (<svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>),
-  chevron:  (<svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>),
-  code:     (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>),
-  seo:      (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>),
-  performance:(<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>),
-  chatbot:  (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>),
-  image:    (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>),
-  content:  (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>),
-  profile:  (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>),
-  billing:  (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>),
-  apikeys:  (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>),
-  domains:  (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>),
-  security: (<svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>),
+// ── SVG Icon System ─────────────────────────────────────────────────
+const I = {
+  home:       <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>,
+  rocket:     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>,
+  globe:      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>,
+  cpu:        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>,
+  shop:       <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>,
+  user:       <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  folder:     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>,
+  puzzle:     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>,
+  palette:    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>,
+  bot:        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>,
+  deploy:     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>,
+  team:       <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
+  settings:   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+  billing:    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+  receipt:    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16l3-2 2 2 2-2 2 2 2-2 3 2V4a2 2 0 00-2-2z"/><line x1="16" y1="8" x2="8" y2="8"/><line x1="16" y1="12" x2="8" y2="12"/></svg>,
+  chevron:    <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>,
+  menu:       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+  x:          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  landing:    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
+  dashboard2: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+  saas:       <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>,
+  signout:    <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.7" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
 };
 
-  const navItems = [
-  { label: "Home", href: "/", icon: icons.home },
-  { label: "Create", href: "/create", icon: icons.create, children: [
-    { label: "Chatbot",    href: "/chatbot",    icon: icons.chatbot, newTab: true },
-    { label: "Image Gen",  href: "/image-gen",  icon: icons.image,   newTab: true },
-    { label: "Content",    href: "/content",    icon: icons.content, newTab: true },
-    { label: "Code Gen",   href: "/create",     icon: icons.code,    newTab: true },
-    { label: "Screenshot", href: "/screenshot", icon: icons.image,   newTab: true },
-  ]},
-  { label: "Templates", href: "/templates", icon: icons.templates },
-  { label: "AI Manager", href: "/project-manager", icon: icons.analytics },
-  { label: "Analytics", href: "/analytics", icon: icons.analytics, children: [
-    { label: "Code Analysis", href: "/analytics?tab=code",        icon: icons.code        },
-    { label: "SEO Analysis",  href: "/analytics?tab=seo",         icon: icons.seo         },
-    { label: "Performance",   href: "/analytics?tab=performance",  icon: icons.performance },
-    { label: "Stats",         href: "/stats",                      icon: icons.dashboard   },
-    { label: "Community",     href: "/community",                  icon: icons.home        },
-  ]},
-  { label: "Team",      href: "/team",      icon: icons.dashboard },
-  { label: "Dashboard", href: "/dashboard", icon: icons.dashboard },
-  { label: "Settings",  href: "/settings",  icon: icons.settings  },
-  { label: "Billing", href: "/billing", icon: icons.billing },
+// ── Navigation structure ─────────────────────────────────────────────
+interface NavChild { label: string; href: string; icon: React.ReactNode; badge?: string; }
+interface NavItem  { label: string; href: string; icon: React.ReactNode; children?: NavChild[]; dividerBefore?: boolean; }
+
+const NAV: NavItem[] = [
+  {
+    label: "Home",
+    href:  "/dashboard",
+    icon:  I.home,
+  },
+  {
+    label: "AI Builder",
+    href:  "/create",
+    icon:  I.rocket,
+    children: [
+      { label: "Website",      href: "/create?type=website",     icon: I.globe,      badge: "Popular" },
+      { label: "SaaS / App",   href: "/create?type=saas",        icon: I.saas        },
+      { label: "Landing Page", href: "/create?type=landing",     icon: I.landing     },
+      { label: "Dashboard",    href: "/create?type=dashboard",   icon: I.dashboard2  },
+      { label: "E-commerce",   href: "/create?type=ecommerce",   icon: I.shop        },
+      { label: "Portfolio",    href: "/create?type=portfolio",   icon: I.user        },
+    ],
+  },
+  {
+    label: "Projects",
+    href:  "/project-manager",
+    icon:  I.folder,
+  },
+  {
+    label: "Components",
+    href:  "/templates",
+    icon:  I.puzzle,
+  },
+  {
+    label: "Design System",
+    href:  "/templates?tab=design",
+    icon:  I.palette,
+  },
+  {
+    label: "AI Agents",
+    href:  "/analytics",
+    icon:  I.bot,
+    dividerBefore: true,
+  },
+  {
+    label: "Deploy",
+    href:  "/create?tab=deploy",
+    icon:  I.deploy,
+  },
+  {
+    label: "Team",
+    href:  "/team",
+    icon:  I.team,
+  },
+  {
+    label: "Settings",
+    href:  "/settings",
+    icon:  I.settings,
+    dividerBefore: true,
+    children: [
+      { label: "Billing",   href: "/billing",  icon: I.billing  },
+      { label: "Invoices",  href: "/billing?tab=invoices", icon: I.receipt },
+    ],
+  },
 ];
 
-// ── Profile type ───────────────────────────────────────────────────
+// ── Profile type ─────────────────────────────────────────────────────
 interface Profile {
-  full_name: string;
-  email: string;
-  plan: string;
+  full_name:     string;
+  email:         string;
+  plan:          string;
   total_credits: number;
-  used_credits: number;
+  used_credits:  number;
 }
 
+// ── Component ────────────────────────────────────────────────────────
 export default function KryptonSidebar() {
-  const pathname  = usePathname();
-  const router    = useRouter();
-  const supabase  = createClient();
+  const pathname   = usePathname();
+  const router     = useRouter();
+  const supabase   = createClient();
 
-  const [openMenus, setOpenMenus] = useState<string[]>(["Create"]);
-  const [isMobile,  setIsMobile]  = useState(false);
-  const [mobileOpen,setMobileOpen]= useState(false);
-  const [profile,   setProfile]   = useState<Profile | null>(null);
+  const [openMenus,  setOpenMenus]  = useState<string[]>(["AI Builder", "Settings"]);
+  const [isMobile,   setIsMobile]   = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profile,    setProfile]    = useState<Profile | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // ── Load user profile + credits ──────────────────────────────────
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  // ── Load user profile ────────────────────────────────────────────
+  useEffect(() => { loadProfile(); }, []);
 
   const loadProfile = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data } = await supabase
       .from("profiles")
       .select("full_name, email, plan, total_credits, used_credits")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
-
-    if (data) {
-      setProfile(data);
-    } else {
-      // Fallback from auth user
-      setProfile({
-        full_name: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "User",
-        email: session.user.email || "",
-        plan: "free",
-        total_credits: 5,
-        used_credits: 0,
-      });
-    }
+    if (data) setProfile(data);
   };
 
-  // ── Mobile detection ───────────────────────────────────────────
+  // ── Mobile detection ─────────────────────────────────────────────
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -109,146 +141,202 @@ export default function KryptonSidebar() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // ── Close on outside click ─────────────────────────────────────
+  // ── Close on outside click (mobile) ─────────────────────────────
   useEffect(() => {
+    if (!mobileOpen) return;
     const handler = (e: MouseEvent) => {
-      if (isMobile && mobileOpen && sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
         setMobileOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [isMobile, mobileOpen]);
+  }, [mobileOpen]);
 
-  // ── Close on route change ──────────────────────────────────────
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
-
-  const toggle = (label: string) => {
+  const toggleMenu = (label: string) => {
     setOpenMenus(prev =>
       prev.includes(label) ? prev.filter(l => l !== label) : [...prev, label]
     );
   };
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(href + "?");
+  const isActive = (href: string) => {
+    if (href === "/dashboard") return pathname === "/" || pathname === "/dashboard";
+    return pathname === href || pathname.startsWith(href + "?") || pathname.startsWith(href + "/");
+  };
 
-  // ── Credits calculation ────────────────────────────────────────
-  const totalCredits   = profile?.total_credits ?? 100;
-  const usedCredits    = profile?.used_credits ?? 0;
-  const remaining      = totalCredits - usedCredits;
-  const usedPct        = Math.min((usedCredits / totalCredits) * 100, 100);
-  const remainingPct   = 100 - usedPct;
-  const displayName    = profile?.full_name || profile?.email?.split("@")[0] || "User";
-  const planLabel      = profile?.plan ? profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1) : "Free";
-  const firstLetter    = displayName[0]?.toUpperCase() || "U";
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
+  };
 
-  // ── Sidebar content ────────────────────────────────────────────
-  const sidebarContent = (
-    <aside ref={sidebarRef} style={{
-      width: 240, minHeight: "100vh",
-      background: "#0B1020",
-      borderRight: "1px solid rgba(245,197,66,0.12)",
-      display: "flex", flexDirection: "column",
-      position: "fixed", left: isMobile ? (mobileOpen ? 0 : -240) : 0,
-      top: 0, bottom: 0, zIndex: 200,
-      transition: "left 0.25s ease",
-      fontFamily: "'DM Sans', sans-serif",
-      overflowY: "auto", scrollbarWidth: "none",
+  const creditsUsed  = profile?.used_credits  ?? 0;
+  const creditsTotal = profile?.total_credits ?? 50;
+  const creditsPct   = Math.min(100, Math.round((creditsUsed / creditsTotal) * 100));
+
+  // ── Sidebar content ──────────────────────────────────────────────
+  const SidebarContent = () => (
+    <div style={{
+      display:       "flex",
+      flexDirection: "column",
+      height:        "100%",
+      background:    "#06070D",
+      borderRight:   "1px solid rgba(255,255,255,0.06)",
+      overflow:      "hidden",
     }}>
 
-      {/* ── Logo ── */}
-      <Link href="/" style={{
-        display: "flex", alignItems: "center",
-        justifyContent: "center",
-        padding: "14px 16px",
-        borderBottom: "1px solid rgba(245,197,66,0.12)",
-        textDecoration: "none",
+      {/* ── Logo ─────────────────────────────────────────────────── */}
+      <div style={{
+        display:       "flex",
+        alignItems:    "center",
+        justifyContent:"space-between",
+        padding:       "20px 16px 16px",
+        borderBottom:  "1px solid rgba(255,255,255,0.06)",
+        flexShrink:    0,
       }}>
-        <KryptonLogo size={36} showText={true} animated={false}/>
-      </Link>
+        <Link href="/dashboard" style={{ textDecoration: "none" }}>
+          <KryptonLogo size="sm" />
+        </Link>
+        {isMobile && (
+          <button onClick={() => setMobileOpen(false)} style={{
+            background: "none", border: "none", color: "rgba(255,255,255,0.5)",
+            cursor: "pointer", padding: "4px", display: "flex",
+          }}>
+            {I.x}
+          </button>
+        )}
+      </div>
 
-      {/* ── Nav ── */}
-      <nav style={{ flex: 1, padding: "12px 10px" }}>
-        <div style={{
-          fontSize: 10, fontWeight: 600, letterSpacing: 1,
-          textTransform: "uppercase", color: "rgba(255,255,255,0.15)",
-          padding: "6px 12px 4px",
-        }}>Navigation</div>
-
-        {navItems.map((item) => {
-          const hasChildren = item.children && item.children.length > 0;
-          const isOpen = openMenus.includes(item.label);
-          const active = isActive(item.href);
+      {/* ── Navigation ───────────────────────────────────────────── */}
+      <nav style={{ flex: 1, overflowY: "auto", padding: "10px 8px", scrollbarWidth: "none" }}>
+        {NAV.map((item) => {
+          const active   = isActive(item.href);
+          const hasChild = !!item.children?.length;
+          const expanded = openMenus.includes(item.label);
 
           return (
-            <div key={item.label} style={{ marginBottom: 2 }}>
-              {hasChildren ? (
-                <div onClick={() => toggle(item.label)} style={{
-                  display: "flex", alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "9px 12px", borderRadius: 10,
-                  cursor: "pointer",
-                  color: active ? "#F5F5F5" : "#9AA3AF",
-                  background: active
-                    ? "linear-gradient(135deg,rgba(245,197,66,0.15),rgba(0,208,132,0.08))"
-                    : "transparent",
-                  border: active
-                    ? "1px solid rgba(245,197,66,0.2)"
-                    : "1px solid transparent",
-                  fontSize: 13.5, fontWeight: 500,
-                  transition: "all 0.18s", userSelect: "none" as const,
-                }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    {item.icon}{item.label}
-                  </span>
-                  <span style={{
-                    transition: "transform 0.22s",
-                    transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
-                    color: "rgba(255,255,255,0.18)",
-                  }}>{icons.chevron}</span>
-                </div>
-              ) : (
-                <Link href={item.href} target={item.label === "Billing" ? "_blank" : undefined} style={{
-                  display: "flex", alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "9px 12px", borderRadius: 10,
-                  textDecoration: "none",
-                  color: active ? "#F5F5F5" : "#9AA3AF",
-                  background: active
-                    ? "linear-gradient(135deg,rgba(245,197,66,0.15),rgba(0,208,132,0.08))"
-                    : "transparent",
-                  border: active
-                    ? "1px solid rgba(245,197,66,0.2)"
-                    : "1px solid transparent",
-                  fontSize: 13.5, fontWeight: 500,
-                  transition: "all 0.18s",
-                }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    {item.icon}{item.label}
-                  </span>
-                </Link>
+            <div key={item.label}>
+              {/* Divider */}
+              {item.dividerBefore && (
+                <div style={{ height: "1px", background: "rgba(255,255,255,0.06)", margin: "10px 8px 10px" }} />
               )}
 
-              {hasChildren && isOpen && (
+              {/* Parent item */}
+              <div
+                onClick={() => hasChild ? toggleMenu(item.label) : (router.push(item.href), isMobile && setMobileOpen(false))}
+                style={{
+                  display:       "flex",
+                  alignItems:    "center",
+                  justifyContent:"space-between",
+                  padding:       "9px 12px",
+                  borderRadius:  "8px",
+                  cursor:        "pointer",
+                  marginBottom:  "2px",
+                  background:    active && !hasChild
+                    ? "rgba(255,255,255,0.08)"
+                    : "transparent",
+                  color: active && !hasChild
+                    ? "#fff"
+                    : "rgba(255,255,255,0.55)",
+                  transition:    "all 0.15s ease",
+                  position:      "relative",
+                }}
+                onMouseEnter={e => {
+                  if (!active) (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.05)";
+                  (e.currentTarget as HTMLDivElement).style.color = "#fff";
+                }}
+                onMouseLeave={e => {
+                  if (!active) (e.currentTarget as HTMLDivElement).style.background = "transparent";
+                  (e.currentTarget as HTMLDivElement).style.color = active && !hasChild ? "#fff" : "rgba(255,255,255,0.55)";
+                }}
+              >
+                {/* Active indicator bar */}
+                {active && !hasChild && (
+                  <div style={{
+                    position: "absolute", left: 0, top: "20%", bottom: "20%",
+                    width: "3px", borderRadius: "2px",
+                    background: "linear-gradient(180deg,#7C3AED,#4F46E5)",
+                  }} />
+                )}
+
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ opacity: active && !hasChild ? 1 : 0.7, display: "flex" }}>
+                    {item.icon}
+                  </span>
+                  <span style={{ fontSize: "13px", fontWeight: active && !hasChild ? 600 : 400, letterSpacing: "0.01em" }}>
+                    {item.label}
+                  </span>
+                </div>
+
+                {hasChild && (
+                  <span style={{
+                    display: "flex", opacity: 0.4,
+                    transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s ease",
+                  }}>
+                    {I.chevron}
+                  </span>
+                )}
+              </div>
+
+              {/* Children */}
+              {hasChild && expanded && (
                 <div style={{
-                  paddingLeft: 14, marginLeft: 20,
-                  borderLeft: "1px solid rgba(245,197,66,0.12)",
-                  marginTop: 2, marginBottom: 2,
+                  marginLeft:   "12px",
+                  paddingLeft:  "12px",
+                  borderLeft:   "1px solid rgba(255,255,255,0.07)",
+                  marginBottom: "4px",
                 }}>
-                  {item.children!.map((child) => (
-                    <Link key={child.href} href={child.href} target={(child as any).newTab ? "_blank" : undefined} style={{
-                      display: "flex", alignItems: "center", gap: 9,
-                      padding: "7px 10px", borderRadius: 8,
-                      textDecoration: "none", fontSize: 12.5,
-                      color: isActive(child.href) ? "#5FB88A" : "#9AA3AF",
-                      background: isActive(child.href)
-                        ? "rgba(0,208,132,0.1)"
-                        : "transparent",
-                      marginBottom: 1, transition: "all 0.15s",
-                    }}>
-                      {child.icon}{child.label}{(child as any).newTab && <span style={{ marginLeft: "auto", fontSize: 9, opacity: 0.4 }}>↗</span>}
-                    </Link>
-                  ))}
+                  {item.children!.map(child => {
+                    const childActive = isActive(child.href);
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        onClick={() => isMobile && setMobileOpen(false)}
+                        style={{
+                          display:       "flex",
+                          alignItems:    "center",
+                          justifyContent:"space-between",
+                          gap:           "9px",
+                          padding:       "8px 10px",
+                          borderRadius:  "7px",
+                          textDecoration:"none",
+                          marginBottom:  "1px",
+                          background:    childActive ? "rgba(124,58,237,0.12)" : "transparent",
+                          color:         childActive ? "#A78BFA" : "rgba(255,255,255,0.45)",
+                          fontSize:      "12.5px",
+                          fontWeight:    childActive ? 600 : 400,
+                          transition:    "all 0.15s ease",
+                        }}
+                        onMouseEnter={e => {
+                          if (!childActive) {
+                            (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)";
+                            (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.75)";
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (!childActive) {
+                            (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                            (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.45)";
+                          }
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ opacity: 0.7, display: "flex" }}>{child.icon}</span>
+                          {child.label}
+                        </div>
+                        {child.badge && (
+                          <span style={{
+                            fontSize: "10px", fontWeight: 600, padding: "2px 6px",
+                            borderRadius: "4px", background: "rgba(124,58,237,0.3)",
+                            color: "#A78BFA", letterSpacing: "0.03em",
+                          }}>
+                            {child.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -256,119 +344,142 @@ export default function KryptonSidebar() {
         })}
       </nav>
 
-      {/* ── Credits Bar ── */}
-      <div style={{
-        margin: "0 10px 10px",
-        background: "rgba(245,197,66,0.06)",
-        border: "1px solid rgba(245,197,66,0.15)",
-        borderRadius: 10, padding: "10px 14px",
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-          <span style={{ fontSize: 11, color: "#9AA3AF" }}>Credits Used</span>
-          <button
-            onClick={() => router.push("/settings?tab=billing")}
-            style={{
-              fontSize: 10, color: "#F5F5F5",
-              background: "none",
-              border: "1px solid rgba(245,197,66,0.3)",
-              borderRadius: 4, padding: "1px 7px",
-              cursor: "pointer",
-            }}
-          >
-            Upgrade ⚡
-          </button>
-        </div>
-
-        {/* Progress bar */}
+      {/* ── Credits bar ──────────────────────────────────────────── */}
+      {profile && (
         <div style={{
-          height: 4, background: "rgba(255,255,255,0.07)",
-          borderRadius: 4, overflow: "hidden", marginBottom: 6,
+          padding:      "12px 14px",
+          borderTop:    "1px solid rgba(255,255,255,0.06)",
+          flexShrink:   0,
         }}>
-          <div style={{
-            height: "100%",
-            width: `${remainingPct}%`,
-            background: remaining > 20
-              ? "linear-gradient(90deg,#F5F5F5,#5FB88A)"
-              : "linear-gradient(90deg,#E5736B,#D9D9D9)",
-            borderRadius: 4,
-            transition: "width 0.5s ease",
-          }} />
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.18)" }}>
-            Used: {usedCredits}
-          </span>
-          <span style={{
-            fontSize: 10.5, fontWeight: 700,
-            color: remaining > 20 ? "#5FB88A" : "#E5736B",
-          }}>
-            {remaining} / {totalCredits}
-          </span>
-        </div>
-      </div>
-
-      {/* ── User Card ── */}
-      <div style={{
-        padding: "14px 16px",
-        borderTop: "1px solid rgba(245,197,66,0.12)",
-        display: "flex", alignItems: "center", gap: 10,
-      }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: "50%",
-          background: "linear-gradient(135deg,#F5F5F5,#5FB88A)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 13, fontWeight: 700, color: "#000", flexShrink: 0,
-        }}>
-          {firstLetter}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 12.5, fontWeight: 600, color: "#F5F5F5",
-            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          }}>
-            {displayName}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+            <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>Credits</span>
+            <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>
+              {creditsUsed}/{creditsTotal}
+            </span>
           </div>
-          <div style={{ fontSize: 10.5, color: "#5FB88A", fontWeight: 500 }}>
-            {planLabel} Plan
+          <div style={{
+            height: "3px", borderRadius: "2px",
+            background: "rgba(255,255,255,0.08)", overflow: "hidden",
+          }}>
+            <div style={{
+              height: "100%", borderRadius: "2px",
+              width: `${creditsPct}%`,
+              background: creditsPct > 85
+                ? "linear-gradient(90deg,#EF4444,#F97316)"
+                : "linear-gradient(90deg,#7C3AED,#4F46E5)",
+              transition: "width 0.5s ease",
+            }} />
+          </div>
+          {profile.plan && (
+            <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)" }}>
+                {profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1)} Plan
+              </span>
+              <Link href="/billing" style={{
+                fontSize: "10px", fontWeight: 700, color: "#7C3AED",
+                textDecoration: "none", letterSpacing: "0.04em",
+              }}>
+                UPGRADE
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── User footer ──────────────────────────────────────────── */}
+      <div style={{
+        padding:       "12px 14px",
+        borderTop:     "1px solid rgba(255,255,255,0.06)",
+        display:       "flex",
+        alignItems:    "center",
+        justifyContent:"space-between",
+        flexShrink:    0,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+          <div style={{
+            width: "30px", height: "30px", borderRadius: "50%", flexShrink: 0,
+            background: "linear-gradient(135deg,#7C3AED,#4F46E5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "12px", fontWeight: 700, color: "#fff",
+          }}>
+            {profile?.full_name?.[0]?.toUpperCase() || "K"}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {profile?.full_name || "User"}
+            </div>
+            <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.35)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {profile?.email || ""}
+            </div>
           </div>
         </div>
+        <button onClick={handleSignOut} title="Sign out" style={{
+          background: "none", border: "none", cursor: "pointer",
+          color: "rgba(255,255,255,0.3)", display: "flex", padding: "4px", flexShrink: 0,
+          borderRadius: "6px", transition: "all 0.15s",
+        }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.7)"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.3)"; (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+        >
+          {I.signout}
+        </button>
       </div>
-    </aside>
+    </div>
   );
 
+  // ── Desktop ──────────────────────────────────────────────────────
+  if (!isMobile) {
+    return (
+      <div style={{ width: "220px", flexShrink: 0, height: "100vh", position: "sticky", top: 0 }}>
+        <SidebarContent />
+      </div>
+    );
+  }
+
+  // ── Mobile ───────────────────────────────────────────────────────
   return (
     <>
-      {/* Mobile hamburger */}
-      {isMobile && (
-        <button onClick={() => setMobileOpen(!mobileOpen)} style={{
-          position: "fixed", top: 12, left: 12, zIndex: 300,
-          background: "#0B1020",
-          border: "1px solid rgba(245,197,66,0.2)",
-          borderRadius: 8, width: 36, height: 36,
-          cursor: "pointer",
+      {/* Hamburger */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        style={{
+          position: "fixed", top: "14px", left: "14px", zIndex: 60,
+          width: "38px", height: "38px", borderRadius: "10px",
+          background: "rgba(6,7,13,0.9)", backdropFilter: "blur(12px)",
+          border: "1px solid rgba(255,255,255,0.1)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#F5F5F5",
-        }}>
-          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            {mobileOpen
-              ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-              : <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>
-            }
-          </svg>
-        </button>
+          cursor: "pointer", color: "#fff",
+        }}
+      >
+        {I.menu}
+      </button>
+
+      {/* Overlay */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(4px)", zIndex: 49,
+          }}
+        />
       )}
 
-      {/* Mobile overlay */}
-      {isMobile && mobileOpen && (
-        <div onClick={() => setMobileOpen(false)} style={{
-          position: "fixed", inset: 0, zIndex: 150,
-          background: "rgba(0,0,0,0.6)",
-          backdropFilter: "blur(2px)",
-        }} />
-      )}
-
-      {sidebarContent}
+      {/* Drawer */}
+      <div
+        ref={sidebarRef}
+        style={{
+          position:   "fixed",
+          top:        0,
+          left:       mobileOpen ? 0 : "-240px",
+          width:      "240px",
+          height:     "100vh",
+          zIndex:     50,
+          transition: "left 0.28s cubic-bezier(0.16,1,0.3,1)",
+        }}
+      >
+        <SidebarContent />
+      </div>
     </>
   );
 }
