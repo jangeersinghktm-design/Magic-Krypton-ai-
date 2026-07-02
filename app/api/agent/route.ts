@@ -105,7 +105,7 @@ Analyze this request and respond with ONLY a JSON object (no markdown, no explan
     {"id": 1, "task": "Specific task description", "category": "design|frontend|logic|data|optimization"},
     {"id": 2, "task": "Another specific task", "category": "frontend"}
   ],
-  "projectType": "website|app|game|dashboard|ecommerce|tool|landing",
+  "projectType": "website|app|saas|dashboard|ecommerce|tool|landing",
   "complexity": "simple|medium|complex",
   "summary": "One sentence describing exactly what will be built"
 }
@@ -130,7 +130,6 @@ Rules:
 
 function generateFallbackAnalysis(prompt: string) {
   const lower = prompt.toLowerCase();
-  const isGame = /game|snake|mario|chess|tetris|puzzle/.test(lower);
   const isShop = /shop|store|ecommerce|cart|product/.test(lower);
   const isApp  = /app|dashboard|crm|tracker|manager/.test(lower);
 
