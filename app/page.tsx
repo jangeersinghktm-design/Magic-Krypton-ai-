@@ -15,14 +15,13 @@ const PLACEHOLDERS = [
   "Build a premium SaaS landing page...",
   "Create a fitness tracking dashboard...",
   "Build a restaurant website with menu...",
-  "Generate a browser Snake game...",
   "Create an e-commerce store...",
   "Build a portfolio website...",
   "Design a crypto dashboard...",
   "Create a productivity tool...",
 ];
 
-const BUILD_TYPES = ["Website","Landing Page","App","Game","Dashboard","Tool","E-Commerce","Portfolio"];
+const BUILD_TYPES = ["Website","Landing Page","App","Dashboard","Tool","E-Commerce","Portfolio"];
 
 export default function HomePage() {
   const router  = useRouter();
@@ -263,8 +262,7 @@ export default function HomePage() {
                     website:   {icon:"◇", color:"#F5F5F5", label:"Website"},
                     landing:   {icon:"◆", color:"#D9D9D9", label:"Landing"},
                     app:       {icon:"▣", color:"#BFC5CC", label:"App"},
-                    game:      {icon:"▲", color:"#D9D9D9", label:"Game"},
-                    dashboard: {icon:"◈", color:"#F5F5F5", label:"Dashboard"},
+                                        dashboard: {icon:"◈", color:"#F5F5F5", label:"Dashboard"},
                     ecommerce: {icon:"🛒", color:"#F97316", label:"Store"},
                     portfolio: {icon:"💼", color:"#8B5CF6", label:"Portfolio"},
                     tool:      {icon:"🔧", color:"#64748B", label:"Tool"},
@@ -285,20 +283,17 @@ export default function HomePage() {
                         borderBottom:`1px solid ${C.border}`, position:"relative", overflow:"hidden",
                       }}>
                         {p.html_code ? (
-                          // P1 FIX: iframes were loading full HTML for each card thumbnail
-                          // Replaced with lightweight CSS color extraction — no iframe overhead
                           <div style={{
-                            width:"100%", height:"100%",
-                            background: (() => {
-                              const bgMatch = p.html_code.match(/background(?:-color)?:\s*(#[0-9a-fA-F]{3,6}|rgba?\([^)]+\))/);
-                              const gradMatch = p.html_code.match(/linear-gradient\([^)]+\)/);
-                              return gradMatch ? gradMatch[0] : bgMatch ? bgMatch[1] : "linear-gradient(135deg,#0C1020,#040610)";
-                            })(),
-                            display:"flex", alignItems:"center", justifyContent:"center",
-                            flexDirection:"column", gap:8, pointerEvents:"none",
+                            width:"400%", height:"400%", transform:"scale(0.25)",
+                            transformOrigin:"top left", pointerEvents:"none",
                           }}>
-                            <div style={{fontSize:36, opacity:0.6}}>{tc.icon}</div>
-                            <div style={{fontSize:10, color:"rgba(255,255,255,0.4)", textAlign:"center", padding:"0 8px", lineHeight:1.4, maxWidth:"90%", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{name}</div>
+                            <iframe
+                              srcDoc={p.html_code}
+                              style={{width:"100%", height:"100%", border:"none", display:"block"}}
+                              sandbox="allow-scripts allow-same-origin"
+                              loading="lazy"
+                              title={name}
+                            />
                           </div>
                         ) : (
                           <div style={{height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -337,7 +332,7 @@ export default function HomePage() {
                         }}
                           style={{flex:1, padding:"8px 0", background:"none", border:"none", color:C.gold,
                             fontSize:12, fontWeight:600, cursor:"pointer", transition:"background 0.15s"}}
-                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,215,0,0.06)")}
+                           onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,215,0,0.06)")}
                           onMouseLeave={e=>(e.currentTarget.style.background="none")}>
                           Open ↗
                         </button>
