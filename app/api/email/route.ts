@@ -41,7 +41,7 @@ const emailTemplates = {
         Welcome, ${name}! 🎉
       </h1>
       <p style="color:#888;font-size:15px;line-height:1.7;margin:0 0 24px;">
-        You're now part of Krypton AI — the fastest way to build websites, apps, and games with AI.
+        You're now part of Krypton AI — the fastest way to build websites, apps, and dashboards with AI.
       </p>
       <div style="background:#161616;border-radius:10px;padding:20px;margin-bottom:24px;">
         <p style="color:#F5D800;font-size:13px;font-weight:700;margin:0 0 12px;">🚀 You get FREE:</p>
