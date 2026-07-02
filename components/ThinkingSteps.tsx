@@ -9,26 +9,6 @@ interface ThinkingStepsProps {
 
 function getSteps(prompt: string, type: string) {
   const lower = prompt.toLowerCase()
-  if (type === 'game' || lower.includes('game') || lower.includes('quiz')) {
-    return [
-      'Understanding the game concept and mechanics',
-      'Planning the game loop and scoring system',
-      'Designing the visual layout and UI elements',
-      'Writing the game logic and event handlers',
-      'Adding animations and visual feedback',
-      'Polishing interactions and edge cases',
-    ]
-  }
-  if (type === 'app' || lower.includes('app') || lower.includes('tool') || lower.includes('calculator')) {
-    return [
-      'Analyzing the app requirements',
-      'Planning component structure and data flow',
-      'Designing the user interface layout',
-      'Building core functionality and logic',
-      'Connecting all features together',
-      'Optimizing for performance and usability',
-    ]
-  }
   return [
     'Reading and understanding your requirements',
     'Planning the page structure and sections',
