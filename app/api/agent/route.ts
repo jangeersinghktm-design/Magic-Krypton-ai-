@@ -130,6 +130,7 @@ Rules:
 
 function generateFallbackAnalysis(prompt: string) {
   const lower = prompt.toLowerCase();
+  const isGame = false; // game builder removed
   const isShop = /shop|store|ecommerce|cart|product/.test(lower);
   const isApp  = /app|dashboard|crm|tracker|manager/.test(lower);
 
