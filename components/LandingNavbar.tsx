@@ -58,7 +58,6 @@ const TEMPLATE_CATEGORIES = [
   { icon: "🛒", label: "E-commerce Templates" },
   { icon: "📊", label: "Dashboard Templates" },
   { icon: "🚀", label: "Landing Pages" },
-  { icon: "🎮", label: "Browser Games" },
   { icon: "⭐", label: "Premium Templates" },
 ];
 
@@ -360,3 +359,4 @@ export default function LandingNavbar() {
   );
                             }
 
+                
