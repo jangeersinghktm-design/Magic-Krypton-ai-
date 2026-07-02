@@ -39,16 +39,6 @@ const GENERATORS = [
     placeholder: "Build a task manager app with projects, tags, filters, and due dates...",
   },
   {
-    id: "game",
-    icon: "🎮",
-    label: "Game",
-    desc: "Playable browser games with full mechanics",
-    gradient: "linear-gradient(135deg,#43e97b,#38f9d7)",
-    tags: ["Canvas", "Levels", "Score", "Mobile"],
-    credit: 4,
-    placeholder: "Create a Snake game with neon graphics, levels, powerups and high score...",
-  },
-  {
     id: "dashboard",
     icon: "📊",
     label: "Dashboard",
@@ -371,3 +361,4 @@ export default function BuildPage() {
   );
 }
 
+        
