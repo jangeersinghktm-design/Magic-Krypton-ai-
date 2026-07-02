@@ -6,8 +6,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const maxDuration = 300;
-export const runtime = "nodejs"; // FIX: edge→nodejs for AI calls
+export const maxDuration = 120;
+export const runtime     = "edge";
 
 // ── AI Providers ─────────────────────────────────────────────────
 async function callClaude(system: string, prompt: string, maxTokens = 12000): Promise<string> {
@@ -77,7 +77,7 @@ function cleanHTML(raw: string): string {
 // ── Credit Cost ───────────────────────────────────────────────────
 function creditCost(type: string): number {
   const costs: Record<string, number> = {
-    website: 3, landing: 2, app: 3, game: 4,
+    website: 3, landing: 2, app: 3, game: 0, // removed
     dashboard: 4, tool: 2, ecommerce: 4, portfolio: 2,
   };
   return costs[type] ?? 3;
@@ -262,67 +262,7 @@ Build a complete, functional web app with real interactivity.
    - Clear all data (with confirmation)
 `,
 
-  game: `${BASE_RULES}
-
-## 🎮 GAME GENERATOR — Fully Playable Browser Game:
-
-Build a COMPLETE, immediately playable browser game. NOT a demo. NOT a prototype.
-
-**MANDATORY GAME ARCHITECTURE:**
-
-\`\`\`
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-window.addEventListener("resize", () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-let state = "menu"; // menu | playing | paused | gameover
-let score = 0, level = 1, lives = 3, highScore = parseInt(localStorage.getItem("hs")||"0");
-function gameLoop() { update(); render(); requestAnimationFrame(gameLoop); }
-window.onload = () => gameLoop();
-\`\`\`
-
-**REQUIRED SYSTEMS (ALL mandatory):**
-1. **GAMEPLAY**: Smooth movement, collision detection, real game mechanics
-2. **PROGRESSION**: Levels 1-∞, difficulty increases (speed/quantity/complexity)
-3. **SCORING**: Live score on canvas, high score (localStorage), combo multiplier
-4. **LIVES**: 3 lives, respawn animation, invincibility frames
-5. **POWERUPS**: 3+ types spawning randomly (speed, shield, multiplier, health)
-6. **AUDIO**: Web Audio API — coin collect beep, death sound, level-up fanfare
-7. **PARTICLES**: Burst particles on collect, death, level-up (CSS or canvas)
-8. **ACHIEVEMENTS**: 5 achievements with localStorage persistence, popup notification
-
-**HUD DESIGN** (on canvas overlay OR HTML overlay):
-- Top-left: Score + High Score
-- Top-center: Level badge
-- Top-right: Lives (♥ hearts)
-- Glassmorphism style HUD bars
-
-**SCREENS:**
-- MENU: Game title (neon glow), instructions, Start button, High Score display
-- PLAYING: Full game, HUD active
-- PAUSE: Overlay with Resume/Restart/Menu buttons
-- GAME OVER: Score, New High Score detection, Restart button
-
-**MOBILE CONTROLS** (MANDATORY):
-- D-pad (← ↑ ↓ →) bottom-left, 60px buttons, touch events
-- Action button (A/JUMP/SHOOT) bottom-right
-- All touch targets 60px minimum
-
-**VISUAL STYLE:**
-- Dark background with gradient or star field
-- Neon accent colors (#00FFFF, #FF00FF, #FFD700) 
-- Canvas: anti-aliased graphics, smooth animations
-- Particle effects for all major events
-
-**SPECIFIC GAME MECHANICS (detect from prompt):**
-- Snake: grid-based, growing snake, walls/self kill, fruit spawning
-- Tetris: piece rotation, line clearing, hold queue, ghost piece, T-spin
-- Platformer: gravity physics, platforms, enemy patrol AI, coin collecting
-- Space Shooter: scrolling bg, enemy waves, bullet patterns, boss fights
-- Puzzle: drag-and-drop or click mechanics, win condition detection
-- Racing: track rendering, obstacle avoidance, speed/drift mechanics
-`,
+  game: "",
 
   dashboard: `${BASE_RULES}
 
