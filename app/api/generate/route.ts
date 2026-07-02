@@ -6,12 +6,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  renderComponent, getDefaultVariant, buildComponentContext,
-  buildRootTokens, listVariants, type ComponentCategory,
-} from "@/lib/component-library";
 
-export const maxDuration = 300; // Fixed: 308 exceeded Vercel Pro 300s limit
+export const maxDuration = 308;
 export const runtime     = "nodejs"; // FIXED: was "edge" — Edge has hard 25s limit on Hobby plan
                                       // which caused FUNCTION_INVOCATION_TIMEOUT before any API
                                       // call could even be made. Node.js respects maxDuration=120s.
@@ -44,7 +40,7 @@ function calculateCreditCost(prompt: string, isEdit: boolean): { cost: number; c
 function getThinkingSteps(prompt: string): string[] {
   const lower = prompt.toLowerCase();
 
-  const isGame      = /game|mario|snake|puzzle|chess|tetris|pacman|arcade|fps|rpg/.test(lower);
+  const isGame      = false; // game builder removed // was: /game|mario|snake|puzzle|chess|tetris|pacman|arcade|fps|rpg/.test(lower);
   const isEcommerce = /shop|store|ecommerce|cart|product|checkout|marketplace/.test(lower);
   const isLanding   = /landing|saas|startup|portfolio|agency|business website/.test(lower);
   const isApp       = /app|dashboard|tool|calculator|tracker|manager|crm|erp/.test(lower);
@@ -519,251 +515,6 @@ function getModelCascade(plan: string) {
   ];
 }
 
-// ── Component Library Pipeline (V1 architecture fix) ─────────────────────────
-// Migrated from orchestrate/route.ts — same logic, same component library.
-// AI generates JSON/content only. HTML comes from renderComponent() exclusively.
-
-// Detect project niche from prompt (simplified version for generate route)
-function detectProjectNiche(prompt: string, projectType: string): any {
-  const p = prompt.toLowerCase();
-  const isLuxury   = /luxury|premium|high.end|exclusive|elite|couture|bespoke/.test(p);
-  const isCreative = /creative|design|art|portfolio|studio|photography|film/.test(p);
-  const isCorp     = /corporate|enterprise|consulting|legal|finance|b2b|saas/.test(p);
-  const isFriendly = /community|local|family|kids|food|cafe|restaurant|fitness|gym/.test(p);
-
-  const tone = isLuxury ? "editorial"
-             : isCreative ? "bold"
-             : isCorp ? "trust"
-             : isFriendly ? "warm"
-             : "clean";
-
-  const marketLevel = isLuxury ? "luxury" : isCorp ? "premium" : "mid";
-
-  // Deterministic palette from token system
-  const palettes: Record<string, any> = {
-    editorial:  { primary:"#D4A853", secondary:"#1A1A2E", grad:"linear-gradient(135deg,#D4A853,#B8935A)", accent:"#D4A853", bg:"#050810", surface:"#0A0D1A", card:"#0F1320", text2:"#8892A0" },
-    bold:       { primary:"#7C3AED", secondary:"#EC4899", grad:"linear-gradient(135deg,#7C3AED,#EC4899)", accent:"#7C3AED", bg:"#030007", surface:"#07000E", card:"#0D0018", text2:"#9CA3AF" },
-    trust:      { primary:"#2563EB", secondary:"#1E40AF", grad:"linear-gradient(135deg,#2563EB,#1E40AF)", accent:"#3B82F6", bg:"#020B1A", surface:"#051225", card:"#081930", text2:"#94A3B8" },
-    warm:       { primary:"#F59E0B", secondary:"#EF4444", grad:"linear-gradient(135deg,#F59E0B,#EF4444)", accent:"#F59E0B", bg:"#0C0800", surface:"#150E00", card:"#1C1300", text2:"#9CA3AF" },
-    clean:      { primary:"#6366F1", secondary:"#8B5CF6", grad:"linear-gradient(135deg,#6366F1,#8B5CF6)", accent:"#6366F1", bg:"#040610", surface:"#070B16", card:"#0C1020", text2:"#8892A0" },
-  };
-
-  const palette = palettes[tone] || palettes.clean;
-
-  return {
-    industry: projectType, businessType: "service", marketLevel,
-    reach: "national", audience: "b2c", tone,
-    imageKeyword: prompt.split(" ").slice(0, 3).join(" "),
-    imageKeyword2: projectType,
-    sectionImageMap: {}, sectionOrder: [],
-    conversionGoal: "inquiry", competitorStyle: "Stripe",
-    brandPositioning: isLuxury ? "luxury" : "innovative",
-    audienceDimensions: {}, objectionHandling: [], trustElements: [],
-    palette: { ...palette, primary: palette.primary, secondary: palette.secondary,
-               grad: palette.grad, accent: palette.accent, bg: palette.bg,
-               surface: palette.surface, card: palette.card, text2: palette.text2 },
-    typography: {
-      headingFont: isCreative ? "'Playfair Display', serif" : isLuxury ? "'Cormorant Garamond', serif" : "'Syne', sans-serif",
-      bodyFont: "'DM Sans', sans-serif",
-      headingWeight: "800", headingSpacing: "-0.02em",
-      googleFonts: isCreative
-        ? "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500&display=swap"
-        : isLuxury
-        ? "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500&display=swap"
-        : "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap",
-    },
-    brandVoice: { adjectives: [], phrases: [], avoid: [] },
-  };
-}
-
-// Generate component content JSON via AI (same as orchestrate)
-async function generatePageCopy(
-  prompt: string, niche: any, projectType: string
-): Promise<Record<string, any>> {
-  const categories: ComponentCategory[] = projectType === "dashboard"
-    ? ["navbar", "dashboard", "footer"]
-    : projectType === "ecommerce" || projectType === "store"
-    ? ["navbar", "hero", "ecommerce", "testimonials", "cta", "footer"]
-    : projectType === "portfolio"
-    ? ["navbar", "hero", "portfolio", "testimonials", "cta", "footer"]
-    : ["navbar", "hero", "features", "testimonials", "pricing", "faq", "cta", "footer"];
-
-  const tone = niche.tone || "clean";
-  const variantOptions = categories.map(c => `${c}: [${listVariants(c).join(", ")}]`).join(", ");
-
-  const ANTHROPIC = process.env.ANTHROPIC_API_KEY;
-  const OPENAI    = process.env.OPENAI_API_KEY;
-  const GEMINI    = process.env.GEMINI_API_KEY;
-
-  const system = `You are Krypton AI's content specialist. Output ONLY valid JSON — no markdown, no HTML. Write specific copy for the user's niche.`;
-  const user = `Build content for: "${prompt}"
-Tone: ${tone} | Market: ${niche.marketLevel}
-
-Return JSON with these component keys: ${categories.join(", ")}
-Include a "variants" object that picks from these options:
-${variantOptions}
-
-Requirements:
-- "navbar": { logoText, links:[{label,href}], cta:{text,href} }
-- "hero": { badge, headline, subheadline, ctaPrimary:{text,href}, ctaSecondary:{text,href} }
-- "features": { eyebrow, headline, items:[{icon,title,desc}] }
-- "testimonials": { eyebrow, headline, items:[{quote,name,role,rating}] }
-- "pricing": { eyebrow, headline, tiers:[{name,price,period,features:[],cta:{text,href},highlighted}] }
-- "faq": { eyebrow, headline, items:[{question,answer}] }
-- "cta": { headline, subheadline, ctaPrimary:{text,href} }
-- "footer": { logoText, tagline, columns:[{title,links:[{label,href}]}], copyrightName }
-
-Write real, compelling copy specific to: "${prompt}". No placeholders.`;
-
-  // Try Claude → OpenAI → Gemini, same pattern as orchestrate
-  for (const [key, callFn] of [
-    ["claude",  async () => {
-      if (!ANTHROPIC) throw new Error("no key");
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type":"application/json","x-api-key":ANTHROPIC,"anthropic-version":"2023-06-01","anthropic-beta":"prompt-caching-2024-07-31" },
-        body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:4000, system:[{type:"text",text:system,cache_control:{type:"ephemeral"}}], messages:[{role:"user",content:user}] }),
-        signal: AbortSignal.timeout(90000),
-      });
-      if (!r.ok) throw new Error(`Claude ${r.status}`);
-      const d = await r.json();
-      return d.content?.[0]?.text || "";
-    }],
-    ["openai", async () => {
-      if (!OPENAI) throw new Error("no key");
-      const r = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type":"application/json","Authorization":`Bearer ${OPENAI}` },
-        body: JSON.stringify({ model:"gpt-4o", max_tokens:4000, response_format:{type:"json_object"}, messages:[{role:"system",content:system},{role:"user",content:user}] }),
-        signal: AbortSignal.timeout(90000),
-      });
-      if (!r.ok) throw new Error(`OpenAI ${r.status}`);
-      const d = await r.json();
-      return d.choices?.[0]?.message?.content || "";
-    }],
-    ["gemini", async () => {
-      if (!GEMINI) throw new Error("no key");
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI}`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ contents:[{parts:[{text:system+"\n\n"+user}]}], generationConfig:{maxOutputTokens:4000,temperature:0.4} }),
-        signal: AbortSignal.timeout(60000),
-      });
-      if (!r.ok) throw new Error(`Gemini ${r.status}`);
-      const d = await r.json();
-      return d.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    }],
-  ] as const) {
-    try {
-      const text    = await (callFn as () => Promise<string>)();
-      const cleaned = text.replace(/```json|```/g,"").trim();
-      try { const p=JSON.parse(cleaned); if(p.hero||p.navbar) return p; } catch {}
-      const m = cleaned.match(/\{[\s\S]+\}/);
-      if (m) { const p=JSON.parse(m[0]); if(p.hero||p.navbar) return p; }
-    } catch { continue; }
-  }
-
-  // Intelligent defaults (never fail)
-  const name = prompt.slice(0,40);
-  return {
-    variants: { navbar:"glass-sticky", hero:"split-image", features:"icon-grid", testimonials:"cards", pricing:"tiers", faq:"accordion", cta:"centered-gradient", footer:"columns" },
-    navbar: { logoText:name, links:[{label:"Home",href:"#hero"},{label:"Services",href:"#features"},{label:"Pricing",href:"#pricing"},{label:"Contact",href:"#cta"}], cta:{text:"Get Started",href:"#cta"} },
-    hero: { badge:`Premium ${projectType}`, headline:`The Future of ${name}`, subheadline:`Premium solutions designed for results.`, ctaPrimary:{text:"Get Started",href:"#cta"}, ctaSecondary:{text:"Learn More",href:"#features"} },
-    features: { eyebrow:"Why Choose Us", headline:`Everything you need`, items:[{icon:"⚡",title:"Fast Delivery",desc:"Rapid execution."},{icon:"🔒",title:"Reliable",desc:"Consistent outcomes."},{icon:"🎯",title:"Expert Team",desc:"Deep expertise."}] },
-    testimonials: { eyebrow:"Reviews", headline:"Trusted by leaders", items:[{quote:"Exceptional quality.",name:"Sarah M.",role:"Director",rating:5},{quote:"Outstanding results.",name:"James K.",role:"CEO",rating:5}] },
-    pricing: { eyebrow:"Pricing", headline:"Simple pricing", tiers:[{name:"Starter",price:"$49",period:"month",highlighted:false,features:["Core features","Support"],cta:{text:"Start Now",href:"#cta"}},{name:"Pro",price:"$149",period:"month",highlighted:true,features:["Everything","Priority support"],cta:{text:"Go Pro",href:"#cta"}}] },
-    faq: { eyebrow:"FAQ", headline:"Questions & Answers", items:[{question:"How quickly can you start?",answer:"We begin within 24-48 hours."},{question:"Is there a contract?",answer:"Monthly plans, no commitment."}] },
-    cta: { headline:`Ready to start?`, subheadline:"Join satisfied clients today.", ctaPrimary:{text:"Start Now",href:"#contact"} },
-    footer: { logoText:name, tagline:`Premium ${projectType} solutions.`, columns:[{title:"Product",links:[{label:"Features",href:"#features"},{label:"Pricing",href:"#pricing"}]}], copyrightName:name },
-  };
-}
-
-// Assemble HTML from component library (zero AI)
-function assembleHtml(content: Record<string,any>, niche: any): string {
-  const ctx    = buildComponentContext(niche.palette.primary);
-  const tokens = buildRootTokens(niche);
-  const tone   = niche.tone || "clean";
-  const v      = content.variants || {};
-
-  const order: ComponentCategory[] = ["navbar","hero","features","dashboard","testimonials","pricing","faq","portfolio","ecommerce","cta","footer"];
-  let   body = "";
-  for (const cat of order) {
-    const c = content[cat];
-    if (!c) continue;
-    body += renderComponent(cat, v[cat] || getDefaultVariant(cat, tone), ctx, c);
-  }
-
-  const fonts = niche.typography?.googleFonts
-    ? `<link rel="preconnect" href="https://fonts.googleapis.com"><link href="${niche.typography.googleFonts}" rel="stylesheet">`
-    : "";
-
-  const staticJS = `
-(function(){
-  document.querySelectorAll('.hamburger').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.nav-links').forEach(function(n){n.classList.toggle('open');});});});
-  document.querySelectorAll('a[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){var t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}});});
-  var ro=new IntersectionObserver(function(e){e.forEach(function(x){if(x.isIntersecting){x.target.classList.add('visible');ro.unobserve(x.target);}});},{threshold:0.1});
-  document.querySelectorAll('.reveal').forEach(function(el){ro.observe(el);});
-  document.querySelectorAll('.faq-question').forEach(function(q){q.addEventListener('click',function(){var a=q.nextElementSibling;var op=q.classList.contains('active');document.querySelectorAll('.faq-question').forEach(function(oq){oq.classList.remove('active');if(oq.nextElementSibling)oq.nextElementSibling.classList.remove('open');});if(!op&&a){q.classList.add('active');a.classList.add('open');}});});
-  window.addEventListener('scroll',function(){document.querySelectorAll('nav').forEach(function(n){n.classList.toggle('scrolled',window.scrollY>50);});},{passive:true});
-})();`.trim();
-
-  const staticCSS = `
-*{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}
-body{background:var(--bg);color:var(--text);font-family:var(--body-font);line-height:1.65;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
-h1,h2,h3,h4{font-family:var(--heading-font);font-weight:var(--heading-weight);letter-spacing:var(--heading-spacing);line-height:1.15;}
-h1{font-size:clamp(28px,6vw,72px);}h2{font-size:clamp(22px,4vw,48px);}h3{font-size:clamp(16px,2.5vw,28px);}
-a{color:inherit;text-decoration:none;}img{max-width:100%;height:auto;}
-::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:rgba(var(--primary-rgb),.4);border-radius:4px;}
-.container,.section-inner{max-width:1200px;margin:0 auto;padding:0 clamp(16px,4vw,48px);}
-section{padding:clamp(60px,10vw,120px) 0;overflow-x:hidden;}
-.btn,.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#fff;border:none;padding:14px 28px;border-radius:10px;font-weight:700;cursor:pointer;text-decoration:none;font-size:15px;transition:transform .2s,box-shadow .2s;}
-.btn:hover,.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(var(--primary-rgb),.35);}
-.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text);border:1px solid var(--border);padding:13px 28px;border-radius:10px;font-weight:600;cursor:pointer;font-size:15px;transition:all .2s;text-decoration:none;}
-.btn-secondary:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.2);}
-.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;transition:border-color .2s,transform .2s;}
-.card:hover{border-color:rgba(var(--primary-rgb),.3);transform:translateY(-2px);}
-nav{position:sticky;top:0;z-index:100;background:rgba(var(--bg-rgb),.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
-nav.scrolled{box-shadow:0 4px 24px rgba(0,0,0,.3);}
-.nav-links{display:flex;align-items:center;gap:8px;}
-.hamburger{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:6px;}
-.nav-links.open{display:flex;}
-@media(max-width:768px){.nav-links{display:none;position:fixed;inset:58px 0 0 0;background:var(--bg);flex-direction:column;padding:20px;gap:12px;border-top:1px solid var(--border);}.nav-links a{font-size:17px;}.hamburger{display:block;}}
-.faq-answer{max-height:0;overflow:hidden;transition:max-height .35s ease;}
-.faq-answer.open{max-height:400px;}
-.faq-question{cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
-input,textarea{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;width:100%;outline:none;transition:border-color .2s;}
-input:focus,textarea:focus{border-color:var(--primary);}
-input::placeholder,textarea::placeholder{color:var(--text-2);}
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .65s cubic-bezier(.16,1,.3,1),transform .65s cubic-bezier(.16,1,.3,1);}
-.reveal.visible{opacity:1;transform:none;}
-.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
-@media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:1fr 1fr;}}
-@media(max-width:640px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
-.text-gradient{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-footer{background:var(--surface);border-top:1px solid var(--border);padding:clamp(48px,8vw,80px) 0 28px;}
-.pricing-card.highlighted,.pricing-card.featured{border-color:rgba(var(--primary-rgb),.4);background:var(--surface);}
-`.trim();
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>${content.hero?.headline?.slice(0,50) || "Krypton AI"}</title>
-${fonts}
-<style>
-${tokens}
-${staticCSS}
-</style>
-</head>
-<body>
-${body}
-<script>${staticJS}</script>
-</body>
-</html>`;
-}
-
 // ── Main Route Handler ───────────────────────────────────────────
 // Fix 6: Per-user generation lock
 const activeGens = new Set<string>();
@@ -887,43 +638,60 @@ export async function POST(req: NextRequest) {
       }, { status: 429 });
     }
 
-    // ── Architecture: Component Library Pipeline ──────────────────────────
-    // AI generates JSON content only. HTML assembled from renderComponent().
-    // No AI call returns HTML — architecture aligned with orchestrate/route.ts.
-    const lower = prompt.toLowerCase();
-    let projectType = "website";
-    if (/game|snake|mario|puzzle|chess|tetris|arcade|rpg/.test(lower)) projectType = "game";
-    else if (/shop|store|ecommerce|cart|marketplace/.test(lower)) projectType = "ecommerce";
-    else if (/dashboard|admin panel|analytics|crm/.test(lower)) projectType = "dashboard";
-    else if (/portfolio/.test(lower)) projectType = "portfolio";
-    else if (/landing/.test(lower)) projectType = "landing";
-
-    // Games still use game/route.ts (valid exception) — but generate route
-    // is only called as SSE fallback, so games shouldn't reach here.
-    // If they do, treat as website.
-    if (projectType === "game") projectType = "website";
-
+    // Build system prompt and thinking steps
+    const { prompt: userPrompt, projectType: reqProjectType } = await (async () => {
+      // Auto-detect project type from prompt
+      const lower = prompt.toLowerCase();
+      let detectedType = "website";
+      if (/\bgame\b|\bsnake\b|\bmario\b|\bpuzzle\b|\bchess\b|\btetris\b|\barcade\b|\brpg\b/.test(lower)) detectedType = "game";
+      else if (/\bshop\b|\bstore\b|\becommerce\b|\bcart\b|\bproduct listing\b|\bmarketplace\b/.test(lower)) detectedType = "ecommerce";
+      else if (/\bdashboard\b|\badmin panel\b|\banalytics\b|\bcrm\b/.test(lower)) detectedType = "dashboard";
+      else if (/\bapp\b|\bapplication\b|\btool\b|\btracker\b|\bmanager\b/.test(lower) && !/\bweb app\b/.test(lower)) detectedType = "app";
+      else if (/\blanding\b/.test(lower)) detectedType = "landing";
+      return { prompt, projectType: detectedType };
+    })();
+    const systemPrompt  = buildSystemPrompt(plan, reqProjectType);
     const thinkingSteps = getThinkingSteps(prompt);
+
+    // ── 3-Layer AI Cascade ────────────────────────────────────
+    const cascade = getModelCascade(plan);
     let html = "";
     let usedProvider = "claude";
+    let attemptCount = 0;
 
-    try {
-      // Stage 1: Detect niche (deterministic, 0 AI calls)
-      const niche = detectProjectNiche(prompt, projectType);
+    for (const attempt of cascade) {
+      attemptCount++;
+      try {
+        let raw = "";
 
-      // Stage 2: Generate page copy JSON (1 AI call — Claude→OpenAI→Gemini)
-      const pageCopy = await generatePageCopy(prompt, niche, projectType);
-      usedProvider = "claude"; // generatePageCopy tracks internally
+        if (attempt.provider === "claude") {
+          raw = await callClaude(systemPrompt, prompt, attempt.model, attempt.maxTokens);
+        } else if (attempt.provider === "openai") {
+          raw = await callOpenAI(systemPrompt, prompt, attempt.model, attempt.maxTokens);
+        } else {
+          raw = await callGemini(systemPrompt, prompt, attempt.model);
+        }
 
-      // Stage 3: Assemble HTML from component library (0 AI calls)
-      html = assembleHtml(pageCopy, niche);
+        html = cleanHTML(raw);
+        usedProvider = attempt.provider;
 
-    } catch (err: any) {
-      console.error("[Generate] Pipeline error:", err.message);
-      return NextResponse.json({
-        error: "Our AI is taking a short break. Please try again in a moment.",
-        code: "AI_UNAVAILABLE",
-      }, { status: 503 });
+        // ✅ Use HTML if it has any meaningful content — never reject good output
+        if (html && html.length > 200) {
+          break; // Got content — stop cascade, use it
+        }
+
+        // Empty response — try next provider silently
+        if (attemptCount < cascade.length) continue;
+
+      } catch (err) {
+        if (attemptCount === cascade.length) {
+          return NextResponse.json({
+            error: "Our AI is taking a short break. Please try again in a moment.",
+            code: "AI_UNAVAILABLE",
+          }, { status: 503 });
+        }
+        continue; // Silent fail — try next provider
+      }
     }
 
     if (!html || html.length < 200) {
