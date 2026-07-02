@@ -12,7 +12,7 @@ const PLANS = [
     id: "free", name: "Free", emoji: "○",
     monthlyUsd: 0, yearlyUsd: 0, monthlyInr: 0, yearlyInr: 0,
     creditsLabel: "20 Generations / Day", cta: "Current Plan", highlight: false,
-    features: ["Website Generator","App Generator","Game Generator","Live Preview","Download HTML","Community Support"],
+    features: ["Website Generator","App Generator","Live Preview","Download HTML","Community Support"],
     locked: ["Save Projects","Project History","Advanced AI Model","Team Workspace","API Access","Priority Support"],
   },
   {
