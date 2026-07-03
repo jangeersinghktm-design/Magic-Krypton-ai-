@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import KryptonLogo from "@/components/branding/KryptonLogo";
 import AgentTimeline, { AgentPhaseEvent } from "@/components/workspace/AgentTimeline";
 import { runProductionGate } from "@/lib/completion-engine";
+import { detectGameType, buildGameMemory, formatGameMemoryForAI, type GameProjectMemory } from "@/lib/game-builder";
 
 // ── Design Tokens ─────────────────────────────────────────────────
 const C = {
@@ -299,6 +300,8 @@ function CreatePageInner() {
   const [projectId, setProjectId]     = useState("");
   const [projectName, setProjectName] = useState("New Project");
   const [editingName, setEditingName] = useState(false);
+  const [isGameProject, setIsGameProject] = useState(false);
+  const [gameMemory, setGameMemory]       = useState<GameProjectMemory|null>(null);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
   const [device, setDevice]     = useState<Device>("desktop");
   // Screenshot Vision states
@@ -319,7 +322,6 @@ function CreatePageInner() {
     // Production Gate score — state (not just a runFlow-local) so runEdit's
   // post-edit gate re-check (A3) can read/update it across calls.
   const [completenessScore, setCompletenessScore] = useState<number|null>(null);
-  // Game builder removed — website/app focus only
   const [listening, setListening] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
