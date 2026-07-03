@@ -194,7 +194,7 @@ export default function KryptonSidebar() {
         flexShrink:    0,
       }}>
         <Link href="/dashboard" style={{ textDecoration: "none" }}>
-          <KryptonLogo size="sm" />
+          <KryptonLogo size={24} />
         </Link>
         {isMobile && (
           <button onClick={() => setMobileOpen(false)} style={{
