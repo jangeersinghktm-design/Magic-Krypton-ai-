@@ -1972,7 +1972,7 @@ function buildNichePrompt(userPrompt: string, type: string, plan: string, cached
     || detectCompetitorStyle(userPrompt, niche.tone)
     || niche.competitorStyle;
   let designRef: ReturnType<typeof getDesignReference> = null;
-  let composed:  ComposedStrategy | null = null;
+  let composed: any = null;
   const audienceDim = niche.audienceDimensions || detectAudienceDimensions(userPrompt, niche.industry, niche.marketLevel);
 
   const BASE = `You are Krypton AI — a world-class UI/UX designer creating websites comparable to premium agencies.
