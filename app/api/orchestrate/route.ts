@@ -1968,19 +1968,11 @@ function buildNichePrompt(userPrompt: string, type: string, plan: string, cached
     : detectCompetitorFromURL(userPrompt);
   // Phase 2: Competitor style
   // Pass domainId so detectCompetitorStyle uses domain-accurate reference brands
-  const _domainId = domainPlan && (domainPlan as any).__domainKnowledge
-    ? ((domainPlan as any).__domainKnowledge as DomainKnowledge).domain
-    : undefined;
   const competitorStyle = urlBlueprint?.style
-    || detectCompetitorStyle(userPrompt, niche.tone, _domainId)
+    || detectCompetitorStyle(userPrompt, niche.tone)
     || niche.competitorStyle;
-  // Resolve the full DesignReference for this domain
-  const designRef   = getDesignReference(_domainId || "", competitorStyle, niche);
-  // ── Compose strategy from multiple references ─────────────────────
-  const composed    = composeDesignStrategy(
-    _domainId || "", competitorStyle, niche,
-    pipelineBlueprint?.businessGoal || niche.conversionGoal || "lead"
-  );
+  let designRef: ReturnType<typeof getDesignReference> = null;
+  let composed:  ReturnType<typeof composeDesignStrategy> | null = null;
   const audienceDim = niche.audienceDimensions || detectAudienceDimensions(userPrompt, niche.industry, niche.marketLevel);
 
   const BASE = `You are Krypton AI — a world-class UI/UX designer creating websites comparable to premium agencies.
@@ -5339,6 +5331,14 @@ Format: numbered list only. No preamble.`;
             nicheDetectPrompt, projectType, _niche, kryptonGenerate
           );
           if (domainPlan) {
+              const _domainId = (domainPlan as any).__domainKnowledge
+              ? ((domainPlan as any).__domainKnowledge as DomainKnowledge).domain
+              : "";
+            designRef = getDesignReference(_domainId, competitorStyle, _niche);
+            composed  = composeDesignStrategy(
+              _domainId, competitorStyle, _niche,
+              domainPlan.businessGoal || _niche.conversionGoal || "lead"
+            );
             // Update niche sectionOrder with architect's domain-specific plan
             if (domainPlan.sectionOrder?.length > 0) {
               (_niche as any).sectionOrder = domainPlan.sectionOrder;
