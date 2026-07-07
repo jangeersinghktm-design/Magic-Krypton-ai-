@@ -51,6 +51,9 @@ interface ChatMessage {
   isActive?:boolean;
   credits?: number;
   files?:   string[];
+  plan?:    PlanData;          // niche intelligence — industry, sections, palette
+  fileTree?:FilesData;         // file architecture being created
+  review?:  ReviewCheck[];     // self-review checklist results
   gate?:    { dimensions:{dimension:string;score:number}[]; buildPass:boolean; validationPass:boolean; runtimePass:boolean; mobilePass:boolean; overallPass:boolean; repairAttempts:number };
 }
 
@@ -150,77 +153,275 @@ const mkId    = ()=>  `${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
 const sleep   = (ms:number)=>new Promise(r=>setTimeout(r,ms));
 const fmtTime = (d:Date)=>d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
 
-// ── Claude-style Thinking Panel ───────────────────────────────────
-function ThinkingPanel({ phases, isActive }: { phases:AgentPhaseEvent[]; isActive:boolean }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const isDone = !isActive && phases.filter(p=>p.done).length > 0;
+// ── Premium Thinking Panel ──────────────────────────────────────────
+// Inspired by Emergent / Lovable — shows live intelligence, not just status.
+// Receives: phases (agent events), plan (niche data), files (file list),
+// review (self-review checks). All populated from streaming orchestrate events.
+interface PlanData {
+  projectType?:string; industry?:string; businessType?:string;
+  marketLevel?:string; tone?:string; conversionGoal?:string;
+  sections?:string[]; sectionCount?:number; pageCount?:number;
+  componentCount?:number; primaryColor?:string; heading?:string;
+}
+interface ReviewCheck { label:string; pass:boolean; }
+interface FilesData { files?:string[]; total?:number; }
 
-  const STATES = ["Reading Request","Understanding Goal","Creating Plan","Building Project","Validating Output","Optimizing Result","Finalizing"];
-  const MAP:Record<string,string> = { Reading:"Reading Request", Understanding:"Understanding Goal", Planning:"Creating Plan", Building:"Building Project", Validating:"Validating Output", Optimizing:"Optimizing Result", Finalizing:"Finalizing", Planner:"Reading Request", Builder:"Building Project", Validator:"Validating Output" };
+function ThinkingPanel({
+  phases, isActive, plan, files, review
+}: {
+  phases: AgentPhaseEvent[];
+  isActive: boolean;
+  plan?: PlanData;
+  files?: FilesData;
+  review?: ReviewCheck[];
+}) {
+  const [collapsed,  setCollapsed]  = useState(false);
+  const [elapsed,    setElapsed]    = useState(0);
+  const [filesDone,  setFilesDone]  = useState(0);
+  const isDone   = !isActive && phases.length > 0;
+  const doneCount = phases.filter(p=>p.done).length;
+  const totalSteps = 7;
 
-  const stateStatus: Record<string,{done:boolean;active:boolean;pct:number}> = {};
-  phases.forEach(p=>{ const label=MAP[p.agent]; if(label) stateStatus[label]={done:!!p.done,active:!p.done&&isActive,pct:p.pct||0}; });
+  // ── Elapsed timer ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isActive) return;
+    setElapsed(0);
+    const t = setInterval(() => setElapsed(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [isActive]);
 
-  const currentStep = STATES.find(s=>stateStatus[s]?.active) || (isDone ? "Complete" : "Initializing...");
+  // ── Animate file creation ─────────────────────────────────────────
+  useEffect(() => {
+    if (!files?.files?.length) return;
+    setFilesDone(0);
+    const total = files.files.length;
+    let i = 0;
+    const t = setInterval(() => {
+      i++;
+      setFilesDone(i);
+      if (i >= total) clearInterval(t);
+    }, 180);
+    return () => clearInterval(t);
+  }, [files?.total]);
+
+  const fmtTime = (s:number) => s < 60 ? `${s}s` : `${Math.floor(s/60)}m ${s%60}s`;
+
+  // ── Current step label ────────────────────────────────────────────
+  const activePhase = phases.find(p => !p.done && isActive);
+  const currentLabel = isDone
+    ? (plan?.industry ? `${plan.industry} — Complete` : "Complete")
+    : activePhase ? activePhase.action
+    : "Initializing...";
+
+  const TYPE_ICONS:Record<string,string> = {
+    website:"🌐", landing:"🚀", saas:"⚡", dashboard:"📊",
+    ecommerce:"🛒", portfolio:"💼", app:"📱", blog:"📝", default:"🔧",
+  };
+  const typeIcon = TYPE_ICONS[plan?.projectType||""] || TYPE_ICONS.default;
 
   return (
     <div style={{ padding:"0 16px 4px" }}>
+      {/* Header */}
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-        <div style={{ width:18, height:18, borderRadius:"50%", background:`rgba(245,245,245,0.1)`, border:`1px solid rgba(245,245,245,0.3)`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <div style={{ width:18, height:18, borderRadius:"50%", background:"rgba(245,245,245,0.1)",
+          border:"1px solid rgba(245,245,245,0.3)", display:"flex", alignItems:"center",
+          justifyContent:"center", flexShrink:0 }}>
           <img src="/logo.svg" width={10} height={10} alt="" style={{ opacity:.8 }}/>
         </div>
         <span style={{ fontSize:11, color:C.muted, fontWeight:500 }}>Krypton Intelligence</span>
+        {isActive && <span style={{ fontSize:10, color:C.muted, marginLeft:"auto" }}>{fmtTime(elapsed)}</span>}
+        {isDone && <span style={{ fontSize:10, color:C.muted, marginLeft:"auto" }}>Completed in {fmtTime(elapsed)}</span>}
       </div>
 
-      <div style={{ background:"rgba(245,245,245,0.04)", border:`1px solid rgba(245,245,245,0.12)`, borderRadius:12, overflow:"hidden" }}>
-        {/* Thinking header */}
-        <button
-          onClick={()=>setCollapsed(v=>!v)}
-          style={{ width:"100%", padding:"10px 14px", background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:10, textAlign:"left" }}
-        >
+      <div style={{ background:"rgba(245,245,245,0.04)", border:"1px solid rgba(245,245,245,0.1)",
+        borderRadius:12, overflow:"hidden" }}>
+
+        {/* ── Status header ─────────────────────────────────────── */}
+        <button onClick={()=>setCollapsed(v=>!v)} style={{ width:"100%", padding:"11px 14px",
+          background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center",
+          gap:10, textAlign:"left" }}>
           {isDone ? (
-            <span style={{ color:C.green, fontSize:12 }}>✓</span>
+            <span style={{ color:C.green, fontSize:13 }}>✓</span>
           ) : (
-            <div style={{ width:7, height:7, borderRadius:"50%", background:C.purple, animation:"pulse 1.4s ease-in-out infinite", flexShrink:0 }}/>
+            <div style={{ width:7, height:7, borderRadius:"50%", background:C.purple, flexShrink:0,
+              animation:"pulse 1.4s ease-in-out infinite" }}/>
           )}
-          <span style={{ fontSize:12, fontWeight:600, color:isDone?C.green:C.purple, flex:1 }}>
-            {isDone ? "Completed" : `${currentStep}...`}
+          <span style={{ fontSize:12, fontWeight:600, flex:1,
+            color: isDone ? C.green : C.purple }}>
+            {currentLabel}
           </span>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            {!isDone && <span style={{ fontSize:10, color:C.muted }}>{doneCount}/{totalSteps}</span>}
+            {isDone && files?.total && (
+              <span style={{ fontSize:9, color:C.muted }}>
+                {files.total} files · {fmtTime(elapsed)} ago
+              </span>
+            )}
+            {isDone && !files?.total && elapsed > 0 && (
+              <span style={{ fontSize:9, color:C.muted }}>{fmtTime(elapsed)}</span>
+            )}
+          </div>
           <span style={{ fontSize:10, color:C.muted }}>{collapsed?"▶":"▼"}</span>
         </button>
 
-        {/* Progress bar */}
-        {!isDone && !collapsed && (
-          <div style={{ height:1.5, background:"rgba(255,255,255,0.06)", marginBottom:8 }}>
-            <div style={{ height:"100%", width:`${Math.round((phases.filter(p=>p.done).length/7)*100)}%`, background:C.gradP, transition:"width .5s ease" }}/>
+        {/* ── Progress bar ──────────────────────────────────────── */}
+        {!isDone && (
+          <div style={{ height:2, background:"rgba(255,255,255,0.05)", margin:"0 14px 10px" }}>
+            <div style={{ height:"100%", borderRadius:1,
+              width:`${Math.round((doneCount/totalSteps)*100)}%`,
+              background:C.gradP, transition:"width .6s ease" }}/>
           </div>
         )}
 
-        {/* Steps */}
         {!collapsed && (
-          <div style={{ padding:"0 14px 12px" }}>
-            {STATES.map((label,i)=>{
-              const info = stateStatus[label];
-              const isDoneS = info?.done||false;
-              const isActiveS = info?.active||false;
-              const notReached = !info;
-              return (
-                <div key={label} style={{ display:"flex", alignItems:"center", gap:10, padding:"4px 0", opacity:notReached?0.25:1, transition:"opacity .3s" }}>
-                  <div style={{ width:14, height:14, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
-                    background:isDoneS?"rgba(0,208,132,0.1)":isActiveS?"rgba(245,245,245,0.12)":"rgba(255,255,255,0.04)",
-                    border:`1px solid ${isDoneS?"rgba(0,208,132,0.35)":isActiveS?"rgba(245,245,245,0.4)":"rgba(255,255,255,0.07)"}`,
-                  }}>
-                    {isDoneS ? <span style={{color:C.green,fontSize:7,fontWeight:800}}>✓</span>
-                    :isActiveS ? <div style={{width:5,height:5,borderRadius:"50%",border:"1.5px solid rgba(245,245,245,0.3)",borderTopColor:C.purple,animation:"spin .7s linear infinite"}}/>
-                    : <div style={{width:3,height:3,borderRadius:"50%",background:"rgba(255,255,255,0.15)"}}/>}
-                  </div>
-                  <span style={{ fontSize:12, color:isDoneS?"rgba(255,255,255,0.2)":isActiveS?C.purple:C.sub, textDecoration:isDoneS?"line-through":"none", textDecorationColor:"rgba(255,255,255,0.1)", fontWeight:isActiveS?600:400 }}>
-                    {label}
+          <div style={{ padding:"0 14px 14px" }}>
+
+            {/* ── PLAN CARD ─────────────────────────────────────── */}
+            {plan?.industry && (
+              <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)",
+                borderRadius:8, padding:"10px 12px", marginBottom:10 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+                  <span style={{ fontSize:14 }}>{typeIcon}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.text,
+                    textTransform:"uppercase", letterSpacing:"0.06em" }}>
+                    {plan.projectType || "Website"} Plan
                   </span>
-                  {isActiveS && info.pct>0 && <span style={{fontSize:10,color:"rgba(245,245,245,0.5)",marginLeft:"auto"}}>{info.pct}%</span>}
+                  {plan.primaryColor && (
+                    <div style={{ width:10, height:10, borderRadius:"50%",
+                      background:plan.primaryColor, marginLeft:"auto", flexShrink:0 }}/>
+                  )}
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"5px 12px" }}>
+                  {[
+                    ["Industry",    plan.industry],
+                    ["Market",      plan.marketLevel],
+                    ["Pages",       plan.pageCount ? `${plan.pageCount}` : undefined],
+                    ["Sections",    plan.sectionCount ? `${plan.sectionCount}` : undefined],
+                    ["Components",  plan.componentCount ? `~${plan.componentCount}` : undefined],
+                    ["Goal",        plan.conversionGoal],
+                  ].filter(([,v])=>!!v).map(([k,v])=>(
+                    <div key={k as string} style={{ display:"flex", alignItems:"baseline", gap:4 }}>
+                      <span style={{ fontSize:10, color:C.muted, flexShrink:0 }}>{k}:</span>
+                      <span style={{ fontSize:10, color:C.text, fontWeight:600,
+                        overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {v as string}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {/* Section chips */}
+                {plan.sections && plan.sections.length > 0 && (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:3, marginTop:8 }}>
+                    {plan.sections.slice(0,8).map(s=>(
+                      <span key={s} style={{ fontSize:9, padding:"2px 7px", borderRadius:20,
+                        background:"rgba(255,255,255,0.06)", color:C.muted,
+                        textTransform:"capitalize" }}>
+                        {s.replace(/-/g," ")}
+                      </span>
+                    ))}
+                    {(plan.sections.length > 8) && (
+                      <span style={{ fontSize:9, color:C.muted }}>+{plan.sections.length-8} more</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── PHASE STEPS ───────────────────────────────────── */}
+            {["Reading Request","Understanding Goal","Creating Plan","Building Project",
+              "Validating Output","Optimizing Result","Finalizing"].map((label,i)=>{
+              const MAP:Record<string,string> = {
+                Reading:"Reading Request", Understanding:"Understanding Goal",
+                Planning:"Creating Plan", Building:"Building Project",
+                Validating:"Validating Output", Optimizing:"Optimizing Result",
+                Finalizing:"Finalizing"
+              };
+              const phase = phases.find(p => MAP[p.agent]===label);
+              const isDoneS = !!phase?.done;
+              const isActiveS = !!phase && !phase.done && isActive;
+              const notReached = !phase;
+              return (
+                <div key={label} style={{ display:"flex", alignItems:"center", gap:10,
+                  padding:"4px 0", opacity:notReached?0.22:1, transition:"opacity .35s" }}>
+                  <div style={{ width:14, height:14, borderRadius:"50%", flexShrink:0,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    background: isDoneS?"rgba(0,208,132,0.1)":isActiveS?"rgba(245,245,245,0.1)":"rgba(255,255,255,0.04)",
+                    border:`1px solid ${isDoneS?"rgba(0,208,132,0.35)":isActiveS?"rgba(245,245,245,0.35)":"rgba(255,255,255,0.07)"}` }}>
+                    {isDoneS ? <span style={{color:C.green,fontSize:7,fontWeight:800}}>✓</span>
+                    : isActiveS ? <div style={{width:5,height:5,borderRadius:"50%",
+                        border:"1.5px solid rgba(245,245,245,0.2)",borderTopColor:C.purple,
+                        animation:"spin .7s linear infinite"}}/>
+                    : <div style={{width:3,height:3,borderRadius:"50%",background:"rgba(255,255,255,0.12)"}}/>}
+                  </div>
+                  <span style={{ fontSize:11, color: isDoneS?C.text:isActiveS?C.text:C.muted, flex:1 }}>
+                    {phase?.action || label}
+                  </span>
+                  {isDoneS && <span style={{fontSize:9,color:C.green}}>✓</span>}
                 </div>
               );
             })}
+
+            {/* ── FILE CREATION LOG ─────────────────────────────── */}
+            {files?.files && files.files.length > 0 && (
+              <div style={{ marginTop:10, background:"rgba(0,0,0,0.2)", borderRadius:6,
+                padding:"8px 10px", fontFamily:"monospace" }}>
+                <div style={{ fontSize:9, color:C.muted, marginBottom:5,
+                  textTransform:"uppercase", letterSpacing:"0.08em" }}>
+                  File Architecture
+                </div>
+                {files.files.slice(0, filesDone).map((f,i)=>(
+                  <div key={f} style={{ display:"flex", alignItems:"center", gap:6,
+                    padding:"2px 0", animation:"fadeIn .2s ease" }}>
+                    <span style={{ color:C.green, fontSize:9 }}>+</span>
+                    <span style={{ fontSize:10, color:"rgba(255,255,255,0.55)" }}>{f}</span>
+                  </div>
+                ))}
+                {filesDone < (files.total||0) && (
+                  <div style={{ fontSize:9, color:C.muted }}>
+                    {filesDone}/{files.total} files...
+                  </div>
+                )}
+                {filesDone >= (files.total||0) && files.total > 0 && (
+                  <div style={{ fontSize:9, color:C.green, marginTop:3 }}>
+                    ✓ {files.total} files created
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── SELF REVIEW ───────────────────────────────────── */}
+            {review && review.length > 0 && (
+              <div style={{ marginTop:10 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                  <span style={{ fontSize:9, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em" }}>
+                    Self Review
+                  </span>
+                  {(review as any).score !== undefined && (
+                    <span style={{ fontSize:9, fontWeight:700, color:
+                      (review as any).score >= 90 ? C.green :
+                      (review as any).score >= 70 ? C.purple : "#EF4444" }}>
+                      {(review as any).score}/100
+                    </span>
+                  )}
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3px 8px" }}>
+                  {review.map((c: ReviewCheck)=>(
+                    <div key={c.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                      <span style={{ fontSize:9, color: c.pass ? C.green : "#EF4444", flexShrink:0 }}>
+                        {c.pass ? "✓" : "✗"}
+                      </span>
+                      <span style={{ fontSize:10, color: c.pass ? C.text : C.muted }}>{c.label}</span>
+                    </div>
+                  ))}
+                </div>
+                {review.filter((c: ReviewCheck) => !c.pass).length > 0 && (
+                  <div style={{ marginTop:6, fontSize:9, color:"#EF4444", opacity:0.7 }}>
+                    {review.filter((c: ReviewCheck) => !c.pass).length} issue(s) detected
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         )}
       </div>
@@ -507,6 +708,24 @@ function CreatePageInner() {
     }
   };
 
+  // ── Client-side instant intent detection (mirrors orchestrate logic) ──
+  const detectTypeLocal = (p: string): string => {
+    const s = p.toLowerCase();
+    if (/landing page|landing site|squeeze page|opt.?in page/.test(s)) return "Landing Page";
+    if (/admin panel|back.?office|internal tool|erp/.test(s)) return "Dashboard";
+    if (/crm|lead manag|sales pipeline/.test(s)) return "Dashboard";
+    if (/ai tool|ai app|ai platform|chatbot|ai assistant/.test(s)) return "AI Tool";
+    if (/docs|documentation|knowledge base/.test(s)) return "Blog";
+    if (/saas|subscription platform|b2b platform/.test(s)) return "SaaS";
+    if (/shop|store|ecommerce|marketplace|product catalog/.test(s)) return "E-commerce";
+    if (/dashboard|analytics|metrics|reporting/.test(s)) return "Dashboard";
+    if (/web app|tool|tracker|calculator|manager|planner/.test(s)) return "App";
+    if (/portfolio|showcase|resume site|personal site/.test(s)) return "Portfolio";
+    if (/blog|news site|magazine/.test(s)) return "Blog";
+    if (/landing|waitlist|coming soon/.test(s)) return "Landing Page";
+    return "Website";
+  };
+
   const runFlow = async (userPrompt:string) => {
     if (!userPrompt.trim()||loading) return;
     if (remaining<1) {
@@ -516,7 +735,14 @@ function CreatePageInner() {
     }
     setLoading(true); setPrompt(""); promptRef.current=userPrompt;
     addMsg({role:"user",type:"text",content:userPrompt});
-    const thinkId = addMsg({role:"ai",type:"thinking",content:"",phases:[],isActive:true});
+    // ── Instant planning (0ms) — shown BEFORE first API byte ───────────
+    const detectedType = detectTypeLocal(userPrompt);
+    const thinkId = addMsg({role:"ai",type:"thinking",content:"",isActive:true,phases:[
+      {agent:"Reading",     icon:"○", action:`Detected: ${detectedType} project`, pct:8,  status:"done",    done:true},
+      {agent:"Planning",    icon:"○", action:"Planning project structure...",      pct:15, status:"running"},
+      {agent:"Understanding",icon:"○",action:"Analyzing requirements...",          pct:22, status:"running"},
+      {agent:"Building",    icon:"○", action:"Building...",                        pct:40, status:"running"},
+    ]});
 
     const {data:{session}} = await supabase.auth.getSession();
     if (!session) { setLoading(false); return; }
@@ -561,6 +787,10 @@ function CreatePageInner() {
           idx>=0?livePhases[idx]=p:livePhases.push(p);
           updateMsg(thinkId,{phases:[...livePhases],isActive:true});
         }
+        // ── New intelligence events ────────────────────────────────────
+        if (em[1]==="plan")   { updateMsg(thinkId, { plan: data as PlanData, isActive:true }); }
+        if (em[1]==="files")  { updateMsg(thinkId, { fileTree: data as FilesData, isActive:true }); }
+        if (em[1]==="review") { updateMsg(thinkId, { review: data.checks as ReviewCheck[], isActive:true }); }
         if (em[1]==="complete"){
           html=data.html||""; credUsed=data.creditCost||1; savedPid=data.projectId||"";
           completenessScore = typeof data.completenessScore === "number" ? data.completenessScore : null;
@@ -666,9 +896,10 @@ function CreatePageInner() {
     setLoading(true);
     addMsg({role:"user",type:"text",content:editPrompt});
     const thinkId=addMsg({role:"ai",type:"thinking",content:"",isActive:true,phases:[
-      {agent:"Reading",icon:"○",action:"Reading your request",pct:20,status:"running"},
-      {agent:"Building",icon:"○",action:"Applying changes",pct:0,status:"running"},
-      {agent:"Validating",icon:"○",action:"Validating",pct:0,status:"running"},
+      {agent:"Reading",    icon:"○", action:"Analyzing edit request...", pct:15, status:"running"},
+      {agent:"Targeting",  icon:"○", action:"Resolving target section...", pct:0, status:"running"},
+      {agent:"Building",   icon:"○", action:"Applying patch...",          pct:0, status:"running"},
+      {agent:"Validating", icon:"○", action:"Validating changes...",      pct:0, status:"running"},
     ]});
     const {data:{session}}=await supabase.auth.getSession();
     if(!session){setLoading(false);return;}
@@ -743,10 +974,15 @@ function CreatePageInner() {
         // Priority 1 — persist updated memory so edit context survives reopen
         persistMemory(projectId, editedProjMem||null, editedGameMem||null);
         setCredits(cv=>({...cv,used:cv.used+1}));
+        // Use log from chat route to show real intent + target
+        const editLog = d1?.log;
+        const targetSection = editLog?.intent?.replace("_EDIT","").toLowerCase() || "section";
+        const providerLabel = editLog?.provider === "claude" ? "Claude" : editLog?.provider === "openai" ? "OpenAI" : "AI";
         updateMsg(thinkId,{isActive:false,phases:[
-          {agent:"Reading",icon:"○",action:"Understood",pct:100,done:true,status:"done"},
-          {agent:"Building",icon:"○",action:"Applied",pct:100,done:true,status:"done"},
-          {agent:"Validating",icon:"○",action:"Done",pct:100,done:true,status:"done"},
+          {agent:"Reading",    icon:"○", action:`Intent: ${editLog?.intent||"STYLE_EDIT"}`,    pct:100, done:true, status:"done"},
+          {agent:"Targeting",  icon:"○", action:`Target resolved: ${targetSection}`,            pct:100, done:true, status:"done"},
+          {agent:"Building",   icon:"○", action:`Patch applied via ${providerLabel}`,          pct:100, done:true, status:"done"},
+          {agent:"Validating", icon:"○", action:`Validated — ${editLog?.validation?.valid?"passed":"repaired"}`, pct:100, done:true, status:"done"},
         ]});
 
         // A3 — Post-edit Production Gate re-check (client-side, pure-function)
@@ -1029,7 +1265,13 @@ function CreatePageInner() {
                       </div>
                     </div>
                   ) : msg.type==="thinking" ? (
-                    <ThinkingPanel phases={msg.phases||[]} isActive={msg.isActive||false}/>
+                    <ThinkingPanel
+                phases={msg.phases||[]}
+                isActive={msg.isActive||false}
+                plan={msg.plan}
+                files={msg.fileTree}
+                review={msg.review}
+              />
                   ) : (
                     <div style={{padding:"2px 16px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:7}}>
