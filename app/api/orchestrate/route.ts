@@ -1991,7 +1991,7 @@ Reference Brands:  ${composed?.brands.join(", ") ?? competitorStyle}
 Quality Target:    ${composed?.qualityTarget ?? "Premium agency quality"}
 
 DESIGN COMPOSITION (${composed?.composition.length ?? 1} references merged):
-${composed.composition.map(c => `  ${c.role}: ${c.brand} — ${c.why}`).join("\n")}
+${composed.composition.map((c: any) => `  ${c.role}: ${c.brand} — ${c.why}`).join("\n")}
 
 COMPOSED DESIGN DIRECTIVES (implement precisely):
 Hero Layout:   ${composed.heroDirective}
