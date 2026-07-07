@@ -381,7 +381,7 @@ function ThinkingPanel({
                     {filesDone}/{files.total} files...
                   </div>
                 )}
-                {filesDone >= (files.total||0) && files.total > 0 && (
+                {filesDone >= (files.total ?? 0) && (files.total ?? 0) > 0 && (
                   <div style={{ fontSize:9, color:C.green, marginTop:3 }}>
                     ✓ {files.total} files created
                   </div>
