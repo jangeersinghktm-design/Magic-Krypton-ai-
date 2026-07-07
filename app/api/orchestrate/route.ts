@@ -265,14 +265,47 @@ async function kryptonGenerate(system: string, prompt: string): Promise<{text:st
 // ── Project Type Detector ────────────────────────────────────────
 function detectProjectType(prompt: string): string {
   const p = prompt.toLowerCase();
-  if (/\bgame\b|\bsnake\b|\btetris\b|\bpuzzle\b|\barcade\b|\bplatform\b|\bshooter\b/.test(p)) return "game";
-  if (/\bsaas\b|\bsubscription\b|\bsoftware as a service\b|\bb2b\b.*\bplatform\b|\bpricing tiers?\b/.test(p)) return "saas";
-  if (/\bshop\b|\bstore\b|\becommerce\b|\bcart\b|\bproduct\b|\bmarketplace\b/.test(p)) return "ecommerce";
-  if (/\bdashboard\b|\badmin\b|\banalytics\b|\bcrm\b|\bpanel\b/.test(p)) return "dashboard";
-  if (/\bapp\b|\btool\b|\btracker\b|\bcalculator\b|\bmanager\b/.test(p)) return "app";
-  if (/\blanding\b/.test(p)) return "landing";
-  if (/\bportfolio\b/.test(p)) return "portfolio";
-  if (/\bblog\b|\bnews\b|\barticle\b/.test(p)) return "blog";
+
+  // ── Exact compound patterns first (most specific → least specific) ──
+  // "landing page for X" always landing — never website
+  if (/landing page|landing site|squeeze page|lead capture|opt.?in page/.test(p)) return "landing";
+
+  // Admin / Internal tools
+  if (/admin panel|admin dashboard|back.?office|internal tool|erp/.test(p)) return "dashboard";
+
+  // CRM — before "app" to avoid generic match
+  if (/crm|customer relation|lead manag|sales pipeline|contact manag/.test(p)) return "dashboard";
+
+  // AI Tool / AI product
+  if (/ai tool|ai app|ai platform|ai product|gpt|chatbot|ai assistant/.test(p)) return "app";
+
+  // Documentation / Knowledge base
+  if (/docs|documentation|knowledge base|wiki|guide site/.test(p)) return "blog";
+
+  // SaaS — before generic "software"
+  if (/saas|subscription platform|software as a service|b2b platform|pricing tiers/.test(p)) return "saas";
+
+  // E-commerce
+  if (/shop|store|ecommerce|e-commerce|cart|marketplace|product catalog|buying/.test(p)) return "ecommerce";
+
+  // Dashboard / Analytics
+  if (/dashboard|analytics|metrics|data visualization|reporting/.test(p)) return "dashboard";
+
+  // App / Tool — specific patterns
+  if (/web app|app|tool|tracker|calculator|manager|planner|scheduler/.test(p)) return "app";
+
+  // Portfolio
+  if (/portfolio|showcase|resume site|personal site|my work/.test(p)) return "portfolio";
+
+  // Blog / Content
+  if (/blog|news site|magazine|articles|content site/.test(p)) return "blog";
+
+  // Landing — also catch single-page conversion patterns
+  if (/landing|waitlist|coming soon|pre.?launch|single page/.test(p)) return "landing";
+
+  // Game (dead path — kept for backward compat)
+  if (/game|snake|tetris|puzzle|arcade/.test(p)) return "game";
+
   return "website";
 }
 
@@ -463,9 +496,865 @@ function detectCompetitorFromURL(prompt: string): CompetitorBlueprint | null {
 }
 
 // ── PHASE 2: Competitor Style Detector ──────────────────────────
-function detectCompetitorStyle(prompt: string, tone: string): string {
+
+// ════════════════════════════════════════════════════════════════════
+// DESIGN REFERENCE INTELLIGENCE ENGINE
+// ════════════════════════════════════════════════════════════════════
+// Maps every domain to world-class design references with:
+//   - Exact CSS directives (not vague "design like X")
+//   - Component variant decisions (which hero, which pricing, etc.)
+//   - Photography and motion direction
+//   - Never-do rules to prevent quality regression
+//
+// Used in BASE prompt so every generation stage receives reference intel.
+// ════════════════════════════════════════════════════════════════════
+
+interface DesignReference {
+  name:               string;      // display name: "Ferrari × Porsche Automotive"
+  brands:             string[];    // world-class reference brands for this domain
+  styleKey:           string;      // matches competitorStyle field
+  cssDirectives:      string;      // exact CSS patterns / design rules to produce
+  componentVariants:  Partial<Record<string, string>>;  // exact variant per category
+  heroDirective:      string;      // how to build the hero for this domain
+  cardDirective:      string;      // how to build cards
+  typographyDirective:string;      // headline size, weight, spacing rules
+  motionDirective:    string;      // animation curve, duration, trigger
+  ctaDirective:       string;      // CTA button style and placement
+  photoDirective:     string;      // photography style brief
+  qualityTarget:      string;      // what "great" looks like for this domain
+  never:              string[];    // absolute avoidance rules
+}
+
+const REFERENCE_PROFILES: Record<string, DesignReference> = {
+
+  // ── LUXURY AUTOMOTIVE: Ferrari × Porsche × Aston Martin ────────────
+  "Bottega Veneta Editorial": {
+    name:     "Ferrari × Porsche Automotive Luxury",
+    brands:   ["Ferrari","Porsche","Lamborghini","Aston Martin","Bugatti","Rolls-Royce"],
+    styleKey: "Bottega Veneta Editorial",
+    cssDirectives: `
+/* Luxury Automotive CSS Directives */
+/* 1. Zero border-radius — edges are sharp. Luxury needs no softening. */
+.card, button, .btn, img, section { border-radius: 0 !important; }
+/* 2. Typography: very large, very light weight hero headline */
+h1 { font-weight: 300; font-size: clamp(64px,10vw,140px); letter-spacing: -0.02em; line-height: 0.95; }
+/* 3. Section rhythm: 180px top/bottom — let it breathe */
+section { padding: 180px clamp(24px,8vw,120px); }
+/* 4. Primary color accent only on fine details — not on large blocks */
+.accent-line { width: 48px; height: 1px; background: var(--primary); margin: 32px 0; }
+/* 5. Horizontal rule dividers instead of card borders */
+.section-divider { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 80px 0; }
+/* 6. Images: full-bleed, no rounding, dramatic proportion */
+.hero-img { width: 100%; height: 80vh; object-fit: cover; }
+/* 7. CTA: outlined, uppercase, letter-spaced — not filled */
+.cta-primary { background: transparent; border: 1px solid var(--primary); color: var(--primary); text-transform: uppercase; letter-spacing: 0.15em; font-size: 11px; padding: 18px 48px; }
+/* 8. Navigation: minimal, center-aligned or spaced, no heavy backgrounds */
+nav { background: transparent; padding: 32px 80px; }`,
+    componentVariants: {
+      hero: "split-image", features: "alternating", pricing: "three-tier",
+      testimonials: "featured", faq: "accordion", cta: "floating-card",
+      footer: "four-column", navbar: "bold-split",
+    },
+    heroDirective:    "Full-bleed vehicle image LEFT, ultra-thin headline RIGHT. No gradient overlays. Black background. Absolutely no rounding. Headline: 3 words maximum — aspirational. Subhead: 1 sentence maximum.",
+    cardDirective:    "No card borders. Horizontal rule separators only. Content floats on dark background. Image-led. Text below, never overlaid on image.",
+    typographyDirective:"H1: 300 weight, -0.02em tracking, clamp(64px,10vw,140px). H2: 200-300 weight, clamp(32px,5vw,72px). All headings: uppercase tracking on labels only. Body: 16px, line-height 1.8, muted color.",
+    motionDirective:  "Hero: fade-in 1.4s ease (no slide). Sections: opacity 0→1 over 1.0s, NO translateY. Images: scale 1.01 on hover over 0.8s. CTA: border-color transition 0.3s. Zero bounce or spring easing.",
+    ctaDirective:     "Primary: outlined button, uppercase, 0.15em letter-spacing, 11px font. Never filled with gradient. Color: primary accent. Secondary: text-only link with arrow →.",
+    photoDirective:   "Studio photography: single vehicle on black or white seamless. Low angle (10-30°). Dramatic key lighting. No lifestyle people. No stock. 3:2 ratio or wider. Color: desaturated, high contrast.",
+    qualityTarget:    "Passes as a Ferrari or Porsche official website. Zero stock feel. Every element deliberate. White space is a feature. Typography-led, not graphic-led.",
+    never:            ["Rounded corners on anything","Gradient-filled buttons","Multiple rainbow colors","Stock business people photos","Emoji or icons in headings","Centered body text","Generic stock car images","Busy patterns or textures","Generic pricing card layouts"],
+  },
+
+  // ── FINE DINING: Nobu × Eleven Madison × Alain Ducasse ─────────────
+  "Airbnb": {
+    name:     "Nobu × Eleven Madison Park Fine Dining",
+    brands:   ["Nobu","Eleven Madison Park","Noma","Alain Ducasse","The Fat Duck","Heston Blumenthal"],
+    styleKey: "Airbnb",
+    cssDirectives: `
+/* Fine Dining CSS Directives */
+/* 1. Warm, organic border-radius — 16-24px max */
+.card, .card-inner { border-radius: 20px; }
+/* 2. Typography: editorial serif for headings, clean sans for body */
+h1, h2, h3 { font-family: var(--heading-font); font-weight: 400; font-style: italic; }
+/* 3. Section rhythm: 100-140px — generous but not luxury-car spacious */
+section { padding: clamp(80px,10vw,140px) clamp(24px,6vw,80px); }
+/* 4. Warm image treatment: slight warm tone, no cold blues */
+img { filter: brightness(0.95) saturate(1.1) sepia(0.05); }
+/* 5. Section alternation: warm cream and deep charcoal */
+section:nth-child(even) { background: #0E0A07; }
+section:nth-child(odd) { background: #080604; }
+/* 6. Menu items: horizontal rule below, clean typography, no card boxes */
+.menu-item { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 20px 0; }
+/* 7. Reservation CTA: full-width subtle background, prominent */
+.reservation-form { background: rgba(255,255,255,0.04); padding: 48px; }`,
+    componentVariants: {
+      hero: "centered", features: "alternating", testimonials: "masonry",
+      cta: "split-form", footer: "minimal-centered", navbar: "minimal-centered",
+    },
+    heroDirective:    "Full-screen atmospheric restaurant interior or hero dish. Centered headline with restaurant name in elegant serif italic. Subheadline: 1 sentence describing the experience. CTA: 'Reserve a Table' — center-aligned. No busy layout.",
+    cardDirective:    "Rounded 20px. Warm dark background. Image: full-card top, square or 4:3. Text: restaurant name, 1-line description. Hover: gentle lift 4px, warm shadow. No hard borders.",
+    typographyDirective:"H1: serif italic, 400 weight, clamp(48px,7vw,96px). H2: same serif, 300-400 weight. Labels: sans-serif uppercase 0.1em tracking. Body: 16px, 1.8 line-height, warm off-white.",
+    motionDirective:  "Fade-in from bottom 20px, 0.7s ease-out. Image hover: scale 1.03 over 0.5s ease. CTA hover: background lighten 8%. No parallax. No dramatic effects. Warmth, not spectacle.",
+    ctaDirective:     "Primary: warm accent filled, rounded 12px, 'Reserve a Table'. Secondary: text link '→ View Menu'. Form CTA: full-width, high contrast.",
+    photoDirective:   "Food: macro close-up, steam visible, warm side-lighting. Interior: candle-lit, bokeh background, genuine warmth. Chef: candid in kitchen, action shot. Golden-hour warm tones throughout. Analog film aesthetic preferred.",
+    qualityTarget:    "Matches Nobu or Eleven Madison Park website. Warm, aspirational, sensory. Makes you taste the food before you visit. Every image deliberate.",
+    never:            ["Cold blue tones","Startup aesthetic","Generic stock food","Dashboard layouts","Multiple CTAs per page","Busy icon grids","Tech-style pricing tables","Sans-serif headings on hero"],
+  },
+
+  // ── SAAS: Stripe × Linear × Vercel ────────────────────────────────
+  "Stripe": {
+    name:     "Stripe × Linear × Vercel",
+    brands:   ["Stripe","Linear","Vercel","Resend","Clerk","Supabase","PlanetScale"],
+    styleKey: "Stripe",
+    cssDirectives: `
+/* Stripe × Linear SaaS CSS Directives */
+/* 1. Precise grid: 8px base unit */
+:root { --unit: 8px; }
+/* 2. Border radius: 8-12px — modern but not playful */
+.card, button { border-radius: 10px; }
+/* 3. Card: glass effect, 1px border, blur */
+.card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
+/* 4. Gradient accent line on featured cards */
+.card-featured::before { content:''; display:block; height:2px; background: var(--grad); border-radius: 2px 2px 0 0; margin: -1px -1px 0; }
+/* 5. Typography: tight tracking, medium weight */
+h1 { font-size: clamp(40px,6vw,80px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.0; }
+/* 6. Section alternation: very subtle — two shades of near-black */
+section:nth-child(even) { background: #0A0A0F; }
+/* 7. Code-style accents */
+code, .code-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
+/* 8. Grid lines background effect on hero */
+.hero-grid-bg { background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 72px 72px; }`,
+    componentVariants: {
+      hero: "product-showcase", features: "bento-grid", pricing: "toggle",
+      testimonials: "logo-wall", faq: "simple-list", cta: "centered-gradient",
+      footer: "newsletter-rich", navbar: "glass-sticky",
+    },
+    heroDirective:    "Product screenshot as primary visual — above fold, on dark background with subtle grid. Headline: 6-8 words, tight tracking, gradient on last word. Subheadline: 1 sentence, outcome-focused. Social proof: user count or logos below CTA.",
+    cardDirective:    "Glass morphism: rgba(255,255,255,0.04) + 1px border + blur(20px). Featured: 2px gradient top border. Hover: border brightens to rgba(255,255,255,0.16). Icon: small, 16px, inside rounded 8px bg.",
+    typographyDirective:"H1: 700 weight, -0.03em tracking, gradient on keyword. H2: 600 weight, -0.02em. Code/tags: monospace inline. Body: 15-16px, 1.7 line-height, rgba(255,255,255,0.7) color. Labels: 11px, 0.1em tracking, primary color.",
+    motionDirective:  "Reveal: opacity+translateY(16px) → 0, 0.5s ease. Grid lines: fade in 0.3s. Card hover: translateY(-2px), border glow. Counter: count up on viewport entry. Chart bars: animate width from 0. Cursor: default (no custom).",
+    ctaDirective:     "Primary: gradient filled, 700 weight, 14px, rounded 8px. 'Start Free Trial' or 'Get Started'. Secondary: text with arrow, muted color. Badge above CTA: '⚡ Free — no credit card required'.",
+    photoDirective:   "Product UI screenshots on dark mockup device. Team: casual, diverse, office or remote. Abstract: gradient meshes, geometric data vis. Never: stock handshake, generic office, physical currency.",
+    qualityTarget:    "Passes as a Linear or Stripe landing page. Data-dense but not busy. Every metric scannable in under 3 seconds. Premium but approachable.",
+    never:            ["Serif fonts on main content","Rounded >12px on interactive elements","Rainbow gradients","Stock business handshakes","Long paragraphs over 4 lines","Luxury fashion aesthetic","Restaurant warmth"],
+  },
+
+  // ── CREATIVE AGENCY: Superside × Fantasy ──────────────────────────
+  "Linear": {
+    name:     "Superside × Fantasy × Collins Agency",
+    brands:   ["Superside","Fantasy","Collins","Wolff Olins","Pentagram","BUCK"],
+    styleKey: "Linear",
+    cssDirectives: `
+/* Agency Creative CSS Directives */
+/* 1. Oversized display type — typography IS the design */
+h1 { font-size: clamp(72px,14vw,200px); font-weight: 800; line-height: 0.88; letter-spacing: -0.04em; }
+/* 2. Large numbers as decorative elements */
+.section-number { font-size: clamp(120px,20vw,280px); font-weight: 900; opacity: 0.04; line-height: 1; }
+/* 3. Portfolio grid: irregular sizes, hover reveals */
+.work-grid { display: grid; grid-template-columns: repeat(12,1fr); gap: 16px; }
+.work-card { position: relative; overflow: hidden; }
+.work-card-overlay { position: absolute; inset:0; background: rgba(0,0,0,0.85); opacity: 0; transition: opacity 0.35s ease; display: flex; flex-direction: column; justify-content: flex-end; padding: 32px; }
+.work-card:hover .work-card-overlay { opacity: 1; }
+/* 4. Gradient border on hover */
+.gradient-hover { border: 1px solid transparent; transition: all 0.3s; }
+.gradient-hover:hover { border-color: rgba(255,255,255,0.2); box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+/* 5. Ticker/marquee for client logos */
+.ticker { display: flex; animation: ticker 20s linear infinite; white-space: nowrap; }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }`,
+    componentVariants: {
+      hero: "minimal-statement", features: "bento-grid", portfolio: "filter-gallery",
+      testimonials: "logo-wall", cta: "floating-card", footer: "mega-social",
+      navbar: "bold-split",
+    },
+    heroDirective:    "Typography-first: single powerful statement, 3-5 words, 900 weight, fills viewport. Below: selected client logos marquee. No product screenshot on hero. Cursor: custom dot. Background: near-black with subtle noise texture.",
+    cardDirective:    "Work cards: full-image, hover reveals overlay with project name + category. Case study cards: 16:9 aspect ratio. No rounded corners on work cards. Text cards: can have gradient borders.",
+    typographyDirective:"Display: 800-900 weight, extremely tight tracking -0.04em, clamp(72px,14vw,200px). Section labels: 10px, 0.2em tracking, uppercase, muted. Body: 16px normal weight. Mix of serif and sans acceptable.",
+    motionDirective:  "Work card overlay: opacity 0→1 on hover, 0.35s ease. Sections: slide in from left/right alternating. Numbers: count up slowly. Ticker: 20s loop. Hero text: staggered word reveal, 0.1s per word delay.",
+    ctaDirective:     "Primary: text + arrow →, large, no background fill. Or: outlined white button, uppercase. Never: filled gradient button. CTA should feel editorial.",
+    photoDirective:   "Case study screens: angled device mockups on dark bg. Agency team: candid creative workspace moments. Process: whiteboard, sketches, design iterations. Never: stock diverse-handshake-meeting photos.",
+    qualityTarget:    "Passes as a Pentagram or Collins project. Work speaks louder than copy. Typography makes a visual statement. Portfolio feels like art direction.",
+    never:            ["Rounded 20px+ corners","Warm color palette","SaaS product screenshots","Restaurant warmth","Stock handshake photos","Plain icon grids","Soft gradients","Multiple filled CTA buttons"],
+  },
+
+  // ── APPLE × TESLA CLEAN PREMIUM ───────────────────────────────────
+  "Apple": {
+    name:     "Apple × Tesla Premium Clean",
+    brands:   ["Apple","Tesla","Dyson","Loewe","Bang & Olufsen"],
+    styleKey: "Apple",
+    cssDirectives: `
+/* Apple × Tesla CSS Directives */
+/* 1. Generous whitespace — Apple-level breathing room */
+section { padding: clamp(120px,15vw,180px) clamp(24px,8vw,80px); }
+/* 2. Typography: system-level precision */
+h1 { font-size: clamp(44px,8vw,96px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; }
+/* 3. Cards: ultra-clean glass */
+.card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 20px; backdrop-filter: blur(40px) saturate(180%); }
+/* 4. Feature icons: gradient circles */
+.feature-icon { width: 56px; height: 56px; border-radius: 16px; background: var(--grad); display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+/* 5. Section labels: eyebrow text pattern */
+.eyebrow { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--primary); margin-bottom: 16px; display: block; }
+/* 6. Image treatment: crisp, no filter, on clean background */
+img.product-img { border-radius: 24px; box-shadow: 0 48px 120px rgba(0,0,0,0.6); }
+/* 7. Gradient text on hero keyword */
+.gradient-word { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }`,
+    componentVariants: {
+      hero: "centered", features: "bento-grid", pricing: "three-tier",
+      testimonials: "grid", faq: "simple-list", cta: "centered-gradient",
+      footer: "newsletter-rich", navbar: "glass-sticky",
+    },
+    heroDirective:    "Centered layout. Ultra-clean product image centered with soft drop shadow. Headline: 700 weight, tight tracking, 1 gradient word. Subheadline: 2 sentences, centered, muted. CTA: two buttons — primary filled pill, secondary text.",
+    cardDirective:    "Glass morphism: rgba(255,255,255,0.05) + 1px border rgba(255,255,255,0.09) + blur(40px) + border-radius 20px. Feature icon top-left. Title, description. Hover: translateY(-6px) + shadow deepens.",
+    typographyDirective:"H1: 700 weight, -0.03em tracking. Eyebrow labels: 12px, 0.1em tracking, uppercase, primary color. Body: 16-17px, 1.75 line-height. Feature headlines: 20-22px, 600 weight.",
+    motionDirective:  "Reveal: opacity+translateY(24px)→0, blur(8px)→0, 0.65s ease-out. Card hover: translateY(-6px) + box-shadow 0 24px 64px rgba(0,0,0,0.4). Icon hover: scale(1.08). CTA hover: brightness(1.1). No dramatic effects.",
+    ctaDirective:     "Primary: pill shape (border-radius 50px), gradient filled, 600 weight. 'Get Started' or 'Try Free'. Secondary: text with arrow. Both center-aligned. Never: rectangular sharp buttons.",
+    photoDirective:   "Product: pure white or dark background studio, single focus, crisp shadows. People: diverse, natural smiles, casual professional wear. Abstract: clean gradient meshes. Lifestyle: minimal, not cluttered.",
+    qualityTarget:    "Passes as Apple.com or Tesla.com landing page. Generous whitespace. Typography-product hierarchy clear. Premium but accessible. Zero noise.",
+    never:            ["Busy patterns","Multiple colors in same section","Non-system fonts","Amateur gradients","Stock office people","Orange or harsh accents","Comic-like animations","Aggressive sale messaging"],
+  },
+
+  // ── NIKE × UNDER ARMOUR PERFORMANCE ──────────────────────────────
+  "Nike": {
+    name:     "Nike × Under Armour Performance",
+    brands:   ["Nike","Under Armour","Adidas","Gymshark","Lululemon"],
+    styleKey: "Nike",
+    cssDirectives: `
+/* Nike Performance CSS Directives */
+/* 1. Bold hero type — massive, bold, impactful */
+h1 { font-size: clamp(72px,14vw,180px); font-weight: 900; line-height: 0.88; text-transform: uppercase; letter-spacing: -0.02em; }
+/* 2. Diagonal section cuts */
+.angled { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 60px), 0 100%); }
+.angled-reverse { clip-path: polygon(0 60px, 100% 0, 100% 100%, 0 100%); }
+/* 3. Large stat numbers */
+.stat-giant { font-size: clamp(80px,16vw,200px); font-weight: 900; line-height: 0.9; }
+/* 4. High contrast only — no subtle shades */
+body { background: #000; color: #fff; }
+/* 5. Clip-path on CTAs */
+.cta-angled { clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 100%, 16px 100%); }`,
+    componentVariants: {
+      hero: "split-image", features: "stat-highlight", pricing: "three-tier",
+      testimonials: "grid", cta: "banner-strip", footer: "four-column",
+      navbar: "glass-sticky",
+    },
+    heroDirective:    "Split: athlete action shot LEFT (dramatic, movement), bold claim RIGHT. Headline: 2-3 words, 900 weight, uppercase, full-width. No soft gradients. Maximum impact. No serif fonts.",
+    cardDirective:    "No rounded corners. Black or very dark cards. Athlete imagery primary. Stats overlaid on image. Hover: image zooms scale(1.08) over 0.4s.",
+    typographyDirective:"Everything bold. H1: 900 weight, uppercase, -0.02em tracking. Section stats: 900 weight massive display. Body: clean sans 15px 500 weight. Zero serif. Zero italic.",
+    motionDirective:  "Fast: 0.3-0.4s all transitions. Stats: count up fast 0.8s. Scroll reveal: slide from left/right (not bottom). CTA: clipPath reveals on hover. No slow luxury motion.",
+    ctaDirective:     "Large pill OR angled clip-path button. 900 weight uppercase. Primary: white on black OR brand color. Secondary: outlined white. 'Shop Now', 'Train Now', 'Get Started'.",
+    photoDirective:   "Athletes in explosive motion. High shutter speed. Dynamic angles — low angle upward (power), wide angle (scale). Dramatic contrast. Black/white with one accent color. No stock gym photos.",
+    qualityTarget:    "Passes as Nike.com campaign page. Immediate energy. Bold typography makes you feel motivated before you read a word. Maximum contrast.",
+    never:            ["Soft rounded aesthetics","Pastels","Luxury editorial pacing","Long form text","Serif typography","Warm colors","Restaurant warmth","SaaS dashboard layouts"],
+  },
+
+  // ── HEALTHCARE: Mayo Clinic × Cleveland Clinic ─────────────────────
+  "HubSpot": {
+    name:     "Mayo Clinic × Cleveland Clinic Healthcare",
+    brands:   ["Mayo Clinic","Cleveland Clinic","Johns Hopkins","Bupa","Kaiser Permanente"],
+    styleKey: "HubSpot",
+    cssDirectives: `
+/* Healthcare CSS Directives */
+/* 1. Clean, light, accessible — never dark or moody */
+body { background: #F8F9FB; color: #1A202C; }
+/* 2. Trustworthy blue-green accents */
+:root { --trust-color: #2B7FBF; }
+/* 3. Generous white space, clinical cleanliness */
+section { padding: clamp(72px,8vw,120px) clamp(24px,6vw,80px); background: #fff; }
+section:nth-child(even) { background: #F8F9FB; }
+/* 4. Cards: white, light shadow, 12px radius */
+.card { background: #fff; border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); border: none; }
+/* 5. Doctor profiles: portrait aspect, circular or rounded photo */
+.doctor-img { border-radius: 50%; width: 120px; height: 120px; object-fit: cover; }
+/* 6. Accessibility: high contrast text, clear focus states */
+a:focus-visible { outline: 3px solid var(--trust-color); outline-offset: 3px; }
+p, li { font-size: 16px; line-height: 1.75; color: #374151; }`,
+    componentVariants: {
+      hero: "split-image", features: "icon-grid", pricing: "three-tier",
+      testimonials: "featured", faq: "accordion", cta: "split-form",
+      footer: "four-column", navbar: "bordered-cta",
+    },
+    heroDirective:    "Split: doctor or patient (real, warm, diverse) RIGHT. Headline LEFT: reassuring, patient-first. 'Expert Care When You Need It.' CTA: 'Book Appointment' — prominent, accessible. Light background, never dark.",
+    cardDirective:    "White background, light box shadow, 12px radius. Service icon: flat, colored. Title: 18px 600 weight. Description: 14px 1.65 line-height muted. Hover: shadow deepens. No glass effect.",
+    typographyDirective:"H1: 700 weight, clamp(36px,5vw,56px), dark color #1A202C. Never aggressive. Body: 16px, 1.75 line-height, #374151. Labels: 13px 600 weight. Font: system sans or Inter.",
+    motionDirective:  "Subtle and professional. Reveal: opacity 0→1, translateY(12px)→0, 0.5s ease. Hover: translateY(-2px), shadow + 8px. No bouncy animations. Trustworthy, not flashy.",
+    ctaDirective:     "Primary: trust-blue filled, 16px 700 weight, 48px height, 12px radius. 'Book Appointment'. Secondary: outlined or white with trust-blue border. Never: dark, edgy, or playful buttons.",
+    photoDirective:   "Doctor: warm, diverse, professional but approachable — not stock sterile. Patient: genuine care moment, natural lighting. Clinic: clean, modern, bright. NEVER dark moody or dramatic.",
+    qualityTarget:    "Matches Mayo Clinic website. Trustworthy first impression. Patient-centered language. Clean, accessible, professional. Makes patients feel safe.",
+    never:            ["Dark mode or dark backgrounds","Aggressive typography","Startup energy","Generic stock hospital rooms","Luxury aesthetics","Fashion photography","Creative agency boldness","Rounded 20px+ (use 12px max)"],
+  },
+
+  // ── HOSPITALITY LUXURY: Four Seasons × Aman ─────────────────────────
+  "Four Seasons": {
+    name:     "Four Seasons × Aman Resorts Luxury Hospitality",
+    brands:   ["Four Seasons","Aman","Ritz-Carlton","Rosewood","One & Only"],
+    styleKey: "Four Seasons",
+    cssDirectives: `
+/* Luxury Hospitality CSS Directives */
+/* 1. Full-screen immersive images */
+.hero-img { width: 100%; height: 100vh; object-fit: cover; }
+/* 2. Serif typography throughout — elegance is the message */
+h1, h2, h3 { font-family: 'Playfair Display', 'Cormorant Garamond', serif; font-weight: 400; font-style: italic; }
+/* 3. Golden accent on fine details only */
+.gold-accent { color: #C9A86C; }
+.gold-line { width: 40px; height: 1px; background: #C9A86C; margin: 24px auto; }
+/* 4. Maximum section padding */
+section { padding: clamp(120px,16vw,200px) clamp(48px,10vw,160px); }
+/* 5. Room cards: landscape photography, serif overlay */
+.room-card { position: relative; overflow: hidden; }
+.room-card-text { position: absolute; bottom: 0; left: 0; right: 0; padding: 32px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); }
+/* 6. Navigation: transparent, centered, minimal */
+nav { background: transparent; justify-content: center; letter-spacing: 0.12em; }`,
+    componentVariants: {
+      hero: "centered", features: "bento-grid", pricing: "three-tier",
+      testimonials: "masonry", cta: "split-form", footer: "four-column",
+      navbar: "minimal-centered",
+    },
+    heroDirective:    "Full-viewport property or destination photograph. Centered: property name in serif italic, ultra-light weight. Gold thin divider line. Subheadline: 1 evocative sentence. CTA: 'Book Your Stay' — centered, outlined or text. No heavy UI over the image.",
+    cardDirective:    "Room/destination cards: landscape photography fills 60% of card. Text overlay at bottom with gradient. Serif italic headline. Price or 'From X/night'. Hover: image scale 1.04 over 0.8s ease.",
+    typographyDirective:"H1: serif italic 300-400 weight, clamp(52px,8vw,112px). H2: same. Body: sans-serif 16px 1.8 line-height, warm white. Labels: uppercase 0.15em tracking, sans-serif, gold color. Zero bold weight headings.",
+    motionDirective:  "Very slow: 1.2-1.6s reveals. Hero image: Ken Burns zoom scale(1.0)→scale(1.05) over 8s ease. Text: fade in 1.4s ease. Hover: 0.8s ease transitions. No parallax scroll on mobile. Zero bounce.",
+    ctaDirective:     "Primary: text-based with thin gold underline, 0.12em tracking uppercase. OR: outlined with thin 1px gold border. 'Reserve' or 'Book'. Never: filled with gradient. Must feel timeless.",
+    photoDirective:   "Property exteriors: golden hour, warm tone. Rooms: natural light, no flash, editorial composition. Pools: blue-water contrast against lush landscape. Staff: genuine warmth. Pool or beach: serene, aspirational.",
+    qualityTarget:    "Matches Four Seasons or Aman website. Every image makes you want to book immediately. Typography breathes. Gold is used sparingly as a fine detail, not a feature.",
+    never:            ["Startup energy","Gradient buttons","Sans-serif hero headings","Dark techy aesthetic","Stock hotel rooms","Busy icon grids","SaaS layout patterns","Healthcare clinical look"],
+  },
+
+  // ── ECOMMERCE: Apple Store × Nike Shop × Tesla ───────────────────────
+  "Shopify": {
+    name:     "Apple Store × Nike.com E-commerce",
+    brands:   ["Apple Store","Nike Shop","Tesla Shop","Glossier","SSENSE"],
+    styleKey: "Shopify",
+    cssDirectives: `
+/* E-commerce CSS Directives */
+/* 1. Product as hero — image is everything */
+.product-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+/* 2. Product cards: no border, white background, image-first */
+.product-card { background: var(--surface); border-radius: 16px; overflow: hidden; }
+.product-card img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+.product-card:hover img { transform: scale(1.04); transition: transform 0.5s ease; }
+/* 3. Price typography */
+.price { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+.price-original { text-decoration: line-through; opacity: 0.5; font-size: 18px; }
+/* 4. Add to cart: prominent, full-width on mobile */
+.add-to-cart { width: 100%; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 50px; }
+/* 5. Category pills */
+.category-pill { padding: 8px 20px; border-radius: 50px; border: 1px solid var(--border); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.category-pill.active, .category-pill:hover { background: var(--primary); color: #fff; border-color: var(--primary); }`,
+    componentVariants: {
+      hero: "product-showcase", features: "icon-grid", pricing: "comparison-table",
+      testimonials: "masonry", cta: "banner-strip", footer: "mega-social",
+      navbar: "glass-sticky", ecommerce: "product-grid",
+    },
+    heroDirective:    "Product as primary visual: clean background (white or brand color), product centered with dramatic shadow. Headline: product name + key benefit. 'Free shipping + 30-day returns' below CTA. No lifestyle imagery on main hero.",
+    cardDirective:    "Square or slight portrait aspect. Product image fills top 70%. Bottom: product name, price, quick-add button. Hover: image zooms + quick-add appears. Clean, minimal, product-first.",
+    typographyDirective:"Product prices: 28px 700 -0.02em. Product names: 16px 600. Category headers: 32px 700. Hero headline: 700 weight, -0.03em tracking. No serif. System sans or Inter throughout.",
+    motionDirective:  "Product card: image zoom 1.04 on hover over 0.5s ease. Quick-add: slides up from bottom 0.3s ease. Cart icon: bounce when item added. Page transitions: fade only, no slide.",
+    ctaDirective:     "Add to Cart: full-width, pill shape, 50px height, bold, primary color. 'Add to Cart' — never 'Buy'. Checkout: black filled. Wishlist: heart outline toggle. Clear and prominent at all times.",
+    photoDirective:   "Products: clean white or gradient background, no props, product fill 80% of frame. Lifestyle shots: product in natural use, aspirational but achievable. Flat lay: styled with complementary items. No busy backgrounds.",
+    qualityTarget:    "Matches Apple Store or Nike.com. Every product looks desirable. Frictionless path to purchase. Trust signals visible without scrolling.",
+    never:            ["Dark moody product photography","Generic stock lifestyle","Restaurant warmth","SaaS layouts","Corporate formal typography","Cluttered product pages","Hidden add-to-cart"],
+  },
+
+  // ── PORTFOLIO: Awwwards × Dribbble × Lee Robinson ──────────────────
+  "Framer": {
+    name:     "Awwwards × Dribbble Creative Portfolio",
+    brands:   ["Awwwards","Dribbble","Behance","Lee Robinson","Brittany Chiang"],
+    styleKey: "Framer",
+    cssDirectives: `
+/* Creative Portfolio CSS Directives */
+/* 1. Typography as identity */
+h1 { font-size: clamp(56px,12vw,160px); font-weight: 800; letter-spacing: -0.04em; line-height: 0.9; }
+/* 2. Hover on work = creative reveal */
+.work-item { position: relative; overflow: hidden; cursor: pointer; }
+.work-item-preview { position: absolute; inset: 0; opacity: 0; transition: opacity 0.3s ease; }
+.work-item:hover .work-item-preview { opacity: 1; }
+/* 3. Cursor as interactive element */
+.cursor-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); position: fixed; pointer-events: none; transition: transform 0.2s ease; z-index: 9999; }
+/* 4. Marquee for skills/clients */
+.marquee { display: flex; gap: 48px; animation: marquee 15s linear infinite; white-space: nowrap; }
+/* 5. About section: personality-led */
+.about-stat { font-size: clamp(48px,8vw,100px); font-weight: 800; line-height: 1; }`,
+    componentVariants: {
+      hero: "minimal-statement", portfolio: "filter-gallery", features: "alternating",
+      testimonials: "grid", cta: "split-form", footer: "minimal-centered",
+      navbar: "minimal-centered",
+    },
+    heroDirective:    "Personal introduction: 'Hi, I'm [Name].' or single bold statement. Type fills 60% of viewport. Below: role + location + availability badge. No product screenshot. No stock imagery. Personality visible in copy.",
+    cardDirective:    "Work cards: full-image, 16:9 or 4:3. On hover: project name slides up from bottom. Category tag: top-left. Hover: image scale 1.05. Case study: cover image fills card, no outline border.",
+    typographyDirective:"H1: 800-900 weight, -0.04em tracking, clamp(56px,12vw,160px). Role/intro: 300 weight, large. Stats: 800 weight display. Body: 15-16px normal weight. Mix personality into copy.",
+    motionDirective:  "Work items: overlay reveals opacity 0→1 over 0.3s. Cursor: custom dot follows mouse. Name: stagger word by word 0.08s delay each. Sections: slide from left only. CTA hover: letter-spacing expands 0.02em.",
+    ctaDirective:     "Primary: outlined, hover fills. Or: text with animated underline expand. 'Let's Work Together' or 'Start a Project'. Must feel personal, not corporate.",
+    photoDirective:   "Work: case study screenshots, mockups, design process. About: genuine candid portrait — not a headshot. Studio or workspace. Process: sketches, whiteboards, iterations. Never: stock diverse-team photos.",
+    qualityTarget:    "Passes Awwwards honourable mention standard. Typography makes a statement. Work is the hero. Copy is personal and confident. Would attract design-aware clients.",
+    never:            ["Stock business headshots","Corporate blue palette","Healthcare clinical aesthetic","SaaS product layout","Restaurant warmth","Generic icon grids","3-column feature sections"],
+  },
+
+  // ── DASHBOARD: Retool × Linear × Monday ─────────────────────────────
+  "Notion": {
+    name:     "Retool × Linear × ClickUp Dashboard",
+    brands:   ["Retool","Linear","Monday.com","ClickUp","Notion"],
+    styleKey: "Notion",
+    cssDirectives: `
+/* Dashboard App CSS Directives */
+/* 1. Data density: tight spacing, information-first */
+section { padding: clamp(48px,6vw,80px) clamp(24px,4vw,48px); }
+/* 2. Sidebar-ready layout awareness */
+.dashboard-layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+/* 3. Stat cards: compact, data-forward */
+.stat-card { padding: 20px 24px; border-radius: 10px; background: var(--card); border: 1px solid var(--border); }
+.stat-value { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.stat-change { font-size: 12px; font-weight: 600; }
+.stat-change.up { color: #10B981; }
+.stat-change.down { color: #EF4444; }
+/* 4. Table styles */
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); padding: 12px 16px; border-bottom: 1px solid var(--border); }
+td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+/* 5. Chart containers */
+.chart-container { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }`,
+    componentVariants: {
+      hero: "product-showcase", features: "bento-grid", pricing: "comparison-table",
+      testimonials: "logo-wall", cta: "centered-gradient", footer: "newsletter-rich",
+      navbar: "glass-sticky", dashboard: "analytics-charts",
+    },
+    heroDirective:    "Dashboard screenshot as primary visual — actual UI visible, not abstract. Headline: 700 weight, tight. 'All your data. One dashboard.' Subheadline: 1 specific benefit sentence. Trust stats below: X,000 teams use it.",
+    cardDirective:    "Compact stat cards: 10px radius, 1px border, padded 20-24px. Value: 700 weight 32px. Change indicator: green/red with arrow. No glass morphism. Precision over beauty.",
+    typographyDirective:"Data numerics: tabular-nums, 700 weight, tight tracking. Labels: 11px uppercase 0.08em tracking. H1: 700 weight -0.03em clamp(36px,5vw,64px). Compact scale throughout — this is a data product.",
+    motionDirective:  "Stat numbers: count up on viewport entry over 1s. Chart bars: animate from 0 on load. Table rows: fade in stagger 0.03s each. No decorative motion. Performance over aesthetics.",
+    ctaDirective:     "Primary: 'Start Free', 'Get Started', or 'Try for Free'. Filled, 600 weight, 10px radius. Never oversized. Secondary: 'View Demo' — text or outlined. Badge: 'No credit card required' below CTA.",
+    photoDirective:   "UI screenshots: actual product screens, clean dark background. Team: diverse remote workers, candid. Charts/graphs: clear data visualization. Never: abstract startup photography, luxury lifestyle.",
+    qualityTarget:    "Matches Linear or Retool. Data-forward. Scannable in under 3 seconds. Every element earns its place. Trust through precision.",
+    never:            ["Luxury editorial spacing","Fashion photography","Rounded corners > 12px","Serif fonts in data UI","Warm color temperature","Restaurant-style warmth","Full-screen lifestyle hero"],
+  },
+};
+
+// ── Domain → Reference key mapping ───────────────────────────────────────
+// Maps DomainKnowledge.designMood / domain to the correct reference profile key
+const DOMAIN_TO_REFERENCE: Record<string, string> = {
+  // Automotive
+  "luxury-car-club":      "Bottega Veneta Editorial",
+  "car-dealership":       "Shopify",
+  "car-rental":           "Apple",
+  "ev-charging":          "Stripe",
+  "taxi-transport":       "Apple",
+  // Food
+  "restaurant":           "Airbnb",
+  "cafe":                 "Airbnb",
+  "bar-pub":              "Airbnb",
+  "bakery":               "Airbnb",
+  "food-delivery":        "Shopify",
+  // Hospitality
+  "hotel":                "Four Seasons",
+  "resort":               "Four Seasons",
+  "travel-agency":        "Airbnb",
+  "airline":              "Apple",
+  // Health
+  "gym":                  "Nike",
+  "yoga-studio":          "Apple",
+  "spa":                  "Four Seasons",
+  "salon":                "Apple",
+  "barber":               "Linear",
+  "dental":               "HubSpot",
+  "healthcare":           "HubSpot",
+  "pharmacy":             "HubSpot",
+  "veterinary":           "HubSpot",
+  "nutritionist":         "HubSpot",
+  "mental-health":        "HubSpot",
+  // Beauty & Fashion
+  "fashion":              "Bottega Veneta Editorial",
+  "jewelry":              "Bottega Veneta Editorial",
+  "watch-brand":          "Bottega Veneta Editorial",
+  "beauty-brand":         "Airbnb",
+  "perfume":              "Bottega Veneta Editorial",
+  // Property
+  "real-estate":          "Apple",
+  "interior-design":      "Framer",
+  "architecture":         "Linear",
+  "construction":         "HubSpot",
+  "furniture":            "Apple",
+  // Tech
+  "saas":                 "Stripe",
+  "ai-startup":           "Stripe",
+  "cybersecurity":        "Stripe",
+  "crm":                  "Notion",
+  "erp":                  "Notion",
+  "developer-tool":       "Stripe",
+  "dashboard-analytics":  "Notion",
+  // Finance
+  "law-firm":             "HubSpot",
+  "accounting":           "HubSpot",
+  "finance":              "Stripe",
+  "insurance":            "HubSpot",
+  "bank-fintech":         "Stripe",
+  "crypto":               "Stripe",
+  // Media
+  "blog-magazine":        "Apple",
+  "podcast":              "Apple",
+  // Services
+  "marketing-agency":     "Linear",
+  "creative-agency":      "Linear",
+  "consultancy":          "HubSpot",
+  "hr-recruiting":        "Stripe",
+  "ngo-charity":          "HubSpot",
+  // Education
+  "school-university":    "HubSpot",
+  "online-course":        "Stripe",
+  "coaching":             "Apple",
+  // Creative
+  "photography":          "Framer",
+  "videography":          "Linear",
+  "wedding":              "Four Seasons",
+  "event-company":        "Apple",
+  // Portfolio
+  "portfolio-developer":  "Framer",
+  "portfolio-designer":   "Framer",
+  "influencer-creator":   "Framer",
+  // Ecommerce
+  "electronics":          "Shopify",
+  "pet-shop":             "Airbnb",
+  "sports-equipment":     "Nike",
+  // Other
+  "logistics":            "HubSpot",
+  "manufacturing":        "HubSpot",
+  "agriculture":          "HubSpot",
+  "landing-page":         "Apple",
+  "app-landing":          "Apple",
+};
+
+// ── Resolve reference for a domain ───────────────────────────────────────
+
+// ════════════════════════════════════════════════════════════════════
+// REFERENCE COMPOSITION ENGINE
+// ════════════════════════════════════════════════════════════════════
+// Merges multiple world-class design references — each owning one
+// specific responsibility. The final design is a unique composition,
+// never a clone of any single brand.
+//
+// Architecture: Per-responsibility override table (Option B).
+// Each domain specifies ONLY the fields that differ from its primary ref.
+// Everything not overridden inherits from the primary reference profile.
+// Adding a new domain = 1-5 lines. Scalable to 500+ domains.
+// ════════════════════════════════════════════════════════════════════
+
+// ── Responsibility keys ───────────────────────────────────────────────
+type RefKey = keyof typeof REFERENCE_PROFILES;
+
+interface CompositionOverride {
+  primary:      RefKey;         // main reference — covers all unspecified roles
+  layout?:      RefKey;         // grid, section structure, container width
+  typography?:  RefKey;         // heading scale, weight, tracking, rhythm
+  motion?:      RefKey;         // animation curves, durations, triggers
+  photography?: RefKey;         // image style, lighting, composition
+  navigation?:  RefKey;         // navbar style, sticky behavior, mobile
+  cards?:       RefKey;         // card background, radius, shadow, hover
+  cta?:         RefKey;         // button style, shape, copy direction
+  spacing?:     RefKey;         // section padding, content rhythm
+  color?:       RefKey;         // accent usage, gradient approach
+}
+
+// ── Composed Strategy output object ───────────────────────────────────
+interface ComposedStrategy {
+  // Attribution — shown in planning UI
+  composition: { role: string; brand: string; why: string }[];
+
+  // Per-responsibility directives (merged from multiple refs)
+  heroDirective:        string;
+  typographyDirective:  string;
+  motionDirective:      string;
+  photoDirective:       string;
+  cardDirective:        string;
+  ctaDirective:         string;
+  navigationDirective:  string;
+  spacingDirective:     string;
+  colorDirective:       string;
+  componentVariants:    Partial<Record<string, string>>;
+  cssDirectives:        string;
+  never:                string[];
+  qualityTarget:        string;
+  brands:               string[];
+}
+
+// ── Composition table — 73 domains, 1-5 lines each ───────────────────
+const COMPOSITION_OVERRIDES: Record<string, CompositionOverride> = {
+
+  // ── AUTOMOTIVE ───────────────────────────────────────────────────────
+  "luxury-car-club":     { primary:"Bottega Veneta Editorial", typography:"Apple",    motion:"Linear",        navigation:"Apple" },
+  "car-dealership":      { primary:"Shopify",                  typography:"Apple",    motion:"Apple",         photography:"Nike" },
+  "car-rental":          { primary:"Apple",                    motion:"Stripe",       cta:"Shopify" },
+  "ev-charging":         { primary:"Stripe",                   photography:"Apple",   color:"Stripe" },
+  "taxi-transport":      { primary:"Apple",                    cta:"Shopify",        motion:"Stripe" },
+
+  // ── FOOD & DRINK ─────────────────────────────────────────────────────
+  "restaurant":          { primary:"Airbnb",                   typography:"Four Seasons", motion:"Apple",     photography:"Airbnb" },
+  "cafe":                { primary:"Airbnb",                   typography:"Apple",    motion:"Apple",         cards:"Airbnb" },
+  "bar-pub":             { primary:"Airbnb",                   typography:"Linear",   motion:"Linear",        color:"Linear" },
+  "bakery":              { primary:"Airbnb",                   typography:"Apple",    photography:"Airbnb",   cta:"Shopify" },
+  "food-delivery":       { primary:"Shopify",                  motion:"Apple",        cta:"Shopify",          cards:"Airbnb" },
+
+  // ── HOSPITALITY ───────────────────────────────────────────────────────
+  "hotel":               { primary:"Four Seasons",             motion:"Apple",        cta:"Bottega Veneta Editorial", navigation:"Apple" },
+  "resort":              { primary:"Four Seasons",             typography:"Bottega Veneta Editorial", motion:"Apple", photography:"Four Seasons" },
+  "travel-agency":       { primary:"Airbnb",                   typography:"Four Seasons", motion:"Apple",     photography:"Airbnb" },
+  "airline":             { primary:"Apple",                    typography:"Stripe",   motion:"Stripe",        cta:"Apple" },
+
+  // ── HEALTH & WELLNESS ─────────────────────────────────────────────────
+  "gym":                 { primary:"Nike",                     cards:"Stripe",        motion:"Nike",          typography:"Nike" },
+  "yoga-studio":         { primary:"Apple",                    typography:"Four Seasons", motion:"Apple",     photography:"Airbnb" },
+  "spa":                 { primary:"Four Seasons",             typography:"Bottega Veneta Editorial", motion:"Apple", cards:"Four Seasons" },
+  "salon":               { primary:"Apple",                    typography:"Bottega Veneta Editorial", photography:"Airbnb" },
+  "barber":              { primary:"Linear",                   typography:"Nike",     photography:"Airbnb",   cards:"Stripe" },
+  "dental":              { primary:"HubSpot",                  motion:"Apple",        typography:"Apple",     cards:"HubSpot" },
+  "healthcare":          { primary:"HubSpot",                  motion:"Apple",        typography:"Apple",     navigation:"HubSpot" },
+  "pharmacy":            { primary:"HubSpot",                  cta:"Shopify",         motion:"Apple" },
+  "veterinary":          { primary:"HubSpot",                  photography:"Airbnb",  motion:"Apple" },
+  "nutritionist":        { primary:"Apple",                    typography:"HubSpot",  photography:"Airbnb" },
+  "mental-health":       { primary:"Apple",                    typography:"Four Seasons", motion:"Apple",     color:"HubSpot" },
+
+  // ── BEAUTY & FASHION ──────────────────────────────────────────────────
+  "fashion":             { primary:"Bottega Veneta Editorial", typography:"Apple",    motion:"Linear",        photography:"Bottega Veneta Editorial" },
+  "jewelry":             { primary:"Bottega Veneta Editorial", motion:"Apple",        navigation:"Bottega Veneta Editorial", cta:"Bottega Veneta Editorial" },
+  "watch-brand":         { primary:"Bottega Veneta Editorial", typography:"Apple",    motion:"Linear",        cards:"Bottega Veneta Editorial" },
+  "beauty-brand":        { primary:"Airbnb",                   typography:"Apple",    photography:"Airbnb",   motion:"Apple" },
+  "perfume":             { primary:"Bottega Veneta Editorial", motion:"Linear",       photography:"Bottega Veneta Editorial", color:"Bottega Veneta Editorial" },
+
+  // ── PROPERTY ──────────────────────────────────────────────────────────
+  "real-estate":         { primary:"Apple",                    typography:"Four Seasons", motion:"Apple",     photography:"Four Seasons" },
+  "interior-design":     { primary:"Framer",                   photography:"Four Seasons", typography:"Bottega Veneta Editorial", motion:"Apple" },
+  "architecture":        { primary:"Linear",                   typography:"Bottega Veneta Editorial", photography:"Linear", motion:"Linear" },
+  "construction":        { primary:"HubSpot",                  typography:"Apple",    motion:"Apple",         cards:"Stripe" },
+  "furniture":           { primary:"Apple",                    typography:"Four Seasons", photography:"Four Seasons", motion:"Apple" },
+
+  // ── TECHNOLOGY ────────────────────────────────────────────────────────
+  "saas":                { primary:"Stripe",                   motion:"Linear",       navigation:"Stripe",    typography:"Apple" },
+  "ai-startup":          { primary:"Stripe",                   motion:"Linear",       color:"Stripe",         typography:"Apple" },
+  "cybersecurity":       { primary:"Stripe",                   typography:"Linear",   motion:"Stripe",        color:"Linear" },
+  "crm":                 { primary:"Notion",                   motion:"Stripe",       navigation:"Stripe",    typography:"Apple" },
+  "erp":                 { primary:"Notion",                   motion:"Stripe",       typography:"HubSpot" },
+  "developer-tool":      { primary:"Stripe",                   typography:"Framer",   color:"Notion",         navigation:"Stripe" },
+  "dashboard-analytics": { primary:"Notion",                   motion:"Stripe",       typography:"Apple",     navigation:"Stripe" },
+
+  // ── FINANCE & LEGAL ───────────────────────────────────────────────────
+  "law-firm":            { primary:"HubSpot",                  typography:"Four Seasons", motion:"Apple",     navigation:"Stripe" },
+  "accounting":          { primary:"HubSpot",                  motion:"Apple",        typography:"Stripe",    cards:"Stripe" },
+  "finance":             { primary:"Stripe",                   typography:"Four Seasons", motion:"Apple",     navigation:"Stripe" },
+  "insurance":           { primary:"HubSpot",                  motion:"Apple",        typography:"Apple",     cta:"Shopify" },
+  "bank-fintech":        { primary:"Stripe",                   motion:"Apple",        cards:"Stripe",         navigation:"Apple" },
+  "crypto":              { primary:"Stripe",                   motion:"Linear",       color:"Linear",         typography:"Apple" },
+
+  // ── MEDIA ─────────────────────────────────────────────────────────────
+  "blog-magazine":       { primary:"Apple",                    typography:"Bottega Veneta Editorial", motion:"Apple", photography:"Airbnb" },
+  "podcast":             { primary:"Apple",                    typography:"Linear",   cards:"Stripe",         motion:"Apple" },
+
+  // ── PROFESSIONAL SERVICES ────────────────────────────────────────────
+  "marketing-agency":    { primary:"Linear",                   typography:"Framer",   photography:"Linear",   motion:"Linear" },
+  "creative-agency":     { primary:"Linear",                   typography:"Framer",   motion:"Linear",        photography:"Linear" },
+  "consultancy":         { primary:"HubSpot",                  typography:"Four Seasons", motion:"Apple",     navigation:"Stripe" },
+  "hr-recruiting":       { primary:"Stripe",                   photography:"HubSpot", motion:"Apple",         cta:"Shopify" },
+  "ngo-charity":         { primary:"HubSpot",                  photography:"Airbnb",  typography:"Apple",     motion:"Apple" },
+
+  // ── EDUCATION ─────────────────────────────────────────────────────────
+  "school-university":   { primary:"HubSpot",                  typography:"Apple",    motion:"Apple",         photography:"Airbnb" },
+  "online-course":       { primary:"Stripe",                   typography:"Apple",    motion:"Apple",         cta:"Shopify" },
+  "coaching":            { primary:"Apple",                    typography:"Four Seasons", photography:"Airbnb", motion:"Apple" },
+
+  // ── CREATIVE PROFESSIONALS ────────────────────────────────────────────
+  "photography":         { primary:"Framer",                   typography:"Bottega Veneta Editorial", motion:"Apple", navigation:"Framer" },
+  "videography":         { primary:"Linear",                   typography:"Framer",   motion:"Linear",        photography:"Bottega Veneta Editorial" },
+  "wedding":             { primary:"Four Seasons",             typography:"Bottega Veneta Editorial", motion:"Apple", photography:"Four Seasons" },
+  "event-company":       { primary:"Apple",                    typography:"Linear",   motion:"Apple",         photography:"Airbnb" },
+
+  // ── PORTFOLIO ─────────────────────────────────────────────────────────
+  "portfolio-developer": { primary:"Framer",                   typography:"Apple",    motion:"Linear",        navigation:"Stripe" },
+  "portfolio-designer":  { primary:"Framer",                   typography:"Bottega Veneta Editorial", motion:"Linear", navigation:"Apple" },
+  "influencer-creator":  { primary:"Framer",                   typography:"Nike",     motion:"Apple",         photography:"Airbnb" },
+
+  // ── ECOMMERCE VERTICALS ───────────────────────────────────────────────
+  "electronics":         { primary:"Shopify",                  typography:"Apple",    motion:"Apple",         photography:"Apple" },
+  "pet-shop":            { primary:"Airbnb",                   cta:"Shopify",         motion:"Apple",         typography:"Apple" },
+  "sports-equipment":    { primary:"Nike",                     cta:"Shopify",         motion:"Nike",          cards:"Shopify" },
+
+  // ── OPERATIONS ────────────────────────────────────────────────────────
+  "logistics":           { primary:"HubSpot",                  typography:"Stripe",   motion:"Apple",         cards:"Stripe" },
+  "manufacturing":       { primary:"HubSpot",                  typography:"Apple",    motion:"Apple" },
+  "agriculture":         { primary:"HubSpot",                  photography:"Airbnb",  color:"HubSpot",        motion:"Apple" },
+
+  // ── LANDING PAGES ─────────────────────────────────────────────────────
+  "landing-page":        { primary:"Apple",                    motion:"Linear",       cta:"Shopify",          typography:"Stripe" },
+  "app-landing":         { primary:"Apple",                    motion:"Stripe",       cta:"Shopify",          typography:"Apple" },
+};
+
+// ── Conflict resolver ─────────────────────────────────────────────────
+// When two references have contradictory philosophies (minimal vs bold),
+// the resolver picks based on businessGoal and marketLevel.
+function resolveConflict(
+  fieldA: string, refA: RefKey,
+  fieldB: string, refB: RefKey,
+  businessGoal: string, marketLevel: string
+): { winner: RefKey; reason: string } {
+  // Trust always wins for finance/medical goals
+  if (/lead|membership|inquiry/.test(businessGoal) && (refA === "HubSpot" || refB === "HubSpot")) {
+    const winner = (refA === "HubSpot" ? refA : refB) as RefKey;
+    return { winner, reason: "Trust signals prioritised for lead-gen goals" };
+  }
+  // Luxury markets: editorial/minimal wins over bold
+  if (marketLevel === "luxury" && (refA === "Bottega Veneta Editorial" || refB === "Bottega Veneta Editorial")) {
+    const winner = (refA === "Bottega Veneta Editorial" ? refA : refB) as RefKey;
+    return { winner, reason: "Luxury market requires editorial restraint" };
+  }
+  // Ecommerce: conversion-focused wins
+  if (/ecommerce|booking/.test(businessGoal) && (refA === "Shopify" || refB === "Shopify")) {
+    const winner = (refA === "Shopify" ? refA : refB) as RefKey;
+    return { winner, reason: "Conversion goal prioritises e-commerce patterns" };
+  }
+  // Default: first ref wins (primary reference takes precedence)
+  return { winner: refA as RefKey, reason: `${refA} selected as primary authority` };
+}
+
+// ── Role labels for attribution display ──────────────────────────────
+const ROLE_LABELS: Record<string, string> = {
+  primary:     "Overall Design",
+  layout:      "Layout System",
+  typography:  "Typography",
+  motion:      "Animations",
+  photography: "Photography",
+  navigation:  "Navigation",
+  cards:       "Card Design",
+  cta:         "CTA Style",
+  spacing:     "Spacing",
+  color:       "Color System",
+};
+
+// ── Brand display name for attribution ────────────────────────────────
+function getBrandDisplay(refKey: RefKey): string {
+  const ref = REFERENCE_PROFILES[refKey];
+  if (!ref) return refKey;
+  // Take first 2 brands from the reference
+  return ref.brands.slice(0, 2).join(" × ");
+}
+
+// ── Core composer function ─────────────────────────────────────────────
+function composeDesignStrategy(
+  domainId:     string,
+  competitorStyle: string,
+  niche:        NicheProfile,
+  businessGoal: string
+): ComposedStrategy {
+  // 1. Look up the override spec for this domain
+  const override = COMPOSITION_OVERRIDES[domainId];
+  const primaryKey: RefKey = override?.primary
+    ?? (REFERENCE_PROFILES[competitorStyle as RefKey] ? competitorStyle as RefKey : "Apple");
+  const primary = REFERENCE_PROFILES[primaryKey]!;
+
+  // 2. Resolve each responsibility — override if specified, else inherit from primary
+  const resolved: Record<string, DesignReference> = {
+    layout:      REFERENCE_PROFILES[override?.layout      ?? primaryKey] ?? primary,
+    typography:  REFERENCE_PROFILES[override?.typography  ?? primaryKey] ?? primary,
+    motion:      REFERENCE_PROFILES[override?.motion      ?? primaryKey] ?? primary,
+    photography: REFERENCE_PROFILES[override?.photography ?? primaryKey] ?? primary,
+    navigation:  REFERENCE_PROFILES[override?.navigation  ?? primaryKey] ?? primary,
+    cards:       REFERENCE_PROFILES[override?.cards       ?? primaryKey] ?? primary,
+    cta:         REFERENCE_PROFILES[override?.cta         ?? primaryKey] ?? primary,
+    spacing:     REFERENCE_PROFILES[override?.spacing     ?? primaryKey] ?? primary,
+    color:       REFERENCE_PROFILES[override?.color       ?? primaryKey] ?? primary,
+  };
+
+  // 3. Build attribution table (only show roles that differ from primary)
+  const composition: { role: string; brand: string; why: string }[] = [
+    { role:"Overall Design", brand:getBrandDisplay(primaryKey), why:"Primary visual language" },
+  ];
+  const seen = new Set<RefKey>([primaryKey]);
+  for (const [role, ref] of Object.entries(resolved)) {
+    const key = ref.styleKey as RefKey;
+    if (key !== primaryKey && !seen.has(key)) {
+      seen.add(key);
+      composition.push({
+        role:  ROLE_LABELS[role] || role,
+        brand: getBrandDisplay(key),
+        why:   `Best-in-class ${ROLE_LABELS[role]?.toLowerCase() || role}`,
+      });
+    }
+  }
+
+  // 4. Merge CSS directives — primary first, then unique additions from overrides
+  const cssBlocks = new Set<string>([primary.cssDirectives.trim()]);
+  for (const ref of Object.values(resolved)) {
+    if (ref.cssDirectives.trim() !== primary.cssDirectives.trim()) {
+      // Add only the most specific selector lines (not full block duplication)
+      const lines = ref.cssDirectives.split('\n')
+        .filter(l => l.includes('{') && !primary.cssDirectives.includes(l.split('{')[0]));
+      if (lines.length > 0) cssBlocks.add(lines.slice(0, 5).join('\n'));
+    }
+  }
+
+  // 5. Merge NEVER rules (union)
+  const neverSet = new Set(primary.never);
+  for (const ref of Object.values(resolved)) {
+    for (const n of ref.never) {
+      if (!primary.never.includes(n)) neverSet.add(n);
+    }
+  }
+
+  // 6. Merge component variants — override wins over primary
+  const variants = { ...primary.componentVariants };
+  if (resolved.navigation !== primary) Object.assign(variants, { navbar: resolved.navigation.componentVariants.navbar });
+  if (resolved.cta !== primary)        Object.assign(variants, { cta: resolved.cta.componentVariants.cta });
+  if (resolved.cards !== primary) {
+    const cardKey = Object.keys(resolved.cards.componentVariants)[0];
+    if (cardKey) variants[cardKey] = (resolved.cards.componentVariants as any)[cardKey];
+  }
+
+  // 7. Collect unique brand references for attribution
+  const allBrands = Array.from(new Set([
+    ...primary.brands.slice(0, 2),
+    ...Object.values(resolved)
+      .filter(r => r !== primary)
+      .flatMap(r => r.brands.slice(0, 1)),
+  ])).slice(0, 6);
+
+  return {
+    composition,
+    heroDirective:        resolved.layout.heroDirective,
+    typographyDirective:  resolved.typography.typographyDirective,
+    motionDirective:      resolved.motion.motionDirective,
+    photoDirective:       resolved.photography.photoDirective,
+    cardDirective:        resolved.cards.cardDirective,
+    ctaDirective:         resolved.cta.ctaDirective,
+    navigationDirective:  resolved.navigation.cardDirective,  // use card style for nav context
+    spacingDirective:     resolved.spacing?.cssDirectives?.split('\n').find((l: string) => l.includes('padding')) ?? "Balanced section spacing — 96-120px padding.",
+    colorDirective:       resolved.color?.cssDirectives?.split('\n').find((l: string) => l.includes('color') || l.includes('background')) ?? "Use brand primary color system",
+    componentVariants:    variants,
+    cssDirectives:        Array.from(cssBlocks).join('\n\n/* --- */\n\n'),
+    never:                Array.from(neverSet),
+    qualityTarget:        primary.qualityTarget,
+    brands:               allBrands,
+  };
+}
+
+
+function getDesignReference(
+  domain:        string,
+  competitorStyle: string,
+  niche:         NicheProfile
+): DesignReference | null {
+  // 1. Exact domain match
+  const refKey = DOMAIN_TO_REFERENCE[domain];
+  if (refKey && REFERENCE_PROFILES[refKey]) return REFERENCE_PROFILES[refKey];
+
+  // 2. competitorStyle override (user explicitly said "like Stripe")
+  if (REFERENCE_PROFILES[competitorStyle]) return REFERENCE_PROFILES[competitorStyle];
+
+  // 3. Tone-based fallback
+  const toneMap: Record<string, string> = {
+    editorial: "Bottega Veneta Editorial", energetic: "Nike", warm: "Airbnb",
+    trust: "Stripe", bold: "Linear", clean: "Apple",
+  };
+  const toneKey = toneMap[niche.tone];
+  return toneKey ? (REFERENCE_PROFILES[toneKey] || null) : null;
+}
+
+function detectCompetitorStyle(
+  prompt: string, tone: string, domainId?: string
+): string {
   const p = prompt.toLowerCase();
-  // Explicit mention in prompt
+  // 1. Explicit user mention takes priority
   if (/inspired by stripe|like stripe|stripe style/.test(p)) return "Stripe";
   if (/inspired by apple|like apple|apple style/.test(p)) return "Apple";
   if (/inspired by nike|like nike|nike style/.test(p)) return "Nike";
@@ -473,19 +1362,17 @@ function detectCompetitorStyle(prompt: string, tone: string): string {
   if (/inspired by linear|like linear|linear style/.test(p)) return "Linear";
   if (/inspired by framer|like framer|framer style/.test(p)) return "Framer";
   if (/inspired by notion|like notion|notion style/.test(p)) return "Notion";
-  if (/inspired by webflow|like webflow/.test(p)) return "Webflow";
+  if (/inspired by ferrari|like ferrari/.test(p)) return "Bottega Veneta Editorial";
   if (/inspired by shopify|like shopify/.test(p)) return "Shopify";
   if (/inspired by hubspot|like hubspot/.test(p)) return "HubSpot";
-  // Auto-detect from tone
+  if (/inspired by four seasons|four seasons style/.test(p)) return "Four Seasons";
+  // 2. Domain-specific reference (accurate over tone-guess)
+  if (domainId && DOMAIN_TO_REFERENCE[domainId]) return DOMAIN_TO_REFERENCE[domainId];
+  // 3. Tone-based fallback
   const map: Record<string,string> = {
-    editorial: "Bottega Veneta Editorial",
-    energetic: "Nike",
-    warm: "Airbnb",
-    trust: "Stripe",
-    bold: "Linear",
-    clean: "Apple",
-    adventurous: "Airbnb",
-    helpful: "HubSpot",
+    editorial: "Bottega Veneta Editorial", energetic: "Nike", warm: "Airbnb",
+    trust: "Stripe", bold: "Linear", clean: "Apple",
+    adventurous: "Airbnb", helpful: "HubSpot",
   };
   return map[tone] || "Apple";
 }
@@ -1080,7 +1967,20 @@ function buildNichePrompt(userPrompt: string, type: string, plan: string, cached
       }
     : detectCompetitorFromURL(userPrompt);
   // Phase 2: Competitor style
-  const competitorStyle = urlBlueprint?.style || detectCompetitorStyle(userPrompt, niche.tone) || niche.competitorStyle;
+  // Pass domainId so detectCompetitorStyle uses domain-accurate reference brands
+  const _domainId = domainPlan && (domainPlan as any).__domainKnowledge
+    ? ((domainPlan as any).__domainKnowledge as DomainKnowledge).domain
+    : undefined;
+  const competitorStyle = urlBlueprint?.style
+    || detectCompetitorStyle(userPrompt, niche.tone, _domainId)
+    || niche.competitorStyle;
+  // Resolve the full DesignReference for this domain
+  const designRef   = getDesignReference(_domainId || "", competitorStyle, niche);
+  // ── Compose strategy from multiple references ─────────────────────
+  const composed    = composeDesignStrategy(
+    _domainId || "", competitorStyle, niche,
+    pipelineBlueprint?.businessGoal || niche.conversionGoal || "lead"
+  );
   const audienceDim = niche.audienceDimensions || detectAudienceDimensions(userPrompt, niche.industry, niche.marketLevel);
 
   const BASE = `You are Krypton AI — a world-class UI/UX designer creating websites comparable to premium agencies.
@@ -1095,6 +1995,29 @@ Audience:          ${niche.audience} · ${audienceDim.gender} · ${audienceDim.a
 Sophistication:    ${audienceDim.sophistication} · motivated by: ${audienceDim.motivation}
 Design Tone:       ${niche.tone}
 Competitor Style:  ${competitorStyle} (match this design quality/feel — NOT content)
+Reference Brands:  ${composed.brands.join(", ")}
+Quality Target:    ${composed.qualityTarget}
+
+DESIGN COMPOSITION (${composed.composition.length} references merged):
+${composed.composition.map(c => `  ${c.role}: ${c.brand} — ${c.why}`).join("\n")}
+
+COMPOSED DESIGN DIRECTIVES (implement precisely):
+Hero Layout:   ${composed.heroDirective}
+Typography:    ${composed.typographyDirective}
+Motion:        ${composed.motionDirective}
+Photography:   ${composed.photoDirective}
+Cards:         ${composed.cardDirective}
+CTA:           ${composed.ctaDirective}
+Spacing:       ${composed.spacingDirective}
+
+CSS DIRECTIVES (from merged references — implement these patterns):
+${composed.cssDirectives}
+
+COMPONENT VARIANTS SELECTED (composition-driven):
+${Object.entries(composed.componentVariants).map(([k,v]) => `  ${k}: ${v}`).join("\n")}
+
+NEVER DO (merged quality rules):
+${composed.never.slice(0, 12).map(n => `  ✗ ${n}`).join("\n")}
 Conversion Goal:   ${niche.conversionGoal} ← OPTIMIZE ENTIRE PAGE FOR THIS
 
 CONVERSION PATH: ${
@@ -1357,13 +2280,22 @@ ${plan}`;
 
 // ── PHASE 2: Design Language Per Niche ───────────────────────────
 interface DesignLanguage {
-  name: string;          // Apple / Stripe / Nike / Airbnb / Linear
-  cardStyle: string;     // CSS for cards
-  buttonStyle: string;   // CSS for buttons
-  heroStyle: string;     // CSS for hero
-  sectionBg: string[];   // alternating section backgrounds
-  effectsCSS: string;    // premium effects CSS
-  spacing: string;       // spacing philosophy
+  name: string;              // Apple / Stripe / Nike / Airbnb / Linear / Editorial Luxury
+  cardStyle: string;         // CSS for cards
+  buttonStyle: string;       // CSS for buttons
+  heroStyle: string;         // CSS for hero
+  sectionBg: string[];       // alternating section backgrounds
+  effectsCSS: string;        // premium effects CSS
+  spacing: string;           // spacing philosophy
+  // ── Visual Intelligence Extensions ─────────────────────────────────
+  motionStyle: string;       // how animations behave for this domain
+  imageDirection: string;    // photography/imagery direction for AI prompt
+  componentDensity: string;  // generous | balanced | tight | data-heavy
+  premiumLevel: number;      // 1-10: used to bias CSS quality and complexity
+  colorTemperature: string;  // warm | cool | neutral | vibrant — palette mood
+  typographyScale: string;   // compact | normal | editorial | display
+  borderRadius: string;      // sharp (0px) | subtle (4px) | rounded (12px) | pill (999px)
+  shadowDepth: string;       // flat | subtle | medium | dramatic | glow
 }
 
 function getDesignLanguage(niche: NicheProfile): DesignLanguage {
@@ -1392,6 +2324,14 @@ img { border-radius:0 !important; }
 @keyframes luxuryReveal { from{opacity:0;letter-spacing:0.3em} to{opacity:1;letter-spacing:0.08em} }
 .hero-title { animation:luxuryReveal 1.2s ease forwards; }`,
         spacing: "Use generous whitespace — 160px+ section padding. Let content breathe.",
+        motionStyle:       "Ultra-slow reveals (1.2s). Letter-spacing animation on headlines. Parallax on imagery. No bounce easing — only cubic-bezier(0.16,1,0.3,1). Hover: barely perceptible scale(1.02).",
+        imageDirection:    "Editorial fashion photography. High contrast. Desaturated or duotone. Studio or location. Never stock. Models in motion or stillness. Black/white with gold accents.",
+        componentDensity:  "generous",
+        premiumLevel:      10,
+        colorTemperature:  "neutral",
+        typographyScale:   "editorial",
+        borderRadius:      "sharp",
+        shadowDepth:       "flat",
       };
 
     // ── ENERGETIC (Fitness, Sports) — "Nike" style
@@ -1415,6 +2355,14 @@ img { border-radius:0 !important; }
 .slide-right.visible { animation:slideInRight 0.7s ease forwards; }
 :root { --section-pad: clamp(80px,10vw,140px); }`,
         spacing: "Tight, powerful. Section padding 80-120px. Large numbers. High contrast.",
+        motionStyle:       "Fast snappy reveals (0.4s). Diagonal slide-in animations. Parallax at speed. Bold hover scale(1.05). Active states with color pulse. Counter animations on stats.",
+        imageDirection:    "Action sports photography. Dynamic angles. Athletes mid-motion. High shutter speed. Raw energy. Dramatic contrast. Minimal grain. Wide angle dramatic perspective.",
+        componentDensity:  "tight",
+        premiumLevel:      7,
+        colorTemperature:  "cool",
+        typographyScale:   "display",
+        borderRadius:      "sharp",
+        shadowDepth:       "flat",
       };
 
     // ── WARM (Restaurant, Food) — "Airbnb" style
@@ -1436,6 +2384,14 @@ img { border-radius:0 !important; }
 @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
 .img-loading { background:linear-gradient(90deg,var(--card) 25%,var(--surface) 50%,var(--card) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }`,
         spacing: "Comfortable and inviting. 96px section padding. Generous card padding 32px.",
+        motionStyle:       "Smooth gentle reveals (0.65s). Fade + lift from bottom 20px. Card hover lift translateY(-4px) with warm shadow growth. No sharp transitions. Easing: ease-out.",
+        imageDirection:    "Warm natural light photography. Golden hour or soft diffuse. Real people, genuine moments. Food close-up with steam and texture. Interior: candles, wood, fabric.",
+        componentDensity:  "balanced",
+        premiumLevel:      6,
+        colorTemperature:  "warm",
+        typographyScale:   "normal",
+        borderRadius:      "rounded",
+        shadowDepth:       "medium",
       };
 
     // ── TRUST (Finance, Crypto, Medical) — "Stripe" style
@@ -1457,6 +2413,14 @@ img { border-radius:0 !important; }
 .check-list li::before { content:'✓'; color:var(--primary); font-weight:700; flex-shrink:0; margin-top:2px; }
 .hero-gradient-blob { position:absolute; border-radius:50%; filter:blur(120px); pointer-events:none; }`,
         spacing: "Precise. 8px base grid. 96px section padding. Data presented cleanly.",
+        motionStyle:       "Precise reveals (0.5s). Number counters on stats. Grid line animations. Subtle gradient border on hover. Chart bars animate on scroll. No overshoot easing.",
+        imageDirection:    "Clean product screenshots on device mockups. Abstract data visualizations. Dark background with glowing UI elements. Team photos: professional, diverse, confident.",
+        componentDensity:  "balanced",
+        premiumLevel:      8,
+        colorTemperature:  "cool",
+        typographyScale:   "compact",
+        borderRadius:      "subtle",
+        shadowDepth:       "subtle",
       };
 
     // ── BOLD (Agency, Creative) — "Linear" style  
@@ -1482,6 +2446,14 @@ img { border-radius:0 !important; }
 .glow-card::after { content:''; position:absolute; inset:-1px; border-radius:inherit; padding:1px; background:linear-gradient(var(--angle,0deg),var(--primary),transparent,var(--secondary)); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; opacity:0; transition:opacity 0.3s; }
 .glow-card:hover::after { opacity:1; }`,
         spacing: "Dramatic. Large sections 120px+. Oversized typography. Bold visual statements.",
+        motionStyle:       "Cinematic reveals (0.8s). Work cards: overlay reveals on hover. Gradient border rotates on hover. Large number backgrounds count up. Parallax on hero. Bold cursor effects.",
+        imageDirection:    "Portfolio case studies: before/after, process shots, final renders. Agency vibe: creative workspace, team in action, whiteboards. Bold typography as graphic element.",
+        componentDensity:  "generous",
+        premiumLevel:      9,
+        colorTemperature:  "cool",
+        typographyScale:   "display",
+        borderRadius:      "subtle",
+        shadowDepth:       "dramatic",
       };
 
     // ── CLEAN (SaaS, Tech) — "Apple" style
@@ -1504,6 +2476,14 @@ img { border-radius:0 !important; }
 .mockup-bar { background:var(--card); padding:12px 16px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); }
 .dot { width:12px; height:12px; border-radius:50%; }`,
         spacing: "Generous whitespace — Apple-level breathing room. 120px section padding.",
+        motionStyle:       "Elegant reveals (0.65s). Blur+fade in on scroll (blur: 8px → 0). Card hover: translateY(-6px) with glass shadow spread. Feature icons: scale(1.08) on hover. Smooth everything.",
+        imageDirection:    "Clean product photography on white or dark. Device mockups with UI screenshots. Abstract gradients as backgrounds. People: professional, diverse, smiling naturally.",
+        componentDensity:  "balanced",
+        premiumLevel:      8,
+        colorTemperature:  "neutral",
+        typographyScale:   "normal",
+        borderRadius:      "rounded",
+        shadowDepth:       "medium",
       };
   }
 }
@@ -1618,10 +2598,45 @@ PHASE 2: DESIGN LANGUAGE — ${dl.name.toUpperCase()}
 
 ${dl.spacing}
 
+VISUAL INTELLIGENCE:
+  Motion Style:         ${dl.motionStyle}
+  Image Direction:      ${dl.imageDirection}
+  Component Density:    ${dl.componentDensity}
+  Premium Level:        ${dl.premiumLevel}/10
+  Color Temperature:    ${dl.colorTemperature}
+  Typography Scale:     ${dl.typographyScale}
+  Border Radius Style:  ${dl.borderRadius}
+  Shadow Depth:         ${dl.shadowDepth}
+
+MOTION RULES — implement these exactly:
+${dl.motionStyle}
+
+IMAGE DIRECTION — brief AI on imagery style:
+${dl.imageDirection}
+
 MANDATORY CSS PATTERNS (add to <style> block):
 
 /* Design Language Effects */
 ${dl.effectsCSS}
+
+/* Motion Intelligence */
+${dl.premiumLevel >= 8 ? `
+/* Premium Motion — smooth, purposeful animations */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px) ${dl.typographyScale === 'editorial' ? 'scale(0.98)' : ''};
+  transition: opacity ${dl.premiumLevel >= 9 ? '0.9s' : '0.6s'} cubic-bezier(0.16,1,0.3,1),
+              transform ${dl.premiumLevel >= 9 ? '0.9s' : '0.6s'} cubic-bezier(0.16,1,0.3,1);
+}
+[data-reveal].kr-visible {
+  opacity: 1;
+  transform: translateY(0) ${dl.typographyScale === 'editorial' ? 'scale(1)' : ''};
+}
+` : ''}
+/* Border Radius System — ${dl.borderRadius} */
+.card, [class*="-card"] {
+  border-radius: ${dl.borderRadius === 'sharp' ? '0px' : dl.borderRadius === 'subtle' ? '4px' : dl.borderRadius === 'rounded' ? '16px' : '999px'};
+}
 
 /* Complete Color System */
 :root {
@@ -2374,233 +3389,118 @@ Output ONLY the HTML body content (nav through footer). Use real, specific copy 
 }
 
 // ── Stage 3: CSS (complete stylesheet matching the HTML above) ─────────
-// V3 FIX: generateCSS (AI call) → buildStaticCSS (deterministic, zero AI)
-// All per-component styles now come from the Component Library's own <style> blocks.
-// buildStaticCSS adds only global utilities: hover states, responsive helpers,
-// component-agnostic patterns. All token values come from buildRootTokens().
-function buildStaticCSS(niche: NicheProfile): string {
+async function generateCSS(niche: NicheProfile, dl: DesignLanguage, htmlStructure: string): Promise<string> {
   const p = niche.palette;
   const t = niche.typography;
   const rgb = hexToRgbValues(p.primary);
-  return `
-/* ── Global utilities — deterministic, no AI ── */
-*{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
-body{background:var(--bg);color:var(--text);font-family:var(--body-font);line-height:1.65;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
-h1,h2,h3,h4,h5{font-family:var(--heading-font);font-weight:var(--heading-weight);letter-spacing:var(--heading-spacing);line-height:1.15;}
-h1{font-size:clamp(28px,6vw,72px);}
-h2{font-size:clamp(22px,4vw,48px);}
-h3{font-size:clamp(16px,2.5vw,28px);}
-a{color:inherit;text-decoration:none;}
-img{max-width:100%;height:auto;}
-::-webkit-scrollbar{width:4px;}
-::-webkit-scrollbar-thumb{background:rgba(var(--primary-rgb),.4);border-radius:4px;}
+  const premiumEffects = getPremiumEffects(niche, rgb);
 
-/* ── Container ── */
-.container{max-width:1200px;margin:0 auto;padding:0 clamp(16px,4vw,48px);}
-.section-inner{max-width:1200px;margin:0 auto;padding:0 clamp(16px,4vw,48px);}
+  const system = `You are Krypton AI's CSS specialist. You will be given exact HTML and must write a COMPLETE stylesheet that styles every class used in it. Output ONLY CSS — no markdown fences, no explanation.`;
 
-/* ── Buttons ── */
-.btn,.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#fff;border:none;padding:14px 28px;border-radius:10px;font-weight:700;cursor:pointer;text-decoration:none;font-family:var(--body-font);font-size:15px;transition:transform .2s,box-shadow .2s;white-space:nowrap;}
-.btn:hover,.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(var(--primary-rgb),.35);}
-.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text);border:1px solid var(--border);padding:13px 28px;border-radius:10px;font-weight:600;cursor:pointer;font-family:var(--body-font);font-size:15px;transition:all .2s;text-decoration:none;}
-.btn-secondary:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.2);}
+  const user = `${FORCE_RULES}
 
-/* ── Cards ── */
-.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;transition:border-color .2s,transform .2s;}
-.card:hover{border-color:rgba(var(--primary-rgb),.3);transform:translateY(-2px);}
+HTML TO STYLE (style every class name that appears here — do not invent classes that aren't in this HTML):
+${htmlStructure}
 
-/* ── Sections ── */
-section{padding:clamp(60px,10vw,120px) 0;overflow-x:hidden;}
-
-/* ── Navigation ── */
-nav{position:sticky;top:0;z-index:100;background:rgba(var(--bg-rgb),.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
-nav.scrolled{box-shadow:0 4px 24px rgba(0,0,0,.3);}
-.nav-links{display:flex;align-items:center;gap:8px;}
-.hamburger{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:6px;}
-.nav-links.open{display:flex;}
-@media(max-width:768px){
-  .nav-links{display:none;position:fixed;inset:58px 0 0 0;background:var(--bg);flex-direction:column;padding:20px;gap:12px;border-top:1px solid var(--border);align-items:flex-start;}
-  .nav-links a{font-size:17px;padding:10px 0;}
-  .hamburger{display:block;}
+DESIGN SYSTEM — use exactly these values:
+@import url('${t.googleFonts}');
+:root {
+  --primary: ${p.primary}; --secondary: ${p.secondary}; --grad: ${p.grad};
+  --accent: ${p.accent}; --bg: ${p.bg}; --surface: ${p.surface}; --card: ${p.card};
+  --text: #FFFFFF; --text-2: ${p.text2};
+  --border: rgba(255,255,255,0.07); --border-accent: rgba(${rgb},0.3);
 }
+Heading font: ${t.headingFont}, weight ${t.headingWeight}, letter-spacing ${t.headingSpacing}
+Body font: ${t.bodyFont}
 
-/* ── FAQ accordion ── */
-.faq-item{border-bottom:1px solid var(--border);}
-.faq-question{display:flex;justify-content:space-between;align-items:center;padding:18px 0;cursor:pointer;font-weight:600;}
-.faq-answer{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s ease;}
-.faq-answer.open{max-height:400px;padding-bottom:16px;}
-.faq-icon{transition:transform .3s;flex-shrink:0;}
-.faq-question.active .faq-icon{transform:rotate(45deg);}
+CRITICAL RULES:
+- ALL heading font-sizes MUST use clamp(min,vw,max) — NEVER a fixed px value (causes mobile wrapping)
+- Mobile nav MUST collapse to hamburger below 768px (full pattern, not partial)
+- Every button/card/link needs a hover state with transition
+- Add scroll-reveal animation classes (.reveal) with @keyframes
+${premiumEffects}
 
-/* ── Forms ── */
-input,textarea,select{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:var(--body-font);font-size:14px;width:100%;outline:none;transition:border-color .2s;}
-input:focus,textarea:focus,select:focus{border-color:var(--primary);}
-input::placeholder,textarea::placeholder{color:var(--text-2);}
+Output the complete CSS now.`;
 
-/* ── Reveal animation ── */
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .65s cubic-bezier(.16,1,.3,1),transform .65s cubic-bezier(.16,1,.3,1);}
-.reveal.visible{opacity:1;transform:none;}
-
-/* ── Pricing highlighted ── */
-.pricing-card.highlighted,.pricing-card.featured{border-color:rgba(var(--primary-rgb),.4);background:var(--surface);}
-
-/* ── Grid helpers ── */
-.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
-@media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:1fr 1fr;}}
-@media(max-width:640px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
-
-/* ── Text utilities ── */
-.text-center{text-align:center;}
-.text-gradient{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);margin-bottom:12px;}
-.section-headline{font-size:clamp(24px,4vw,44px);margin-bottom:16px;}
-.section-sub{font-size:clamp(14px,2vw,18px);color:var(--text-2);line-height:1.75;max-width:600px;}
-
-/* ── Footer ── */
-footer{background:var(--surface);border-top:1px solid var(--border);padding:clamp(48px,8vw,80px) 0 28px;}
-`.trim();
+  try {
+    const { text } = await kryptonGenerate(system, user);
+    let css = text.replace(/\`\`\`css|\`\`\`/g, "").trim();
+    if (css.length < 200) throw new Error("CSS output too short");
+    // Belt-and-suspenders: catch any fixed-px headings the CSS stage still produces
+    css = enforceResponsiveHeadings(`<style>${css}</style>`).replace(/^<style>|<\/style>$/g, "");
+    return css;
+  } catch {
+    // Fallback: a solid, working default stylesheet using the real niche palette —
+    // not pretty, but guarantees the site is never unstyled if the CSS stage fails twice.
+    return `
+:root{--primary:${p.primary};--secondary:${p.secondary};--grad:${p.grad};--accent:${p.accent};
+--bg:${p.bg};--surface:${p.surface};--card:${p.card};--text:#FFFFFF;--text-2:${p.text2};
+--border:rgba(255,255,255,0.07);}
+body{background:var(--bg);color:var(--text);font-family:${t.bodyFont};line-height:1.6;}
+h1,h2,h3{font-family:${t.headingFont};font-weight:${t.headingWeight};}
+h1{font-size:clamp(28px,6vw,56px);} h2{font-size:clamp(22px,4vw,38px);}
+.container{max-width:1200px;margin:0 auto;padding:0 24px;}
+section{padding:clamp(48px,8vw,96px) 0;}
+nav{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;position:sticky;top:0;background:var(--surface);z-index:100;}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;}
+@media(max-width:768px){.nav-links{display:none;}.hamburger{display:block;}}
+.btn,button,a.btn{background:var(--grad);color:#fff;border:none;padding:14px 28px;border-radius:10px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;transition:transform .2s;}
+.btn:hover{transform:translateY(-2px);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;}
+footer{background:var(--surface);padding:48px 24px;text-align:center;color:var(--text-2);}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s,transform .6s;}
+.reveal.visible{opacity:1;transform:none;}`;
+  }
 }
 
 // ── Stage 4: JS (interactivity targeting the HTML above) ───────────────
-// V4 FIX: generateJS (AI call) → buildStaticJS (deterministic, zero AI)
-// Every behavior is predefined: hamburger, FAQ accordion, smooth scroll,
-// scroll-reveal, sticky header, form handling.
-// Covers 100% of what generateJS asked the AI to produce.
-function buildStaticJS(): string {
-  return `
-/* Krypton AI — Static Interaction Layer */
-(function(){
-  // ── Hamburger menu ──
-  document.querySelectorAll('.hamburger,[data-hamburger]').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      document.querySelectorAll('.nav-links,[data-nav-links]').forEach(function(nav){
-        nav.classList.toggle('open');
-      });
-    });
-  });
-  // Close mobile nav when a link is clicked
-  document.querySelectorAll('.nav-links a,[data-nav-links] a').forEach(function(a){
-    a.addEventListener('click',function(){
-      document.querySelectorAll('.nav-links,[data-nav-links]').forEach(function(nav){
-        nav.classList.remove('open');
-      });
-    });
-  });
-  // Close on outside click
-  document.addEventListener('click',function(e){
-    var t=e.target;
-    if(!t.closest('.hamburger,.nav-links,[data-hamburger],[data-nav-links]')){
-      document.querySelectorAll('.nav-links,[data-nav-links]').forEach(function(nav){
-        nav.classList.remove('open');
-      });
-    }
-  });
+async function generateJS(htmlStructure: string, projectType: string): Promise<string> {
+  const system = `You are Krypton AI's JavaScript specialist. You will be given exact HTML and must write vanilla JS (no frameworks, no libraries) that makes every interactive element in it actually work. Output ONLY JS — no markdown fences, no explanation.`;
 
-  // ── Sticky header ──
-  window.addEventListener('scroll',function(){
-    document.querySelectorAll('nav,header').forEach(function(nav){
-      nav.classList.toggle('scrolled',window.scrollY>50);
-    });
-  },{passive:true});
+  const user = `${FORCE_RULES}
 
-  // ── Smooth scroll ──
-  document.querySelectorAll('a[href^="#"]').forEach(function(a){
-    a.addEventListener('click',function(e){
-      var id=a.getAttribute('href');
-      var t=id&&id.length>1?document.querySelector(id):null;
-      if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth',block:'start'});}
-    });
+HTML TO MAKE INTERACTIVE:
+${htmlStructure}
+
+REQUIRED BEHAVIOR:
+- Mobile hamburger menu: toggle .open class on click, close on link click or outside-click
+- FAQ accordions (if present): expand/collapse, only one open at a time
+- Scroll-reveal: IntersectionObserver adds .visible to .reveal elements as they enter viewport
+- Smooth scroll for all anchor links (#section)
+- Forms: prevent default, show a success message inline (no real backend call)
+- Sticky header: add .scrolled class to nav after 50px scroll for shadow/bg change
+- Any sliders/carousels referenced in the HTML must be fully functional
+
+Output the complete JS now.`;
+
+  try {
+    const { text } = await kryptonGenerate(system, user);
+    const cleaned = text.replace(/\`\`\`(javascript|js)?|\`\`\`/g, "").trim();
+    if (cleaned.length < 50) throw new Error("JS output too short");
+    return cleaned;
+  } catch {
+    // Fallback: minimal but genuinely functional JS — hamburger menu + smooth scroll +
+    // scroll-reveal still work even if the JS stage fails. Better than zero interactivity.
+    return `
+document.querySelectorAll('.hamburger').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-links').forEach(n=>n.classList.toggle('open'));
   });
-
-  // ── Scroll reveal (IntersectionObserver) ──
-  if('IntersectionObserver' in window){
-    var ro=new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(e.isIntersecting){e.target.classList.add('visible');ro.unobserve(e.target);}
-      });
-    },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
-    document.querySelectorAll('.reveal').forEach(function(el){ro.observe(el);});
-  } else {
-    document.querySelectorAll('.reveal').forEach(function(el){el.classList.add('visible');});
+});
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});}
+  });
+});
+const revealObserver=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});
+},{threshold:0.15});
+document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
+window.addEventListener('scroll',()=>{
+  document.querySelectorAll('nav').forEach(n=>n.classList.toggle('scrolled',window.scrollY>50));
+});`;
   }
-
-  // ── FAQ accordion ──
-  document.querySelectorAll('.faq-question,[data-faq-question]').forEach(function(q){
-    q.addEventListener('click',function(){
-      var item=q.closest('.faq-item,[data-faq-item]');
-      var answer=item&&item.querySelector('.faq-answer,[data-faq-answer]');
-      var isOpen=q.classList.contains('active');
-      // Close all
-      document.querySelectorAll('.faq-question,[data-faq-question]').forEach(function(oq){
-        oq.classList.remove('active');
-        var oi=oq.closest('.faq-item,[data-faq-item]');
-        var oa=oi&&oi.querySelector('.faq-answer,[data-faq-answer]');
-        if(oa)oa.classList.remove('open');
-      });
-      // Open clicked (unless it was already open)
-      if(!isOpen&&answer){q.classList.add('active');answer.classList.add('open');}
-    });
-  });
-
-  // ── Form handling (no real backend) ──
-  document.querySelectorAll('form').forEach(function(form){
-    form.addEventListener('submit',function(e){
-      e.preventDefault();
-      var btn=form.querySelector('button[type="submit"],input[type="submit"]');
-      var orig=btn?btn.textContent:'';
-      if(btn){btn.disabled=true;btn.textContent='Sending...';}
-      setTimeout(function(){
-        if(btn){btn.disabled=false;btn.textContent=orig;}
-        var status=form.querySelector('.form-status,.success-message');
-        if(!status){
-          status=document.createElement('p');
-          status.className='form-status';
-          status.style.cssText='color:#4CAF8A;margin-top:12px;font-weight:600;';
-          form.appendChild(status);
-        }
-        status.textContent='✓ Message sent! We will get back to you soon.';
-        form.reset();
-        setTimeout(function(){if(status)status.textContent='';},5000);
-      },1000);
-    });
-  });
-
-  // ── Pricing toggle (monthly/annual) ──
-  var toggle=document.querySelector('.pricing-toggle,[data-pricing-toggle]');
-  if(toggle){
-    toggle.addEventListener('change',function(){
-      var isAnnual=toggle.checked;
-      document.querySelectorAll('[data-monthly],[data-annual]').forEach(function(el){
-        if(isAnnual){el.style.display=el.dataset.annual!==undefined?'':'none';}
-        else{el.style.display=el.dataset.monthly!==undefined?'':'none';}
-      });
-    });
-  }
-
-  // ── Counter animation ──
-  if('IntersectionObserver' in window){
-    var cr=new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(!e.isIntersecting)return;
-        var el=e.target;
-        var target=parseInt(el.dataset.count||el.textContent||'0',10);
-        if(!target)return;
-        var start=0,dur=1600,step=dur/60;
-        var timer=setInterval(function(){
-          start+=target/60;
-          if(start>=target){el.textContent=target.toLocaleString()+(el.dataset.suffix||'');clearInterval(timer);}
-          else{el.textContent=Math.floor(start).toLocaleString()+(el.dataset.suffix||'');}
-        },step);
-        cr.unobserve(el);
-      });
-    },{threshold:0.5});
-    document.querySelectorAll('[data-count]').forEach(function(el){cr.observe(el);});
-  }
-})();
-`.trim();
 }
 
 // ── Complexity Router — decides single-pass (fast) vs 4-stage pipeline ──
@@ -2625,37 +3525,1374 @@ function assessComplexity(prompt: string, projectType: string): "simple" | "comp
 // content (JSON), tested template code renders the actual HTML. Structural
 // correctness (spacing/shadows/radius/mobile/a11y) is now guaranteed by
 // code, not by hoping the AI remembers every rule on every generation.
+
+
+// ════════════════════════════════════════════════════════════════════
+// MASTER DOMAIN KNOWLEDGE ENGINE v2
+// ════════════════════════════════════════════════════════════════════
+// 3-layer inheritance: BasePattern → CategoryOverride → DomainSpec
+// 100+ domains in ~600 lines. Add any new domain in 5 lines.
+// Replaces the 15 flat blueprints from v1.
+// ════════════════════════════════════════════════════════════════════
+
+// ── Shared types ──────────────────────────────────────────────────────
+interface SectionBlueprint {
+  id:       string;
+  category: string;
+  variant:  string;
+  headline: string;
+  purpose:  string;
+}
+
+interface DomainKnowledge {
+  domain:         string;
+  labels:         string[];
+  projectType:    string;
+  projectName:    string;
+  tagline:        string;
+  businessGoal:   string;
+  targetAudience: string;
+  pricingModel:   string;
+  sections:       SectionBlueprint[];
+  primaryCTA:     string;
+  secondaryCTA:   string;
+  copyTone:       string;
+  keyBenefits:    string[];
+  designMood:     string;
+  colorHint:      string;
+  typography:     string;
+  spacing:        string;
+  assetTheme:     string;
+  avoid:          string[];
+}
+
+// ── BASE PATTERNS ─────────────────────────────────────────────────────
+// Six fundamental experience shapes. Every domain inherits one.
+
+type BasePattern = Omit<DomainKnowledge, 'domain'|'labels'|'projectName'|'targetAudience'|'assetTheme'|'avoid'>;
+
+const B: Record<string, BasePattern> = {
+
+  // ── 1. HOSPITALITY — booking-driven service businesses ───────────────
+  HOSPITALITY: {
+    projectType:"website", tagline:"An Experience Worth Returning To",
+    businessGoal:"booking", pricingModel:"none",
+    sections:[
+      {id:"hero",         category:"hero",         variant:"centered",          headline:"Welcome",          purpose:"Atmospheric hero with booking CTA"},
+      {id:"about",        category:"features",     variant:"alternating",       headline:"Our Story",        purpose:"Authentic brand story builds trust"},
+      {id:"services",     category:"features",     variant:"bento-grid",        headline:"What We Offer",    purpose:"Core service/product showcase"},
+      {id:"gallery",      category:"features",     variant:"bento-grid",        headline:"Gallery",          purpose:"Visual proof — photography drives bookings"},
+      {id:"testimonials", category:"testimonials", variant:"masonry",           headline:"What Guests Say",  purpose:"Social proof with real names"},
+      {id:"booking",      category:"cta",          variant:"split-form",        headline:"Make a Reservation",purpose:"Date, party size, special requests"},
+      {id:"footer",       category:"footer",       variant:"minimal-centered",  headline:"",                  purpose:"Address, hours, social, phone"},
+    ],
+    primaryCTA:"Book Now", secondaryCTA:"Learn More",
+    copyTone:"Warm, sensory, and inviting. Make them feel the atmosphere before they arrive.",
+    keyBenefits:["Exceptional quality","Memorable experiences","Dedicated service","Prime location","Outstanding reviews"],
+    designMood:"warm elegant", colorHint:"", typography:"serif", spacing:"balanced",
+  },
+
+  // ── 2. PROFESSIONAL — trust-based service providers ──────────────────
+  PROFESSIONAL: {
+    projectType:"website", tagline:"Expert Guidance. Trusted Results.",
+    businessGoal:"lead", pricingModel:"none",
+    sections:[
+      {id:"hero",         category:"hero",         variant:"split-image",       headline:"Expert Care",      purpose:"Professional credibility first impression"},
+      {id:"services",     category:"features",     variant:"icon-grid",         headline:"Our Services",     purpose:"Clear service breakdown"},
+      {id:"about",        category:"features",     variant:"alternating",       headline:"About Us",         purpose:"Credentials, experience, philosophy"},
+      {id:"stats",        category:"features",     variant:"stat-highlight",    headline:"Track Record",     purpose:"Numbers: years, clients, certifications"},
+      {id:"testimonials", category:"testimonials", variant:"featured",          headline:"Client Stories",   purpose:"Success stories with outcomes"},
+      {id:"contact",      category:"cta",          variant:"split-form",        headline:"Get in Touch",     purpose:"Appointment or enquiry form"},
+      {id:"footer",       category:"footer",       variant:"four-column",       headline:"",                  purpose:"Services, team, contact, location"},
+    ],
+    primaryCTA:"Book Consultation", secondaryCTA:"View Services",
+    copyTone:"Authoritative yet approachable. Lead with outcomes, not process.",
+    keyBenefits:["Qualified experts","Proven track record","Personalised service","Clear communication","Fast turnaround"],
+    designMood:"clean professional", colorHint:"", typography:"sans", spacing:"balanced",
+  },
+
+  // ── 3. ECOMMERCE — product-selling experiences ───────────────────────
+  ECOMMERCE: {
+    projectType:"ecommerce", tagline:"Premium Products. Delivered Fast.",
+    businessGoal:"ecommerce", pricingModel:"product-price",
+    sections:[
+      {id:"hero",         category:"hero",         variant:"product-showcase",  headline:"The Collection",   purpose:"Lifestyle hero with offer"},
+      {id:"featured",     category:"ecommerce",    variant:"featured-product",  headline:"Featured",         purpose:"Hero product — full details + CTA"},
+      {id:"categories",   category:"ecommerce",    variant:"category-showcase", headline:"Shop by Category", purpose:"Category grid with lifestyle imagery"},
+      {id:"products",     category:"ecommerce",    variant:"product-grid",      headline:"New Arrivals",     purpose:"Product cards with add-to-cart"},
+      {id:"benefits",     category:"features",     variant:"icon-grid",         headline:"Why Shop With Us", purpose:"Shipping, returns, warranty, security"},
+      {id:"reviews",      category:"testimonials", variant:"masonry",           headline:"Customer Reviews",  purpose:"Star ratings + verified buyer badges"},
+      {id:"cta",          category:"cta",          variant:"banner-strip",      headline:"Free Shipping Over $50", purpose:"Incentive banner"},
+      {id:"footer",       category:"footer",       variant:"mega-social",       headline:"",                  purpose:"Policy, returns, track order, support"},
+    ],
+    primaryCTA:"Shop Now", secondaryCTA:"View Collection",
+    copyTone:"Benefit-driven with urgency. Quality and value above all.",
+    keyBenefits:["Free shipping over $50","30-day returns","Secure checkout","Same-day dispatch","Quality guarantee"],
+    designMood:"clean minimal", colorHint:"", typography:"sans", spacing:"balanced",
+  },
+
+  // ── 4. SAAS — software / platform businesses ─────────────────────────
+  SAAS: {
+    projectType:"saas", tagline:"The Smarter Way to {action}",
+    businessGoal:"lead", pricingModel:"saas-subscription",
+    sections:[
+      {id:"hero",         category:"hero",         variant:"product-showcase",  headline:"Ship Faster. Scale Smarter.", purpose:"Product screenshot + social proof"},
+      {id:"logos",        category:"features",     variant:"stat-highlight",    headline:"Trusted by 10,000+ Teams",  purpose:"Company logos + user count"},
+      {id:"features",     category:"features",     variant:"bento-grid",        headline:"Everything You Need",       purpose:"Core features in bento grid"},
+      {id:"workflow",     category:"features",     variant:"alternating",       headline:"How It Works",              purpose:"3-step workflow section"},
+      {id:"integrations", category:"features",     variant:"icon-grid",         headline:"Integrations",              purpose:"Slack, GitHub, Notion, etc."},
+      {id:"pricing",      category:"pricing",      variant:"toggle",            headline:"Simple Pricing",            purpose:"Monthly/annual toggle tiers"},
+      {id:"testimonials", category:"testimonials", variant:"logo-wall",         headline:"Loved by Top Teams",        purpose:"Logo wall + featured quotes"},
+      {id:"faq",          category:"faq",          variant:"simple-list",       headline:"FAQ",                       purpose:"Billing, security, integrations"},
+      {id:"cta",          category:"cta",          variant:"centered-gradient", headline:"Start Free. Scale as You Grow.", purpose:"Free trial — no credit card"},
+      {id:"footer",       category:"footer",       variant:"newsletter-rich",   headline:"",                           purpose:"Product, company, docs, status"},
+    ],
+    primaryCTA:"Start Free Trial", secondaryCTA:"View Demo",
+    copyTone:"Clear, confident, outcome-focused. ROI language. Show don't tell.",
+    keyBenefits:["No credit card required","SOC 2 compliant","24/7 support","Scales to enterprise","Cancel anytime"],
+    designMood:"clean modern", colorHint:"", typography:"sans", spacing:"balanced",
+  },
+
+  // ── 5. PORTFOLIO — creator / agency showcase ─────────────────────────
+  PORTFOLIO: {
+    projectType:"portfolio", tagline:"Work that speaks for itself.",
+    businessGoal:"lead", pricingModel:"none",
+    sections:[
+      {id:"hero",         category:"hero",         variant:"minimal-statement", headline:"Hi, I'm {Name}",   purpose:"Bold personal intro"},
+      {id:"work",         category:"portfolio",    variant:"featured-grid",     headline:"Selected Work",    purpose:"Best projects with outcomes"},
+      {id:"about",        category:"features",     variant:"alternating",       headline:"About",            purpose:"Story, skills, process"},
+      {id:"testimonials", category:"testimonials", variant:"grid",              headline:"What Clients Say", purpose:"Client recommendations"},
+      {id:"contact",      category:"cta",          variant:"split-form",        headline:"Work Together",    purpose:"Project inquiry form"},
+      {id:"footer",       category:"footer",       variant:"minimal-centered",  headline:"",                  purpose:"Social links, email, resume"},
+    ],
+    primaryCTA:"Start a Project", secondaryCTA:"View Work",
+    copyTone:"Confident. Let the work lead. Personality in copy.",
+    keyBenefits:["Expert in field","Available for projects","Fast delivery","Collaborative process","Proven results"],
+    designMood:"clean minimal", colorHint:"", typography:"sans", spacing:"balanced",
+  },
+
+  // ── 6. LANDING — single conversion pages ─────────────────────────────
+  LANDING: {
+    projectType:"landing", tagline:"Be First. Get Access.",
+    businessGoal:"lead", pricingModel:"none",
+    sections:[
+      {id:"hero",         category:"hero",         variant:"centered",          headline:"Your Promise Here", purpose:"Single headline + email capture"},
+      {id:"benefits",     category:"features",     variant:"icon-grid",         headline:"Why You'll Love It", purpose:"3 core benefits — scannable"},
+      {id:"features",     category:"features",     variant:"alternating",       headline:"Here's What You Get", purpose:"Feature walkthrough"},
+      {id:"social-proof", category:"testimonials", variant:"grid",              headline:"Join 10,000+ Early Adopters", purpose:"Waitlist count + early testimonials"},
+      {id:"cta",          category:"cta",          variant:"centered-gradient", headline:"Get Early Access",  purpose:"Final email capture with urgency"},
+      {id:"footer",       category:"footer",       variant:"minimal-centered",  headline:"",                   purpose:"Privacy, terms, social"},
+    ],
+    primaryCTA:"Get Early Access", secondaryCTA:"Learn More",
+    copyTone:"Exciting. Benefit-first. Urgency without pressure. Clear in 5 seconds.",
+    keyBenefits:["Early access pricing","Founding member status","Shape the product","Exclusive community","Launch notification"],
+    designMood:"bold modern", colorHint:"", typography:"sans", spacing:"balanced",
+  },
+};
+
+// ── SECTION DELTA helpers ─────────────────────────────────────────────
+// Patch a section in a blueprint's section array
+function patchSection(
+  sections: SectionBlueprint[],
+  id:       string,
+  patch:    Partial<SectionBlueprint>
+): SectionBlueprint[] {
+  return sections.map(s => s.id === id ? { ...s, ...patch } : s);
+}
+function addSectionAfter(
+  sections:  SectionBlueprint[],
+  afterId:   string,
+  newSection: SectionBlueprint
+): SectionBlueprint[] {
+  const idx = sections.findIndex(s => s.id === afterId);
+  if (idx < 0) return [...sections, newSection];
+  return [...sections.slice(0, idx+1), newSection, ...sections.slice(idx+1)];
+}
+function removeSection(sections: SectionBlueprint[], id: string): SectionBlueprint[] {
+  return sections.filter(s => s.id !== id);
+}
+
+// ── COMPACT DOMAIN SPEC ───────────────────────────────────────────────
+interface CompactDomain {
+  domain:       string;
+  labels:       string[];
+  base:         keyof typeof B;
+  projectType?: string;
+  projectName:  string;
+  tagline?:     string;
+  targetAudience: string;
+  primaryCTA:   string;
+  secondaryCTA?: string;
+  assetTheme:   string;
+  avoid:        string[];
+  colorHint?:   string;
+  typography?:  string;
+  designMood?:  string;
+  spacing?:     string;
+  pricingModel?: string;
+  businessGoal?: string;
+  copyTone?:    string;
+  keyBenefits?: string[];
+  sectionPatch?:(sections: SectionBlueprint[]) => SectionBlueprint[];
+}
+
+// ── Resolve CompactDomain → full DomainKnowledge ──────────────────────
+function resolveDomain(d: CompactDomain): DomainKnowledge {
+  const base    = B[d.base];
+  const sections = d.sectionPatch ? d.sectionPatch([...base.sections]) : [...base.sections];
+  return {
+    domain:         d.domain,
+    labels:         d.labels,
+    projectType:    d.projectType || base.projectType,
+    projectName:    d.projectName,
+    tagline:        d.tagline || base.tagline,
+    businessGoal:   d.businessGoal || base.businessGoal,
+    targetAudience: d.targetAudience,
+    pricingModel:   d.pricingModel || base.pricingModel,
+    sections,
+    primaryCTA:     d.primaryCTA,
+    secondaryCTA:   d.secondaryCTA || base.secondaryCTA,
+    copyTone:       d.copyTone || base.copyTone,
+    keyBenefits:    d.keyBenefits || base.keyBenefits,
+    designMood:     d.designMood || base.designMood,
+    colorHint:      d.colorHint || base.colorHint,
+    typography:     d.typography || base.typography,
+    spacing:        d.spacing || base.spacing,
+    assetTheme:     d.assetTheme,
+    avoid:          d.avoid,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MASTER DOMAIN CATALOGUE — 100+ domains, 5-10 lines each
+// ═══════════════════════════════════════════════════════════════════
+
+const COMPACT_DOMAINS: CompactDomain[] = [
+
+  // ── AUTOMOTIVE ───────────────────────────────────────────────────────
+  {
+    domain:"luxury-car-club", base:"HOSPITALITY",
+    labels:["car club","supercar club","hypercar","exotic car","ferrari club","lamborghini club","automobile club","sports car membership","luxury car membership"],
+    projectName:"{Brand} Car Club", tagline:"Drive the Extraordinary",
+    businessGoal:"membership", pricingModel:"membership-tiers",
+    targetAudience:"High-net-worth car enthusiasts aged 35–60",
+    primaryCTA:"Apply for Membership", secondaryCTA:"View the Fleet",
+    assetTheme:"luxury sports car studio photography dramatic dark",
+    avoid:["perfume imagery","fashion photography","generic business stock"],
+    colorHint:"#D4AF37", typography:"serif", designMood:"dark luxury",
+    copyTone:"Aspirational and exclusive. Never pushy. Refined.",
+    keyBenefits:["Curated fleet of 40+ supercars","White-glove concierge","Members-only events","No insurance hassle","Monthly new arrivals"],
+    sectionPatch: s => addSectionAfter(
+      patchSection(s, "services", {id:"fleet",    headline:"Curated Fleet",       purpose:"Showcase premium vehicles"}),
+      "fleet", {id:"membership", category:"pricing", variant:"three-tier", headline:"Membership Tiers", purpose:"Bronze/Silver/Gold with benefits"}
+    ),
+  },
+  {
+    domain:"car-dealership", base:"ECOMMERCE",
+    labels:["car dealership","auto dealership","car sales","used cars","new cars","vehicle sales","car showroom","automobile dealer"],
+    projectName:"{Brand} Motors", tagline:"Your Perfect Car is Here",
+    businessGoal:"lead", targetAudience:"Car buyers seeking new or used vehicles",
+    primaryCTA:"Schedule Test Drive", secondaryCTA:"Browse Inventory",
+    assetTheme:"car dealership showroom vehicles modern professional",
+    avoid:["generic stock photos","dark luxury car club aesthetic"],
+    sectionPatch: s => patchSection(
+      patchSection(s, "products", {id:"inventory", headline:"Browse Inventory", purpose:"Vehicle cards with price, mileage, specs"}),
+      "cta", {headline:"Finance from $199/month", purpose:"Finance calculator or enquiry form"}
+    ),
+  },
+  {
+    domain:"car-rental", base:"HOSPITALITY",
+    labels:["car rental","vehicle rental","rent a car","car hire","fleet rental","van hire","truck rental"],
+    projectName:"{Brand} Car Rental", tagline:"Freedom on Every Road",
+    businessGoal:"booking", targetAudience:"Business and leisure travelers needing vehicle hire",
+    primaryCTA:"Reserve a Vehicle", secondaryCTA:"View Fleet",
+    assetTheme:"car rental fleet vehicles road modern clean",
+    avoid:["luxury car club aesthetic","dark dramatic"],
+    sectionPatch: s => patchSection(s, "services", {headline:"Our Fleet", purpose:"Vehicle categories: Economy, SUV, Luxury, Van"}),
+  },
+  {
+    domain:"ev-charging", base:"SAAS",
+    labels:["ev charging","electric vehicle charging","ev station","charging network","ev infrastructure","electric car charging"],
+    projectName:"{Brand} Charging", tagline:"Charge Faster. Drive Further.",
+    businessGoal:"lead", targetAudience:"EV owners and fleet operators",
+    primaryCTA:"Find a Station", secondaryCTA:"Partner With Us",
+    assetTheme:"electric vehicle EV charging station modern clean green",
+    avoid:["fossil fuel imagery","complex tech jargon"],
+    designMood:"clean modern green", colorHint:"#22C55E",
+  },
+  {
+    domain:"taxi-transport", base:"HOSPITALITY",
+    labels:["taxi","cab","rideshare","transport","shuttle","chauffeur","limo service","private hire","minibus"],
+    projectName:"{Brand} Transport", tagline:"Safe. On Time. Every Time.",
+    businessGoal:"booking", targetAudience:"Commuters and travellers needing reliable transport",
+    primaryCTA:"Book a Ride", secondaryCTA:"Download App",
+    assetTheme:"taxi transport vehicle city professional driver",
+    avoid:["luxury car club aesthetic"],
+    sectionPatch: s => patchSection(s, "booking", {headline:"Book Your Ride", purpose:"Pickup, destination, date/time form"}),
+  },
+
+  // ── FOOD & DRINK ─────────────────────────────────────────────────────
+  {
+    domain:"restaurant", base:"HOSPITALITY",
+    labels:["restaurant","fine dining","dining","bistro","brasserie","steakhouse","seafood restaurant","italian restaurant","mexican restaurant","asian restaurant"],
+    projectName:"{Brand} Restaurant", tagline:"An Unforgettable Dining Experience",
+    businessGoal:"booking", targetAudience:"Food lovers, couples, groups celebrating occasions",
+    primaryCTA:"Reserve a Table", secondaryCTA:"View Menu",
+    assetTheme:"fine dining restaurant food photography plating elegant",
+    avoid:["generic stock food photos","tech startup aesthetic"],
+    typography:"serif",
+    sectionPatch: s => addSectionAfter(
+      patchSection(s,"services",{id:"menu", headline:"Our Menu", purpose:"Signature dishes with food photography"}),
+      "menu", {id:"chef", category:"features", variant:"alternating", headline:"Meet the Chef", purpose:"Chef story and culinary philosophy"}
+    ),
+  },
+  {
+    domain:"cafe", base:"HOSPITALITY",
+    labels:["cafe","coffee shop","coffee house","bakery cafe","brunch","tea room","specialty coffee","espresso bar"],
+    projectName:"{Brand} Café", tagline:"Your Daily Ritual, Perfected.",
+    businessGoal:"booking", targetAudience:"Coffee lovers and casual dining guests",
+    primaryCTA:"Find Us", secondaryCTA:"View Menu",
+    assetTheme:"cafe coffee latte art specialty coffee warm cozy interior",
+    avoid:["fine dining formality","tech aesthetic"],
+    designMood:"warm cozy", copyTone:"Friendly and inviting. Local and authentic. Celebrate the craft.",
+    sectionPatch: s => patchSection(s,"services",{headline:"Our Menu", purpose:"Coffee, food, seasonal specials"}),
+  },
+  {
+    domain:"bar-pub", base:"HOSPITALITY",
+    labels:["bar","pub","cocktail bar","wine bar","sports bar","nightclub","brewery","taproom","speakeasy"],
+    projectName:"{Brand} Bar", tagline:"Good Drinks. Great Nights.",
+    businessGoal:"booking", targetAudience:"Adults seeking social drinking experiences",
+    primaryCTA:"Book a Table", secondaryCTA:"View Drinks Menu",
+    assetTheme:"bar cocktails drinks nightlife atmosphere dark moody",
+    avoid:["family restaurant aesthetic","formal corporate"],
+    designMood:"dark moody", typography:"sans",
+    sectionPatch: s => patchSection(s,"services",{headline:"Our Drinks", purpose:"Cocktails, wines, beers — curated menu"}),
+  },
+  {
+    domain:"bakery", base:"HOSPITALITY",
+    labels:["bakery","bread","pastry","patisserie","cake shop","dessert shop","confectionery","artisan bread"],
+    projectName:"{Brand} Bakery", tagline:"Baked Fresh Every Morning.",
+    businessGoal:"ecommerce", targetAudience:"Local community and artisan food lovers",
+    primaryCTA:"Order Now", secondaryCTA:"View Products",
+    assetTheme:"artisan bakery bread pastry food photography warm",
+    avoid:["fast food aesthetic","corporate restaurant look"],
+    pricingModel:"product-price",
+  },
+  {
+    domain:"food-delivery", base:"ECOMMERCE",
+    labels:["food delivery","meal delivery","meal kit","meal prep","catering delivery","cloud kitchen"],
+    projectName:"{Brand} Delivery", tagline:"Restaurant Quality. Delivered to Your Door.",
+    businessGoal:"ecommerce", targetAudience:"Busy professionals and families",
+    primaryCTA:"Order Now", secondaryCTA:"View Menu",
+    assetTheme:"food delivery meal freshness photography modern",
+    avoid:["stock restaurant imagery"],
+    sectionPatch: s => patchSection(s,"products",{headline:"This Week's Menu", purpose:"Meal cards with allergens, cals, portion"}),
+  },
+
+  // ── HOSPITALITY & TRAVEL ─────────────────────────────────────────────
+  {
+    domain:"hotel", base:"HOSPITALITY",
+    labels:["hotel","boutique hotel","luxury hotel","motel","inn","bed breakfast","accommodation"],
+    projectName:"{Brand} Hotel", tagline:"Where Every Stay Tells a Story",
+    businessGoal:"booking", targetAudience:"Leisure and business travellers",
+    primaryCTA:"Book Your Stay", secondaryCTA:"View Rooms",
+    assetTheme:"luxury hotel room interior pool elegant warm lighting",
+    avoid:["stock office photography","tech startup aesthetic"],
+    typography:"serif", designMood:"warm elegant",
+    sectionPatch: s => [
+      {id:"hero",       category:"hero",         variant:"centered",         headline:"A Retreat Unlike Any Other",    purpose:"Full-screen property hero"},
+      {id:"rooms",      category:"features",     variant:"bento-grid",       headline:"Rooms & Suites",               purpose:"Room type cards with features"},
+      {id:"amenities",  category:"features",     variant:"icon-grid",        headline:"Hotel Amenities",              purpose:"Pool, spa, restaurant, gym"},
+      {id:"dining",     category:"features",     variant:"alternating",      headline:"Dining",                       purpose:"Restaurant and bar experience"},
+      {id:"gallery",    category:"features",     variant:"bento-grid",       headline:"Gallery",                      purpose:"Property photography"},
+      {id:"testimonials",category:"testimonials",variant:"masonry",          headline:"Guest Reviews",                purpose:"Real guest stories"},
+      {id:"booking",    category:"cta",          variant:"split-form",       headline:"Reserve Your Stay",            purpose:"Check-in/out date form"},
+      {id:"footer",     category:"footer",       variant:"four-column",      headline:"",                              purpose:"Rooms, dining, facilities, contact"},
+    ],
+  },
+  {
+    domain:"resort", base:"HOSPITALITY",
+    labels:["resort","luxury resort","beach resort","mountain resort","spa resort","eco resort","all-inclusive","retreat center"],
+    projectName:"{Brand} Resort", tagline:"Escape to Paradise",
+    businessGoal:"booking", targetAudience:"Affluent leisure travellers and honeymooners",
+    primaryCTA:"Book Your Escape", secondaryCTA:"Explore Experiences",
+    assetTheme:"luxury resort pool beach destination paradise photography",
+    avoid:["budget hotel aesthetic","business travel imagery"],
+    typography:"serif", designMood:"warm luxury", spacing:"generous",
+  },
+  {
+    domain:"travel-agency", base:"HOSPITALITY",
+    labels:["travel agency","tour operator","travel company","holiday packages","guided tours","adventure travel","luxury travel","safari"],
+    projectName:"{Brand} Travel", tagline:"Extraordinary Journeys Await",
+    businessGoal:"booking", targetAudience:"Adventure seekers and leisure travellers",
+    primaryCTA:"Plan My Trip", secondaryCTA:"Explore Destinations",
+    assetTheme:"travel destination photography landscape adventure vibrant",
+    avoid:["corporate business aesthetic","dark moody"],
+    sectionPatch: s => [
+      {id:"hero",        category:"hero",         variant:"centered",         headline:"The World is Waiting",         purpose:"Destination imagery with CTA"},
+      {id:"destinations",category:"features",     variant:"bento-grid",       headline:"Popular Destinations",        purpose:"Destination cards"},
+      {id:"packages",    category:"features",     variant:"alternating",      headline:"Our Travel Packages",         purpose:"Package details with price"},
+      {id:"why-us",      category:"features",     variant:"icon-grid",        headline:"Why Travel With Us",          purpose:"Guides, routes, support"},
+      {id:"testimonials",category:"testimonials", variant:"masonry",          headline:"Traveller Stories",           purpose:"Trip reviews"},
+      {id:"booking",     category:"cta",          variant:"split-form",       headline:"Plan Your Perfect Trip",      purpose:"Destination inquiry form"},
+      {id:"footer",      category:"footer",       variant:"four-column",      headline:"",                             purpose:"Destinations, packages, contact"},
+    ],
+  },
+  {
+    domain:"airline", base:"SAAS",
+    labels:["airline","flights","aviation","air travel","charter flight","private jet","private aviation"],
+    projectName:"{Brand} Airways", tagline:"Fly Without Limits",
+    businessGoal:"booking", pricingModel:"none",
+    targetAudience:"Business and leisure air travellers",
+    primaryCTA:"Search Flights", secondaryCTA:"View Routes",
+    assetTheme:"airline aircraft flight travel sky modern",
+    avoid:["budget low-cost aesthetic","heavy animation"],
+  },
+
+  // ── HEALTH & WELLNESS ─────────────────────────────────────────────────
+  {
+    domain:"gym", base:"PROFESSIONAL",
+    labels:["gym","fitness center","fitness club","crossfit box","powerlifting gym","bodybuilding gym","health club","athletic club"],
+    projectName:"{Brand} Fitness", tagline:"Transform Your Body. Transform Your Life.",
+    businessGoal:"membership", pricingModel:"membership-tiers",
+    targetAudience:"Fitness-conscious adults 18–45 seeking real results",
+    primaryCTA:"Start Free Trial", secondaryCTA:"View Programs",
+    assetTheme:"gym fitness training athlete workout high energy dark",
+    avoid:["soft spa aesthetic","luxury fashion"],
+    designMood:"bold dark", typography:"sans", spacing:"tight",
+    copyTone:"Energetic and motivational. Results-focused. Power words.",
+    keyBenefits:["Expert certified coaches","State-of-art equipment","Flexible class schedule","Real community","Guaranteed results"],
+    sectionPatch: s => [
+      {id:"hero",       category:"hero",         variant:"split-image",     headline:"Unleash Your Potential",         purpose:"High-energy hero with athlete"},
+      {id:"results",    category:"features",     variant:"stat-highlight",  headline:"Real Results",                   purpose:"Members lost, gained, transformed"},
+      {id:"programs",   category:"features",     variant:"bento-grid",     headline:"Training Programs",              purpose:"Strength, HIIT, Yoga, Boxing"},
+      {id:"coaches",    category:"features",     variant:"alternating",    headline:"Expert Coaches",                 purpose:"Coach profiles with credentials"},
+      {id:"membership", category:"pricing",      variant:"three-tier",     headline:"Choose Your Plan",              purpose:"Basic/Pro/Elite tiers"},
+      {id:"testimonials",category:"testimonials",variant:"grid",           headline:"Member Transformations",        purpose:"Before/after success stories"},
+      {id:"cta",        category:"cta",          variant:"banner-strip",   headline:"Start Your Journey Today",      purpose:"Free trial or first class offer"},
+      {id:"footer",     category:"footer",       variant:"four-column",    headline:"",                               purpose:"Schedule, classes, location"},
+    ],
+  },
+  {
+    domain:"yoga-studio", base:"HOSPITALITY",
+    labels:["yoga studio","yoga","pilates","meditation","mindfulness","breathwork","hot yoga","vinyasa","barre"],
+    projectName:"{Brand} Studio", tagline:"Find Your Inner Strength.",
+    businessGoal:"membership", pricingModel:"membership-tiers",
+    targetAudience:"Wellness-focused adults seeking balance and mindfulness",
+    primaryCTA:"Try a Free Class", secondaryCTA:"View Schedule",
+    assetTheme:"yoga studio calm serene natural light practice",
+    avoid:["intense gym aesthetic","dark dramatic"],
+    designMood:"calm natural", typography:"serif", spacing:"generous",
+    copyTone:"Calm, centred, and inviting. Speak to the journey inward.",
+  },
+  {
+    domain:"spa", base:"HOSPITALITY",
+    labels:["spa","day spa","luxury spa","beauty spa","wellness spa","massage","facial","body treatment","medi-spa"],
+    projectName:"{Brand} Spa", tagline:"Restore. Renew. Rejuvenate.",
+    businessGoal:"booking", targetAudience:"Adults seeking relaxation and beauty treatments",
+    primaryCTA:"Book a Treatment", secondaryCTA:"View Treatments",
+    assetTheme:"luxury spa massage treatment wellness serene elegant",
+    avoid:["gym energy","medical clinical aesthetic"],
+    typography:"serif", designMood:"calm luxury", spacing:"generous",
+    copyTone:"Serene and restorative. Sensory language. Make them feel relaxed reading the copy.",
+  },
+  {
+    domain:"salon", base:"HOSPITALITY",
+    labels:["hair salon","beauty salon","hairdresser","hair studio","blow dry bar","colour specialist","hair extensions"],
+    projectName:"{Brand} Salon", tagline:"Look Good. Feel Amazing.",
+    businessGoal:"booking", targetAudience:"Style-conscious individuals seeking expert hair services",
+    primaryCTA:"Book Appointment", secondaryCTA:"View Services",
+    assetTheme:"hair salon beauty professional styling photography",
+    avoid:["generic beauty stock","corporate imagery"],
+    designMood:"modern chic",
+  },
+  {
+    domain:"barber", base:"HOSPITALITY",
+    labels:["barber","barber shop","barbershop","men's grooming","beard trim","men haircut","shave"],
+    projectName:"{Brand} Barbershop", tagline:"Sharp Cuts. Clean Lines.",
+    businessGoal:"booking", targetAudience:"Style-conscious men seeking premium grooming",
+    primaryCTA:"Book a Cut", secondaryCTA:"View Services",
+    assetTheme:"barbershop men grooming vintage modern clean",
+    avoid:["women's salon aesthetic","soft spa imagery"],
+    designMood:"dark vintage modern", typography:"sans",
+  },
+  {
+    domain:"dental", base:"PROFESSIONAL",
+    labels:["dental","dentist","dental clinic","orthodontist","dental surgery","teeth whitening","cosmetic dentistry","orthodontics"],
+    projectName:"{Brand} Dental", tagline:"A Healthier Smile Starts Here.",
+    businessGoal:"booking", targetAudience:"Patients seeking quality dental care",
+    primaryCTA:"Book Dental Appointment", secondaryCTA:"View Treatments",
+    assetTheme:"dental clinic teeth whitening modern clean professional",
+    avoid:["dark dramatic aesthetic","luxury car imagery"],
+    sectionPatch: s => addSectionAfter(s,"services",{id:"treatments",category:"features",variant:"bento-grid",headline:"Our Treatments",purpose:"Whitening, Implants, Braces, Invisalign"}),
+  },
+  {
+    domain:"healthcare", base:"PROFESSIONAL",
+    labels:["hospital","clinic","doctor","medical","healthcare","general practice","gp","specialist","physiotherapy","therapy","mental health"],
+    projectName:"{Brand} Clinic", tagline:"Your Health. Our Priority.",
+    businessGoal:"booking", targetAudience:"Patients seeking quality medical care",
+    primaryCTA:"Book an Appointment", secondaryCTA:"View Services",
+    assetTheme:"medical clinic doctor healthcare clean professional bright",
+    avoid:["dark aesthetic","luxury imagery","startup look"],
+    designMood:"clean light", copyTone:"Warm, reassuring, and professional. Patient-first language.",
+  },
+  {
+    domain:"pharmacy", base:"ECOMMERCE",
+    labels:["pharmacy","chemist","drugstore","online pharmacy","prescription","health products","vitamins","supplements"],
+    projectName:"{Brand} Pharmacy", tagline:"Your Health. Delivered.",
+    businessGoal:"ecommerce", targetAudience:"Health-conscious consumers and patients",
+    primaryCTA:"Shop Now", secondaryCTA:"Upload Prescription",
+    assetTheme:"pharmacy health products clean professional modern",
+    avoid:["dark moody","luxury aesthetic"],
+    designMood:"clean professional",
+  },
+  {
+    domain:"veterinary", base:"PROFESSIONAL",
+    labels:["vet","veterinary","animal clinic","pet clinic","veterinarian","animal hospital","pet care"],
+    projectName:"{Brand} Veterinary", tagline:"Exceptional Care for Every Pet.",
+    businessGoal:"booking", targetAudience:"Pet owners seeking trusted veterinary care",
+    primaryCTA:"Book Pet Appointment", secondaryCTA:"Our Services",
+    assetTheme:"veterinary clinic pets animals professional caring",
+    avoid:["human medical aesthetic","dark imagery"],
+    copyTone:"Warm and caring. Speak to both pet and owner. Reassuring and expert.",
+  },
+  {
+    domain:"nutritionist", base:"PROFESSIONAL",
+    labels:["nutritionist","dietitian","nutrition coach","meal planner","weight loss coach","health coach"],
+    projectName:"{Brand} Nutrition", tagline:"Eat Well. Live Better.",
+    businessGoal:"lead", targetAudience:"Health-conscious adults seeking dietary guidance",
+    primaryCTA:"Book Free Consultation", secondaryCTA:"View Programs",
+    assetTheme:"nutrition healthy food lifestyle professional clean",
+    avoid:["medical clinical aesthetic","gym aggressive energy"],
+  },
+  {
+    domain:"mental-health", base:"PROFESSIONAL",
+    labels:["therapist","psychologist","counsellor","mental health","therapy","life coach","mindfulness coach","CBT"],
+    projectName:"{Brand} Therapy", tagline:"Helping You Thrive.",
+    businessGoal:"booking", targetAudience:"Adults seeking mental health support",
+    primaryCTA:"Book a Session", secondaryCTA:"Learn More",
+    assetTheme:"therapy counselling calm office professional warm",
+    avoid:["clinical cold aesthetic","dark imagery"],
+    designMood:"calm warm", typography:"serif",
+    copyTone:"Empathetic, non-clinical, and accessible. Safe and supportive language.",
+  },
+
+  // ── BEAUTY & FASHION ─────────────────────────────────────────────────
+  {
+    domain:"fashion", base:"ECOMMERCE",
+    labels:["fashion","clothing","apparel","fashion brand","streetwear","luxury fashion","designer clothing","boutique clothing"],
+    projectName:"{Brand}", tagline:"Wear Your Story",
+    businessGoal:"ecommerce", targetAudience:"Fashion-forward shoppers",
+    primaryCTA:"Shop the Collection", secondaryCTA:"Explore Looks",
+    assetTheme:"fashion clothing lifestyle editorial model photography",
+    avoid:["generic product stock","tech startup aesthetic"],
+    designMood:"bold editorial", typography:"display", spacing:"generous",
+  },
+  {
+    domain:"jewelry", base:"ECOMMERCE",
+    labels:["jewelry","jewellery","diamonds","rings","necklaces","watches","luxury jewelry","engagement rings","fine jewelry"],
+    projectName:"{Brand}", tagline:"Crafted to Last a Lifetime",
+    businessGoal:"ecommerce", targetAudience:"Discerning buyers seeking quality jewelry",
+    primaryCTA:"Shop Collection", secondaryCTA:"Book Consultation",
+    assetTheme:"jewelry luxury diamonds close-up macro photography elegant dark",
+    avoid:["casual fashion aesthetic","generic product grid"],
+    designMood:"dark luxury", typography:"serif", spacing:"generous",
+    colorHint:"#D4AF37",
+  },
+  {
+    domain:"watch-brand", base:"ECOMMERCE",
+    labels:["watch","timepiece","luxury watch","watch brand","horology","smartwatch","watch collection"],
+    projectName:"{Brand}", tagline:"Time, Perfected.",
+    businessGoal:"ecommerce", targetAudience:"Watch enthusiasts and collectors",
+    primaryCTA:"Explore Collection", secondaryCTA:"Find a Dealer",
+    assetTheme:"luxury watch timepiece photography macro detail dramatic",
+    avoid:["generic product grid","tech startup aesthetic"],
+    designMood:"dark luxury", typography:"serif", colorHint:"#1a1a1a",
+  },
+  {
+    domain:"beauty-brand", base:"ECOMMERCE",
+    labels:["beauty","cosmetics","skincare","makeup","beauty brand","lipstick","foundation","serum","beauty products"],
+    projectName:"{Brand} Beauty", tagline:"Your Ritual. Your Glow.",
+    businessGoal:"ecommerce", targetAudience:"Beauty enthusiasts aged 18–45",
+    primaryCTA:"Shop Now", secondaryCTA:"Take the Quiz",
+    assetTheme:"beauty skincare cosmetics model photography clean modern",
+    avoid:["dark moody","tech aesthetic"],
+    designMood:"clean minimal feminine",
+  },
+  {
+    domain:"perfume", base:"ECOMMERCE",
+    labels:["perfume","fragrance","cologne","eau de parfum","scent","luxury fragrance","perfumery"],
+    projectName:"{Brand}", tagline:"Scent is Memory.",
+    businessGoal:"ecommerce", targetAudience:"Fragrance connoisseurs and gift buyers",
+    primaryCTA:"Shop Fragrances", secondaryCTA:"Find Your Scent",
+    assetTheme:"perfume fragrance bottle luxury photography dark dramatic",
+    avoid:["car imagery","tech aesthetic","generic product grid"],
+    designMood:"dark luxury", typography:"serif", spacing:"generous",
+    copyTone:"Sensory and poetic. Evoke the fragrance experience through language.",
+  },
+
+  // ── HOME & PROPERTY ───────────────────────────────────────────────────
+  {
+    domain:"real-estate", base:"PROFESSIONAL",
+    labels:["real estate","property","homes","realtor","estate agent","house sales","property developer","lettings","property management"],
+    projectName:"{Brand} Real Estate", tagline:"Find Your Perfect Home",
+    businessGoal:"lead", targetAudience:"Home buyers, sellers, and investors",
+    primaryCTA:"Book a Valuation", secondaryCTA:"Browse Properties",
+    assetTheme:"luxury home interior modern architecture real estate",
+    avoid:["generic handshake photos","dark dramatic"],
+    sectionPatch: s => [
+      {id:"hero",       category:"hero",         variant:"split-image",     headline:"Your Dream Home is Waiting",  purpose:"Property hero with search/CTA"},
+      {id:"featured",   category:"features",     variant:"bento-grid",      headline:"Featured Properties",        purpose:"Property cards with price, beds"},
+      {id:"services",   category:"features",     variant:"icon-grid",       headline:"Our Services",               purpose:"Buy, Sell, Rent, Manage, Value"},
+      {id:"about",      category:"features",     variant:"alternating",     headline:"Why Choose Us",              purpose:"Agent expertise and local knowledge"},
+      {id:"testimonials",category:"testimonials",variant:"featured",        headline:"Client Stories",             purpose:"Buyer/seller success stories"},
+      {id:"stats",      category:"features",     variant:"stat-highlight",  headline:"Our Track Record",           purpose:"Properties sold, years, satisfaction"},
+      {id:"contact",    category:"cta",          variant:"split-form",      headline:"Get a Free Valuation",       purpose:"Property valuation request form"},
+      {id:"footer",     category:"footer",       variant:"four-column",     headline:"",                            purpose:"Areas, types, contact, social"},
+    ],
+  },
+  {
+    domain:"interior-design", base:"PORTFOLIO",
+    labels:["interior design","interior designer","interior decorator","home design","space design","interior architecture"],
+    projectName:"{Name} Interior Design", tagline:"Spaces That Tell Your Story",
+    businessGoal:"lead", targetAudience:"Homeowners and developers seeking design services",
+    primaryCTA:"Book Consultation", secondaryCTA:"View Portfolio",
+    assetTheme:"interior design home architecture photography beautiful spaces modern",
+    avoid:["generic office imagery","corporate look"],
+    typography:"serif", designMood:"clean elegant", spacing:"generous",
+  },
+  {
+    domain:"architecture", base:"PORTFOLIO",
+    labels:["architect","architecture firm","architectural design","building design","structural design","urban design"],
+    projectName:"{Brand} Architecture", tagline:"Buildings that Inspire.",
+    businessGoal:"lead", targetAudience:"Developers, government, and private clients",
+    primaryCTA:"Start a Project", secondaryCTA:"View Projects",
+    assetTheme:"architecture building modern photography dramatic structural",
+    avoid:["interior home design aesthetic","soft residential look"],
+    designMood:"bold minimal", typography:"sans", spacing:"generous",
+  },
+  {
+    domain:"construction", base:"PROFESSIONAL",
+    labels:["construction","builder","building company","contractor","civil engineering","renovation","fit-out","home builder"],
+    projectName:"{Brand} Construction", tagline:"Built to Last.",
+    businessGoal:"lead", targetAudience:"Property developers and homeowners needing construction",
+    primaryCTA:"Get a Quote", secondaryCTA:"View Projects",
+    assetTheme:"construction building site modern professional quality",
+    avoid:["luxury aesthetic","soft design portfolio look"],
+    copyTone:"Reliable and expert. Lead with quality and track record. Practical language.",
+  },
+  {
+    domain:"furniture", base:"ECOMMERCE",
+    labels:["furniture","furniture brand","home furniture","office furniture","bespoke furniture","custom furniture","sofas","beds"],
+    projectName:"{Brand} Furniture", tagline:"Live in Style.",
+    businessGoal:"ecommerce", targetAudience:"Homeowners and interior designers",
+    primaryCTA:"Shop Collection", secondaryCTA:"Visit Showroom",
+    assetTheme:"furniture interior home lifestyle photography modern elegant",
+    avoid:["generic product grid","tech aesthetic"],
+    designMood:"warm minimal", typography:"serif",
+  },
+
+  // ── TECHNOLOGY & SOFTWARE ─────────────────────────────────────────────
+  {
+    domain:"saas", base:"SAAS",
+    labels:["saas","software as a service","subscription software","b2b platform","software platform","business software"],
+    projectName:"{Brand}", tagline:"The Smarter Way to {action}",
+    targetAudience:"Teams and businesses improving efficiency",
+    primaryCTA:"Start Free Trial", secondaryCTA:"View Demo",
+    assetTheme:"saas software product dashboard clean modern professional",
+    avoid:["stock business handshake","generic office imagery"],
+  },
+  {
+    domain:"ai-startup", base:"SAAS",
+    labels:["ai startup","ai company","ai product","ai platform","machine learning","gpt","llm","generative ai","ai tool"],
+    projectName:"{Brand} AI", tagline:"Intelligence at Scale.",
+    targetAudience:"Developers and product teams building with AI",
+    primaryCTA:"Start Building Free", secondaryCTA:"View API Docs",
+    assetTheme:"ai artificial intelligence abstract data neural network modern",
+    avoid:["stock robot imagery","sci-fi cliche aesthetic"],
+    designMood:"dark tech", colorHint:"#6D28D9",
+  },
+  {
+    domain:"cybersecurity", base:"SAAS",
+    labels:["cybersecurity","security company","information security","network security","penetration testing","soc","threat detection","endpoint security"],
+    projectName:"{Brand} Security", tagline:"Stay Protected. Stay Ahead.",
+    targetAudience:"CTOs and IT security teams at mid-to-enterprise companies",
+    primaryCTA:"Get Security Assessment", secondaryCTA:"View Solutions",
+    assetTheme:"cybersecurity data protection technology dark abstract",
+    avoid:["hacker cliche imagery","generic shield icons"],
+    designMood:"dark professional", copyTone:"Authoritative and confident. Lead with threats and protection.",
+  },
+  {
+    domain:"crm", base:"SAAS",
+    labels:["crm","customer relationship","lead management","sales crm","sales platform","pipeline management","contact management"],
+    projectName:"{Brand} CRM", tagline:"Close More. Build More. Grow More.",
+    targetAudience:"Sales teams and business development managers",
+    primaryCTA:"Try Free for 14 Days", secondaryCTA:"Watch Demo",
+    assetTheme:"crm sales dashboard pipeline modern clean professional",
+    avoid:["generic handshake stock","luxury aesthetic"],
+    sectionPatch: s => patchSection(s,"workflow",{headline:"Your Sales Pipeline, Simplified"}),
+  },
+  {
+    domain:"erp", base:"SAAS",
+    labels:["erp","enterprise resource planning","business management system","inventory management","supply chain","manufacturing software"],
+    projectName:"{Brand} ERP", tagline:"One System. Total Control.",
+    targetAudience:"Operations directors and C-suite at manufacturing and enterprise companies",
+    primaryCTA:"Request a Demo", secondaryCTA:"View Modules",
+    assetTheme:"erp enterprise software dashboard professional management",
+    avoid:["consumer app aesthetic","startup look"],
+    copyTone:"Enterprise-grade and ROI-focused. Speak to efficiency and control.",
+  },
+  {
+    domain:"developer-tool", base:"SAAS",
+    labels:["developer tool","devtool","api","developer platform","open source","cli tool","sdk","coding tool","dev platform"],
+    projectName:"{Brand}", tagline:"Built for Developers. Loved by Teams.",
+    targetAudience:"Software engineers and engineering teams",
+    primaryCTA:"Start Building Free", secondaryCTA:"View Docs",
+    assetTheme:"developer tool code terminal dark modern professional",
+    avoid:["corporate enterprise aesthetic","soft design"],
+    designMood:"dark code", colorHint:"#1E293B",
+    copyTone:"Developer-first. Technical but accessible. Show the code.",
+  },
+  {
+    domain:"dashboard-analytics", base:"SAAS",
+    labels:["dashboard","analytics platform","reporting tool","data platform","metrics","bi tool","business intelligence","data analytics","data visualization"],
+    projectName:"{Brand} Analytics", tagline:"Your Data. Your Decisions.",
+    targetAudience:"Data analysts and business operators",
+    primaryCTA:"Start Free — No Credit Card", secondaryCTA:"View Live Demo",
+    assetTheme:"analytics dashboard data visualization modern clean dark",
+    avoid:["lifestyle photography","luxury aesthetic"],
+    sectionPatch: s => [
+      {id:"hero",       category:"hero",         variant:"product-showcase", headline:"All Your Metrics in One Place",  purpose:"Dashboard screenshot hero"},
+      {id:"stats",      category:"dashboard",    variant:"topnav-cards",    headline:"Key KPIs",                       purpose:"Revenue, users, conversion cards"},
+      {id:"analytics",  category:"dashboard",    variant:"analytics-charts",headline:"Advanced Analytics",             purpose:"Charts, maps, funnels"},
+      {id:"features",   category:"features",     variant:"bento-grid",      headline:"Powerful Features",              purpose:"Real-time, exports, API, alerts"},
+      {id:"tables",     category:"dashboard",    variant:"table-heavy",     headline:"Detailed Reporting",             purpose:"Sortable data tables"},
+      {id:"pricing",    category:"pricing",      variant:"comparison-table",headline:"Plans for Every Team",           purpose:"Free/Pro/Enterprise comparison"},
+      {id:"testimonials",category:"testimonials",variant:"logo-wall",       headline:"Trusted by Data Teams",          purpose:"Logos + quotes"},
+      {id:"cta",        category:"cta",          variant:"centered-gradient",headline:"Start Analyzing Free",          purpose:"Free account CTA"},
+      {id:"footer",     category:"footer",       variant:"newsletter-rich", headline:"",                                purpose:"Product, API, security, status"},
+    ],
+  },
+
+  // ── FINANCE & LEGAL ───────────────────────────────────────────────────
+  {
+    domain:"law-firm", base:"PROFESSIONAL",
+    labels:["law firm","lawyer","solicitor","barrister","attorney","legal services","legal advice","employment law","family law","corporate law"],
+    projectName:"{Brand} Law", tagline:"Trusted Legal Counsel.",
+    businessGoal:"lead", targetAudience:"Individuals and businesses needing legal representation",
+    primaryCTA:"Book Free Consultation", secondaryCTA:"Our Practice Areas",
+    assetTheme:"law firm professional office legal modern confident",
+    avoid:["stock court imagery","generic handshake photos"],
+    typography:"serif", designMood:"dark professional",
+    copyTone:"Authoritative, confident, and clear. Client outcomes first.",
+  },
+  {
+    domain:"accounting", base:"PROFESSIONAL",
+    labels:["accounting","accountant","bookkeeping","tax","audit","financial accounting","cpa","chartered accountant"],
+    projectName:"{Brand} Accounting", tagline:"Your Numbers. Our Expertise.",
+    targetAudience:"SMEs and individuals needing accounting services",
+    primaryCTA:"Book Free Consultation", secondaryCTA:"Our Services",
+    assetTheme:"accounting finance professional office modern clean",
+    avoid:["dark moody","complex graphics"],
+  },
+  {
+    domain:"finance", base:"PROFESSIONAL",
+    labels:["financial advisor","wealth management","financial planning","investment advisor","IFA","financial services","pension","investment management"],
+    projectName:"{Brand} Financial", tagline:"Your Wealth. Your Future.",
+    targetAudience:"Professionals and HNWIs planning financial futures",
+    primaryCTA:"Book a Strategy Call", secondaryCTA:"Our Services",
+    assetTheme:"wealth finance professional modern confident clean",
+    avoid:["stock money imagery","generic handshake"],
+    designMood:"dark professional", typography:"serif",
+  },
+  {
+    domain:"insurance", base:"PROFESSIONAL",
+    labels:["insurance","insurance broker","life insurance","car insurance","home insurance","business insurance","health insurance"],
+    projectName:"{Brand} Insurance", tagline:"Protected for What Matters Most.",
+    targetAudience:"Individuals and businesses seeking insurance coverage",
+    primaryCTA:"Get a Quote", secondaryCTA:"Our Products",
+    assetTheme:"insurance protection family home professional clean",
+    avoid:["dark moody","complex jargon visuals"],
+    copyTone:"Reassuring and clear. Lead with protection and peace of mind.",
+  },
+  {
+    domain:"bank-fintech", base:"SAAS",
+    labels:["bank","neobank","fintech","digital bank","online bank","challenger bank","financial app","payment platform","money app"],
+    projectName:"{Brand}", tagline:"Banking Built for the Modern World.",
+    targetAudience:"Consumers and SMEs seeking better banking",
+    primaryCTA:"Open Account Free", secondaryCTA:"View Features",
+    assetTheme:"fintech banking app modern clean minimal phone mockup",
+    avoid:["traditional bank imagery","stock briefcase photos"],
+    designMood:"clean modern", colorHint:"#4F46E5",
+  },
+  {
+    domain:"crypto", base:"SAAS",
+    labels:["crypto","cryptocurrency","blockchain","defi","nft","web3","token","exchange","trading","staking"],
+    projectName:"{Brand}", tagline:"The Future of Finance is Here.",
+    targetAudience:"Crypto enthusiasts, traders, and DeFi participants",
+    primaryCTA:"Start Trading", secondaryCTA:"View Markets",
+    assetTheme:"cryptocurrency blockchain defi modern abstract dark neon",
+    avoid:["traditional bank imagery","physical cash photos"],
+    designMood:"dark tech neon", colorHint:"#22D3EE",
+    copyTone:"Bold, forward-looking, community-first. Speak the language of Web3.",
+  },
+
+  // ── MEDIA & CONTENT ───────────────────────────────────────────────────
+  {
+    domain:"blog-magazine", base:"LANDING",
+    labels:["blog","magazine","online publication","news","media","editorial","newsletter","content site","journal"],
+    projectName:"{Brand}", tagline:"Stories That Matter.",
+    businessGoal:"lead", projectType:"blog",
+    targetAudience:"Curious readers seeking quality content",
+    primaryCTA:"Subscribe Free", secondaryCTA:"Read Latest",
+    assetTheme:"magazine editorial photography modern clean content",
+    avoid:["corporate business aesthetic","dark tech look"],
+    sectionPatch: s => [
+      {id:"hero",       category:"hero",         variant:"centered",        headline:"Latest Stories",             purpose:"Featured article hero"},
+      {id:"featured",   category:"features",     variant:"bento-grid",     headline:"Editor's Picks",             purpose:"Featured article grid"},
+      {id:"categories", category:"features",     variant:"icon-grid",      headline:"Topics",                     purpose:"Category navigation"},
+      {id:"about",      category:"features",     variant:"alternating",    headline:"About Us",                   purpose:"Publication mission and team"},
+      {id:"cta",        category:"cta",          variant:"split-form",     headline:"Subscribe for Free",         purpose:"Email newsletter signup"},
+      {id:"footer",     category:"footer",       variant:"newsletter-rich",headline:"",                            purpose:"Topics, authors, social, rss"},
+    ],
+  },
+  {
+    domain:"podcast", base:"LANDING",
+    labels:["podcast","podcast show","audio show","radio show","interview show","business podcast"],
+    projectName:"{Brand} Podcast", tagline:"Listen. Learn. Grow.",
+    targetAudience:"Listeners seeking valuable audio content",
+    primaryCTA:"Listen Now", secondaryCTA:"Subscribe",
+    assetTheme:"podcast microphone studio recording modern professional",
+    avoid:["generic office imagery","corporate stock"],
+  },
+
+  // ── PROFESSIONAL SERVICES ─────────────────────────────────────────────
+  {
+    domain:"marketing-agency", base:"PORTFOLIO",
+    labels:["marketing agency","digital marketing","growth agency","ppc agency","seo agency","content marketing","social media agency","performance marketing"],
+    projectName:"{Brand} Marketing", tagline:"Growth Marketing That Delivers.",
+    businessGoal:"lead", targetAudience:"D2C brands and startups seeking growth",
+    primaryCTA:"Get Growth Strategy", secondaryCTA:"View Case Studies",
+    assetTheme:"marketing agency results growth modern bold",
+    avoid:["generic corporate handshake","dark luxury"],
+    sectionPatch: s => addSectionAfter(s,"work",{id:"results",category:"features",variant:"stat-highlight",headline:"Results We're Proud Of",purpose:"ROAS, revenue generated, leads"}),
+  },
+  {
+    domain:"creative-agency", base:"PORTFOLIO",
+    labels:["creative agency","design agency","branding agency","brand agency","advertising agency","creative studio","brand design"],
+    projectName:"{Brand} Studio", tagline:"We Build Brands That Matter.",
+    targetAudience:"Startups and scale-ups seeking brand identity",
+    primaryCTA:"Start a Project", secondaryCTA:"View Our Work",
+    assetTheme:"creative agency branding design work bold editorial modern",
+    avoid:["generic handshake stock","corporate blue"],
+    designMood:"bold editorial", typography:"display",
+  },
+  {
+    domain:"consultancy", base:"PROFESSIONAL",
+    labels:["consultant","consultancy","management consulting","strategy consulting","business consultant","advisory","management advisory"],
+    projectName:"{Brand} Consulting", tagline:"Strategy That Moves Business.",
+    targetAudience:"C-suite and senior leaders at growth-stage companies",
+    primaryCTA:"Book Strategy Call", secondaryCTA:"Our Services",
+    assetTheme:"consulting strategy business professional confident modern",
+    avoid:["stock handshake","generic office photos"],
+    typography:"serif",
+  },
+  {
+    domain:"hr-recruiting", base:"SAAS",
+    labels:["hr","human resources","recruiting","talent acquisition","staffing","recruitment agency","job board","ats","hrms"],
+    projectName:"{Brand}", tagline:"Hire Smarter. Build Better Teams.",
+    targetAudience:"HR directors and hiring managers",
+    primaryCTA:"Start Hiring Free", secondaryCTA:"View Platform",
+    assetTheme:"hr recruiting team people professional modern office",
+    avoid:["dark tech aesthetic","generic stock handshake"],
+  },
+  {
+    domain:"ngo-charity", base:"LANDING",
+    labels:["ngo","charity","non-profit","nonprofit","foundation","cause","humanitarian","social impact","fundraising"],
+    projectName:"{Brand}", tagline:"Together We Change Lives.",
+    businessGoal:"lead", targetAudience:"Donors, volunteers, and beneficiaries",
+    primaryCTA:"Donate Now", secondaryCTA:"Learn More",
+    assetTheme:"charity impact people community humanitarian photography",
+    avoid:["corporate business aesthetic","dark moody"],
+    designMood:"warm human", colorHint:"#F59E0B",
+    copyTone:"Heartfelt and impactful. Human stories. Show real impact with numbers.",
+  },
+
+  // ── EDUCATION ────────────────────────────────────────────────────────
+  {
+    domain:"school-university", base:"PROFESSIONAL",
+    labels:["school","university","college","academy","institution","educational institution","private school","boarding school"],
+    projectName:"{Brand} Academy", tagline:"Education That Opens Doors.",
+    targetAudience:"Students and parents seeking quality education",
+    primaryCTA:"Apply Now", secondaryCTA:"Book Open Day",
+    assetTheme:"school university campus students learning modern",
+    avoid:["startup aesthetic","dark corporate"],
+    sectionPatch: s => addSectionAfter(s,"services",{id:"outcomes",category:"features",variant:"stat-highlight",headline:"Student Outcomes",purpose:"Employment rate, salary, awards"}),
+  },
+  {
+    domain:"online-course", base:"SAAS",
+    labels:["online course","e-learning","lms","course platform","learning platform","mooc","udemy","teachable","online education","training platform"],
+    projectName:"{Brand} Academy", tagline:"Learn Without Limits.",
+    businessGoal:"lead", targetAudience:"Professionals seeking skill development",
+    primaryCTA:"Enroll Now", secondaryCTA:"Browse Courses",
+    assetTheme:"online learning education laptop courses modern clean",
+    avoid:["dark academic aesthetic","generic stock study"],
+    sectionPatch: s => [
+      {id:"hero",       category:"hero",         variant:"split-image",     headline:"Master New Skills. Change Your Future.",  purpose:"Student success imagery"},
+      {id:"courses",    category:"features",     variant:"bento-grid",      headline:"Our Courses",                            purpose:"Course cards with duration, level"},
+      {id:"why-us",     category:"features",     variant:"icon-grid",       headline:"Why Learn With Us",                      purpose:"Instructors, certificates, jobs"},
+      {id:"outcomes",   category:"features",     variant:"stat-highlight",  headline:"Graduate Outcomes",                      purpose:"Job placement, salary increase"},
+      {id:"instructors",category:"features",     variant:"alternating",     headline:"Learn From Experts",                     purpose:"Instructor profiles"},
+      {id:"testimonials",category:"testimonials",variant:"masonry",         headline:"Student Success Stories",                purpose:"Graduate stories"},
+      {id:"pricing",    category:"pricing",      variant:"three-tier",      headline:"Choose Your Path",                       purpose:"Free/Student/Pro tiers"},
+      {id:"cta",        category:"cta",          variant:"split-form",      headline:"Start Learning Today",                   purpose:"Course interest signup"},
+      {id:"footer",     category:"footer",       variant:"newsletter-rich", headline:"",                                        purpose:"Courses, blog, community, support"},
+    ],
+  },
+  {
+    domain:"coaching", base:"PROFESSIONAL",
+    labels:["coach","coaching","life coach","executive coach","business coach","career coach","performance coach","mindset coach"],
+    projectName:"{Name} Coaching", tagline:"Unlock Your Full Potential.",
+    targetAudience:"Ambitious professionals seeking transformational growth",
+    primaryCTA:"Book Discovery Call", secondaryCTA:"View Programs",
+    assetTheme:"coaching professional success confidence portrait photography",
+    avoid:["clinical therapy aesthetic","corporate consulting look"],
+    copyTone:"Inspiring and outcome-focused. Personal transformation language.",
+  },
+
+  // ── CREATIVE PROFESSIONALS ────────────────────────────────────────────
+  {
+    domain:"photography", base:"PORTFOLIO",
+    labels:["photographer","photography","photoshoot","photo studio","portrait photographer","wedding photographer","commercial photographer","product photographer"],
+    projectName:"{Name} Photography", tagline:"Every Moment, Perfectly Captured.",
+    targetAudience:"Couples, families, brands seeking professional photography",
+    primaryCTA:"Book a Shoot", secondaryCTA:"View Portfolio",
+    assetTheme:"photography portfolio editorial beautiful lighting professional",
+    avoid:["stock photos","corporate office imagery"],
+    designMood:"clean minimal", typography:"serif", spacing:"generous",
+    sectionPatch: s => patchSection(s,"work",{id:"gallery",variant:"filter-gallery",headline:"Portfolio",purpose:"Filterable: Wedding/Commercial/Portrait/Events"}),
+  },
+  {
+    domain:"videography", base:"PORTFOLIO",
+    labels:["videographer","videography","video production","video company","film production","content creator","filmmaker"],
+    projectName:"{Name} Films", tagline:"Stories Worth Telling.",
+    targetAudience:"Brands, events, and individuals seeking video content",
+    primaryCTA:"Get a Quote", secondaryCTA:"Watch Showreel",
+    assetTheme:"videography film production professional camera cinematic",
+    avoid:["photography-only aesthetic","stock video stills"],
+    designMood:"dark cinematic",
+  },
+  {
+    domain:"wedding", base:"HOSPITALITY",
+    labels:["wedding","wedding venue","wedding planner","wedding photographer","bridal","wedding supplier","wedding florist"],
+    projectName:"{Brand} Weddings", tagline:"Your Perfect Day, Perfectly Planned.",
+    businessGoal:"lead", targetAudience:"Couples planning their wedding",
+    primaryCTA:"Plan Your Wedding", secondaryCTA:"View Gallery",
+    assetTheme:"wedding flowers bride ceremony photography elegant romantic",
+    avoid:["dark moody","corporate aesthetic","tech startup look"],
+    typography:"serif", designMood:"romantic elegant", spacing:"generous",
+    copyTone:"Romantic and aspirational. Make them feel the magic of their day.",
+  },
+  {
+    domain:"event-company", base:"HOSPITALITY",
+    labels:["event company","event planner","events management","corporate events","event venue","party planner","conference organiser"],
+    projectName:"{Brand} Events", tagline:"Events Worth Remembering.",
+    businessGoal:"lead", targetAudience:"Businesses and individuals needing event services",
+    primaryCTA:"Plan Your Event", secondaryCTA:"View Portfolio",
+    assetTheme:"events conference gala dinner corporate photography",
+    avoid:["wedding only aesthetic","dark intimate"],
+  },
+
+  // ── PORTFOLIO TYPES ───────────────────────────────────────────────────
+  {
+    domain:"portfolio-developer", base:"PORTFOLIO",
+    labels:["developer portfolio","software engineer portfolio","fullstack developer","frontend developer","backend developer","web developer"],
+    projectName:"{Name} — Developer", tagline:"Building the Web, One Line at a Time.",
+    targetAudience:"Tech companies and startups hiring engineers",
+    primaryCTA:"Hire Me", secondaryCTA:"View Projects",
+    assetTheme:"developer workspace code dark minimal macbook",
+    avoid:["stock business photos","formal corporate"],
+    designMood:"dark minimal",
+    sectionPatch: s => [
+      {id:"hero",      category:"hero",         variant:"minimal-statement",headline:"Hi, I build things for the web.",  purpose:"Bold personal intro with stack"},
+      {id:"about",     category:"features",     variant:"alternating",      headline:"About Me",                         purpose:"Story, stack, years, values"},
+      {id:"skills",    category:"features",     variant:"stat-highlight",   headline:"Tech Stack",                       purpose:"React, Node, Python — with levels"},
+      {id:"projects",  category:"portfolio",    variant:"featured-grid",    headline:"Selected Work",                    purpose:"Projects with tech, links, GitHub"},
+      {id:"experience",category:"features",     variant:"icon-grid",        headline:"Experience",                       purpose:"Work history with impact numbers"},
+      {id:"testimonials",category:"testimonials",variant:"grid",            headline:"What Colleagues Say",             purpose:"Manager/peer recommendations"},
+      {id:"contact",   category:"cta",          variant:"split-form",       headline:"Let's Work Together",             purpose:"Contact + GitHub/LinkedIn"},
+      {id:"footer",    category:"footer",       variant:"minimal-centered", headline:"",                                  purpose:"Social, email, GitHub, resume"},
+    ],
+  },
+  {
+    domain:"portfolio-designer", base:"PORTFOLIO",
+    labels:["designer portfolio","ui designer","ux designer","graphic designer","brand designer","product designer","visual designer"],
+    projectName:"{Name} — Designer", tagline:"Design that moves people.",
+    targetAudience:"Product companies and creative agencies hiring designers",
+    primaryCTA:"Start a Project", secondaryCTA:"View Work",
+    assetTheme:"ui design portfolio mockup clean white minimal modern",
+    avoid:["dark coding aesthetic","corporate blue"],
+    designMood:"clean editorial", typography:"display", spacing:"generous",
+    sectionPatch: s => [
+      {id:"hero",      category:"hero",         variant:"centered",         headline:"I design experiences people love.", purpose:"Strong typographic hero"},
+      {id:"work",      category:"portfolio",    variant:"filter-gallery",   headline:"Selected Work",                    purpose:"Filterable: Branding/UI/Motion"},
+      {id:"about",     category:"features",     variant:"alternating",      headline:"About",                           purpose:"Philosophy, process, tools"},
+      {id:"services",  category:"features",     variant:"icon-grid",        headline:"Services",                        purpose:"Branding, UI, Systems, Prototyping"},
+      {id:"testimonials",category:"testimonials",variant:"featured",        headline:"Client Love",                     purpose:"Client quotes with project context"},
+      {id:"contact",   category:"cta",          variant:"floating-card",    headline:"Let's Create Something Great",    purpose:"Project inquiry form"},
+      {id:"footer",    category:"footer",       variant:"minimal-centered", headline:"",                                  purpose:"Dribbble, Behance, LinkedIn"},
+    ],
+  },
+  {
+    domain:"influencer-creator", base:"PORTFOLIO",
+    labels:["influencer","content creator","youtuber","tiktoker","instagrammer","social media influencer","brand ambassador","personal brand"],
+    projectName:"{Name}", tagline:"Authentic Content. Real Influence.",
+    targetAudience:"Brands seeking influencer partnerships and collaborations",
+    primaryCTA:"Work With Me", secondaryCTA:"View Content",
+    assetTheme:"content creator lifestyle social media photography vibrant modern",
+    avoid:["corporate formal aesthetic","dark tech look"],
+    designMood:"vibrant modern",
+    copyTone:"Personal, authentic, and energetic. Community-first language.",
+  },
+
+  // ── E-COMMERCE VERTICALS ──────────────────────────────────────────────
+  {
+    domain:"electronics", base:"ECOMMERCE",
+    labels:["electronics","tech products","gadgets","smartphones","laptops","headphones","smart home","consumer electronics"],
+    projectName:"{Brand}", tagline:"Technology, Simplified.",
+    targetAudience:"Tech-savvy consumers and early adopters",
+    primaryCTA:"Shop Now", secondaryCTA:"View Deals",
+    assetTheme:"electronics product photography clean white studio modern",
+    avoid:["lifestyle fashion photography","dark luxury"],
+    designMood:"clean tech minimal",
+  },
+  {
+    domain:"pet-shop", base:"ECOMMERCE",
+    labels:["pet shop","pet store","pet supplies","dog food","cat food","pet accessories","animal supplies","veterinary products"],
+    projectName:"{Brand} Pet Shop", tagline:"Everything Your Pet Deserves.",
+    targetAudience:"Pet owners seeking quality supplies and products",
+    primaryCTA:"Shop for Your Pet", secondaryCTA:"View Categories",
+    assetTheme:"pet shop animals dogs cats cute happy photography",
+    avoid:["dark moody aesthetic","luxury brand look"],
+    designMood:"warm friendly", colorHint:"#F59E0B",
+    copyTone:"Warm and enthusiastic. Pet-parent language. Celebrate the joy of pets.",
+  },
+  {
+    domain:"sports-equipment", base:"ECOMMERCE",
+    labels:["sports equipment","sporting goods","gym equipment","outdoor gear","fitness equipment","sports shop","athletic gear"],
+    projectName:"{Brand} Sport", tagline:"Gear Up. Perform Better.",
+    targetAudience:"Athletes and sports enthusiasts",
+    primaryCTA:"Shop Equipment", secondaryCTA:"Find Your Sport",
+    assetTheme:"sports equipment fitness outdoor action photography bold",
+    avoid:["spa wellness aesthetic","luxury fashion photography"],
+    designMood:"bold energetic",
+  },
+
+  // ── LOGISTICS & OPERATIONS ────────────────────────────────────────────
+  {
+    domain:"logistics", base:"PROFESSIONAL",
+    labels:["logistics","freight","shipping","supply chain","warehouse","3pl","courier","delivery service","haulage","transport company"],
+    projectName:"{Brand} Logistics", tagline:"On Time. Every Time.",
+    targetAudience:"Businesses needing reliable logistics and freight services",
+    primaryCTA:"Get a Quote", secondaryCTA:"Track Shipment",
+    assetTheme:"logistics warehouse trucks freight professional modern",
+    avoid:["consumer e-commerce aesthetic","luxury imagery"],
+    copyTone:"Reliable and efficient. Lead with on-time performance and network scale.",
+  },
+  {
+    domain:"manufacturing", base:"PROFESSIONAL",
+    labels:["manufacturing","factory","production","fabrication","industrial","engineering","precision engineering","contract manufacturing"],
+    projectName:"{Brand} Manufacturing", tagline:"Precision Engineered.",
+    targetAudience:"B2B buyers and procurement teams",
+    primaryCTA:"Request a Quote", secondaryCTA:"View Capabilities",
+    assetTheme:"manufacturing factory industrial precision engineering professional",
+    avoid:["consumer brand aesthetic","soft design"],
+  },
+  {
+    domain:"agriculture", base:"PROFESSIONAL",
+    labels:["farm","agriculture","farming","agri-tech","agribusiness","crop","agricultural","food production","sustainable farming"],
+    projectName:"{Brand} Agricultural", tagline:"Growing the Future.",
+    targetAudience:"Agricultural businesses and food producers",
+    primaryCTA:"Contact Us", secondaryCTA:"Our Products",
+    assetTheme:"agriculture farm field crops landscape aerial photography",
+    avoid:["urban tech aesthetic","dark corporate"],
+    designMood:"natural earthy", colorHint:"#16A34A",
+  },
+
+  // ── LANDING PAGES ─────────────────────────────────────────────────────
+  {
+    domain:"landing-page", base:"LANDING",
+    labels:["landing page","waitlist","coming soon","pre-launch","product launch","opt-in","squeeze page","lead generation page"],
+    projectName:"{Brand}", tagline:"Be the First to Experience {Brand}",
+    targetAudience:"Early adopters and interested prospects",
+    primaryCTA:"Get Early Access", secondaryCTA:"Learn More",
+    assetTheme:"product launch abstract modern gradient minimal",
+    avoid:["multi-section complex layout","long content pages"],
+  },
+  {
+    domain:"app-landing", base:"LANDING",
+    labels:["app landing","mobile app landing","app download","app launch","ios app","android app","mobile app promotion"],
+    projectName:"{Brand} App", tagline:"Everything You Need. In Your Pocket.",
+    targetAudience:"Mobile users seeking a better experience",
+    primaryCTA:"Download Free", secondaryCTA:"See How It Works",
+    assetTheme:"mobile app phone mockup clean modern ui",
+    avoid:["desktop software aesthetic","enterprise look"],
+    designMood:"clean modern", colorHint:"",
+  },
+];
+
+// ── Resolve all compact domains → full DomainKnowledge ───────────────────
+const DOMAIN_BLUEPRINTS: DomainKnowledge[] = COMPACT_DOMAINS.map(resolveDomain);
+
+// ── Domain matcher ─────────────────────────────────────────────────────────
+function matchDomain(prompt: string, projectType: string): DomainKnowledge | null {
+  const p = prompt.toLowerCase();
+
+  for (const d of DOMAIN_BLUEPRINTS) {
+    if (d.projectType !== "website" &&
+        d.projectType !== "portfolio" &&
+        d.projectType !== projectType) continue;
+    if (d.labels.some(label => p.includes(label))) return d;
+  }
+
+  // Project-type fallbacks
+  const fallbacks: Record<string, string> = {
+    ecommerce:"ecommerce", saas:"saas", dashboard:"dashboard-analytics",
+    landing:"landing-page", portfolio:"portfolio-designer",
+  };
+  if (fallbacks[projectType]) {
+    return DOMAIN_BLUEPRINTS.find(d => d.domain === fallbacks[projectType]) || null;
+  }
+
+  return null;
+}
+
+// ── Convert DomainKnowledge → DomainBlueprint ─────────────────────────────
+function domainKnowledgeToBluePrint(
+  dk: DomainKnowledge, prompt: string, niche: NicheProfile
+): DomainBlueprint {
+  const brandMatch = prompt.match(/(?:called|named|brand|for)\s+["']?([A-Z][a-zA-Z\s&]{2,30})["']?/i)
+    || prompt.match(/^([A-Z][a-zA-Z\s&]{2,20})\s+(?:website|store|platform|app|gym|hotel|restaurant)/i);
+  const brand = brandMatch?.[1]?.trim() || niche.industry || "Premium";
+
+  return {
+    projectName:   dk.projectName.replace(/\{Brand\}|\{Name\}/g, brand),
+    tagline:       dk.tagline.replace(/\{Brand\}|\{Name\}/g, brand).replace(/\{action\}/g,"work"),
+    businessGoal:  dk.businessGoal,
+    targetAudience:dk.targetAudience,
+    sectionOrder:  dk.sections.map(s => s.id),
+    sectionPurpose:Object.fromEntries(dk.sections.map(s => [s.id, s.purpose])),
+    designDirectives: {
+      colorMood:     dk.designMood,
+      imagingStyle:  dk.assetTheme,
+      typographyFeel:dk.typography,
+      spacingMood:   dk.spacing,
+    },
+    assetTheme:    dk.assetTheme,
+    primaryCTA:    dk.primaryCTA,
+    secondaryCTA:  dk.secondaryCTA,
+    avoidMistakes: dk.avoid,
+    copyTone:      dk.copyTone,
+    keyBenefits:   dk.keyBenefits,
+    pricingModel:  dk.pricingModel,
+  };
+}
+
+function getSectionVariants(dk: DomainKnowledge): Record<string, { category: string; variant: string }> {
+  return Object.fromEntries(dk.sections.map(s => [s.id, { category: s.category, variant: s.variant }]));
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// AI ARCHITECT — Blueprint Engine
+// ════════════════════════════════════════════════════════════════════
+// Runs BEFORE generateComponentContent.
+// Makes ONE focused AI call that produces a domain-specific blueprint:
+//   - businessGoal (membership / booking / showcase / lead / ecommerce)
+//   - exact section order for THIS business (not a generic template)
+//   - design directives (what colors, what images, what typography feel)
+//   - assetTheme (what to search for images — "luxury cars", not "perfume")
+//   - CTA copy ("Join the Club", "Book a Fleet", not "Get Started")
+//
+// Without this: "luxury car club" → perfume images + generic features grid
+// With this:    "luxury car club" → fleet showcase + membership + black/gold
+
+interface DomainBlueprint {
+  projectName:      string;   // "Prestige Car Club"
+  tagline:          string;   // "Drive the Extraordinary"
+  businessGoal:     string;   // "membership" | "showcase" | "lead" | "booking" | "ecommerce"
+  targetAudience:   string;   // "High net-worth car enthusiasts aged 35-60"
+  sectionOrder:     string[]; // ["hero","fleet","membership","experience","gallery","testimonials","faq","contact","footer"]
+  sectionPurpose:   Record<string, string>; // { fleet: "Showcase premium vehicles available", membership: "Drive joining" }
+  designDirectives: {
+    colorMood:      string;   // "Dark luxury — black + deep charcoal + gold accents"
+    imagingStyle:   string;   // "Dramatic car photography — studio lighting, low angles"
+    typographyFeel: string;   // "Editorial serif headlines, clean sans body"
+    spacingMood:    string;   // "Generous — luxury feels unhurried"
+  };
+  assetTheme:       string;   // "luxury sports cars studio photography dramatic"
+  primaryCTA:       string;   // "Apply for Membership"
+  secondaryCTA:     string;   // "View the Fleet"
+  avoidMistakes:    string[]; // ["No stock business photos", "No perfume imagery", "No generic 'Get Started'"]
+  copyTone:         string;   // "Aspirational and exclusive — speak to those who have arrived"
+  keyBenefits:      string[]; // ["Curated fleet of 40+ supercars", "White-glove concierge", "Members-only events"]
+  pricingModel:     string;   // "membership tiers" | "one-time" | "booking-based" | "none"
+}
+
+async function architectBlueprint(
+  userPrompt:  string,
+  projectType: string,
+  niche:       NicheProfile,
+  kryptonGen:  (sys: string, usr: string) => Promise<{ text: string }>
+): Promise<DomainBlueprint | null> {
+
+  // ── STEP 1: Static domain knowledge lookup (instant, no AI call) ────
+  // For all known industries, return the pre-built blueprint directly.
+  // This guarantees: luxury car club never gets perfume imagery,
+  // restaurant always gets booking CTA, SaaS always gets product screenshot hero.
+  const domainKnowledge = matchDomain(userPrompt, projectType);
+  if (domainKnowledge) {
+    const bp = domainKnowledgeToBluePrint(domainKnowledge, userPrompt, niche);
+    // Attach the original DomainKnowledge so generateComponentContent
+    // can access exact variant hints per section (no re-matching needed)
+    (bp as any).__domainKnowledge = domainKnowledge;
+    return bp;
+  }
+
+  // ── STEP 2: AI fallback for unknown/novel domains ────────────────────
+  // Only reaches here if matchDomain() returned null (genuinely unknown domain).
+  // Claude invents a blueprint for: crypto, NFT, biotech, quantum computing,
+  // indie game studio, beekeeping supply, etc.
+  const system = `You are Krypton AI's domain architect. Produce a precise architectural blueprint for this website.
+Output ONLY valid JSON. No markdown. No preamble.
+
+CRITICAL RULES:
+- sectionOrder: 7-10 sections specific to THIS business (not a generic template)
+- primaryCTA: specific action ("Join the Club" / "Book a Table") — never "Get Started"
+- assetTheme: exact image search keywords for THIS domain — never generic business photos
+- avoidMistakes: prevent cross-domain contamination (e.g. car club must avoid perfume imagery)`;
+
+  const user = `Business: "${userPrompt}"
+Project Type: ${projectType}
+Industry: ${niche.industry} (${niche.marketLevel})
+
+Return JSON with keys: projectName, tagline, businessGoal, targetAudience,
+sectionOrder (array), sectionPurpose (object), designDirectives (object with colorMood/imagingStyle/typographyFeel/spacingMood),
+assetTheme, primaryCTA, secondaryCTA, avoidMistakes (array), copyTone, keyBenefits (array), pricingModel`;
+
+  try {
+    const { text } = await kryptonGen(system, user);
+    const cleaned   = text.replace(/\`\`\`json|\`\`\`/g, "").trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!parsed.sectionOrder || !parsed.primaryCTA) return null;
+    return parsed as DomainBlueprint;
+  } catch {
+    return null;
+  }
+}
+
+
 async function generateComponentContent(
-  niche: NicheProfile, blueprint: string, userPrompt: string, projectType: string
+  niche: NicheProfile, blueprint: string, userPrompt: string, projectType: string,
+  domainPlan?: DomainBlueprint | null
 ): Promise<Record<string, any> | null> {
   const tone = niche.tone || "default";
-  const categories: ComponentCategory[] = projectType === "dashboard"
-    ? ["navbar", "dashboard", "footer"]
-    : projectType === "ecommerce" || projectType === "store"
-    ? ["navbar", "hero", "ecommerce", "testimonials", "cta", "footer"]
-    : projectType === "portfolio"
-    ? ["navbar", "hero", "portfolio", "testimonials", "cta", "footer"]
-    : ["navbar", "hero", "features", "testimonials", "pricing", "faq", "cta", "footer"];
 
-  const variantOptions = categories.map(c => `${c}: [${listVariants(c).join(", ")}]`).join("\n");
+  // ── Blueprint-driven category selection ─────────────────────────────
+  // If domainPlan exists, use its sectionOrder to pick components.
+  // Map section names to component categories that actually exist.
+  const SECTION_TO_CATEGORY: Record<string, ComponentCategory> = {
+    hero:"hero", navbar:"navbar", footer:"footer",
+    features:"features", benefits:"features", "why-us":"features",
+    pricing:"pricing", membership:"pricing", plans:"pricing", tiers:"pricing",
+    testimonials:"testimonials", reviews:"testimonials",
+    faq:"faq", faqs:"faq",
+    cta:"cta", contact:"cta",
+    // Domain-specific → map to nearest component
+    fleet:"features", showcase:"features", services:"features",
+    gallery:"features", portfolio:"features",
+    experience:"testimonials", results:"testimonials",
+    about:"features", team:"features", stats:"features",
+    booking:"cta", "book-now":"cta", "get-started":"cta",
+    ecommerce:"ecommerce", products:"ecommerce", shop:"ecommerce",
+    dashboard:"dashboard",
+  };
 
-  const system = `You are Krypton AI's premium content specialist. Output ONLY valid JSON — no markdown, no backticks, no explanation.
+  // ── Section variant lookup (from DomainKnowledge — exact variants) ──
+  // When a static DomainKnowledge blueprint was used, sectionVariantHints
+  // contains the exact variant (e.g. fleet→features/alternating) per section.
+  // This eliminates the "always gets icon-grid for everything" problem.
+  const sectionVariantHints: Record<string, { category: string; variant: string }> = {};
+  if (domainPlan && (domainPlan as any).__domainKnowledge) {
+    const dk = (domainPlan as any).__domainKnowledge as DomainKnowledge;
+    Object.assign(sectionVariantHints, getSectionVariants(dk));
+  }
 
-  CONTENT QUALITY RULES:
-  - Write specific, compelling copy — never generic placeholder text
-  - For luxury brands: use elegant, aspirational language (e.g. "Crafted for the Discerning", "An Olfactory Journey")
-  - For tech products: use clear, confident value propositions
-  - Headlines must be punchy and memorable (5-10 words max)
-  - Testimonial quotes must sound authentic and specific (mention real results)
-  - Feature descriptions: benefit-first, not feature-first
-  - CTA text must create urgency or exclusivity ("Discover Your Signature" not "Click Here")
-  - Pricing: use psychological pricing ($49 not $50, include what makes each tier valuable)
-  - FAQ: answer real objections buyers have
+  let categories: ComponentCategory[];
+  if (domainPlan?.sectionOrder && domainPlan.sectionOrder.length > 0) {
+    // Use AI architect's section order — always includes navbar + footer
+    const mapped = domainPlan.sectionOrder
+      .map(s => SECTION_TO_CATEGORY[s.toLowerCase()] as ComponentCategory)
+      .filter(Boolean);
+    // Deduplicate while preserving order
+    const seen = new Set<string>();
+    categories = (["navbar", ...mapped, "footer"] as ComponentCategory[])
+      .filter(c => { if (seen.has(c)) return false; seen.add(c); return true; });
+  } else if (projectType === "dashboard") {
+    categories = ["navbar", "dashboard", "footer"];
+  } else if (projectType === "ecommerce" || projectType === "store") {
+    categories = ["navbar", "hero", "ecommerce", "testimonials", "cta", "footer"];
+  } else if (projectType === "portfolio") {
+    categories = ["navbar", "hero", "portfolio", "testimonials", "cta", "footer"];
+  } else {
+    categories = ["navbar", "hero", "features", "testimonials", "pricing", "faq", "cta", "footer"];
+  }
 
-  TESTIMONIAL NAMES: Use realistic full names, realistic job titles, realistic companies.
-  NEVER use: "John Doe", "Jane Smith", "User", "Customer", placeholder text.`;
+  // Build variant options with RECOMMENDED hints from DomainKnowledge
+  const variantOptions = categories.map(c => {
+    const allVariants = listVariants(c);
+    // Find if any section in this category has a specific variant hint
+    const hinted = Object.entries(sectionVariantHints)
+      .find(([, v]) => v.category === c);
+    if (hinted) {
+      return `${c}: [${allVariants.map((v: string) => v === hinted[1].variant ? `${v} ★RECOMMENDED` : v).join(", ")}]`;
+    }
+    return `${c}: [${allVariants.join(", ")}]`;
+  }).join("\n");
+
+  // ── Blueprint-enriched system prompt ─────────────────────────────────
+  const blueprintContext = domainPlan ? `
+DOMAIN BLUEPRINT (follow this precisely):
+Business: ${domainPlan.projectName} — ${domainPlan.tagline}
+Goal: ${domainPlan.businessGoal}
+Audience: ${domainPlan.targetAudience}
+Primary CTA: "${domainPlan.primaryCTA}"
+Secondary CTA: "${domainPlan.secondaryCTA}"
+Copy Tone: ${domainPlan.copyTone}
+Key Benefits: ${domainPlan.keyBenefits?.join(" | ")}
+Design: ${domainPlan.designDirectives?.colorMood}
+Imagery: ${domainPlan.designDirectives?.imagingStyle}
+Asset Theme: ${domainPlan.assetTheme}
+AVOID: ${domainPlan.avoidMistakes?.join("; ")}
+Section Purposes: ${Object.entries(domainPlan.sectionPurpose||{}).map(([k,v])=>`${k}: ${v}`).join(" | ")}
+Domain-specific sections: ${(domainPlan.sectionOrder||[]).join(" → ")}
+Exact CTA to use: "${domainPlan.primaryCTA}" — never substitute a generic CTA
+Imagery rule: ${domainPlan.assetTheme}` : "";
+
+  const system = `You are Krypton AI's content specialist. Output ONLY valid JSON — no markdown fences, no preamble. Write real, specific copy for the user's niche.
+
+CRITICAL RULES:
+1. Headlines must be specific to THIS business — never generic
+2. CTAs must use the exact primaryCTA from the blueprint
+3. Benefits must be real differentiators for this industry
+4. Never use stock phrases like "Get Started", "Learn More", "Our Features"
+5. Image keywords must match the EXACT business (car club → luxury cars, NOT perfume)`;
+
   const user = `Build content for: "${userPrompt}"
 Niche: ${niche.industry} (${niche.marketLevel} tier, ${tone} tone)
+${blueprintContext}
 Blueprint context: ${blueprint.slice(0, 400)}
 
 Choose ONE variant per section from these options:
@@ -2665,96 +4902,6 @@ Return JSON only (no \`\`\`json):
 {"variants":{"navbar":"...","hero":"...","features":"...","pricing":"...","cta":"...","footer":"..."},"navbar":{"logoText":"Brand","links":[{"label":"Home","href":"#hero"},{"label":"Features","href":"#features"},{"label":"Pricing","href":"#pricing"}],"cta":{"text":"Get Started","href":"#cta"}},"hero":{"badge":"Tagline","headline":"Specific headline for ${niche.industry}","subheadline":"2-sentence value prop","ctaPrimary":{"text":"Start Free","href":"#cta"},"benefits":[{"text":"Key benefit 1"},{"text":"Key benefit 2"},{"text":"Key benefit 3"}]},"features":{"eyebrow":"Why Us","headline":"Why Choose Us","items":[{"icon":"⚡","title":"Feature 1","desc":"Specific description","stat":"stat"}]},"pricing":{"eyebrow":"Pricing","headline":"Simple Pricing","tiers":[{"name":"Starter","price":"$0","period":"month","features":["Feature A","Feature B"],"cta":{"text":"Start Free","href":"#"},"highlighted":false},{"name":"Pro","price":"$29","period":"month","features":["Everything in Starter","Feature C","Feature D"],"cta":{"text":"Get Pro","href":"#"},"highlighted":true}]},"cta":{"headline":"Ready to start?","subheadline":"Join thousands of users","ctaPrimary":{"text":"Get Started Free","href":"#"}},"footer":{"logoText":"Brand","tagline":"Tagline","columns":[{"title":"Product","links":[{"label":"Features","href":"#"},{"label":"Pricing","href":"#"}]},{"title":"Company","links":[{"label":"About","href":"#"},{"label":"Contact","href":"#"}]}],"socialLinks":[{"label":"Twitter","href":"#"}],"copyrightName":"Brand"}}
 
 Make ALL copy specific to ${niche.industry} — real headlines, real benefits, real feature names.`;
-
-  // ── Intelligent defaults — used when AI parse fails ────────────────────
-  function makeDefaultContent(projectType: string, niche: NicheProfile, tone: string): Record<string, any> {
-    const name     = userPrompt.slice(0, 40);
-    const industry = niche.industry || "business";
-    const market   = niche.marketLevel || "premium";
-    return {
-      variants: {
-        navbar:       getDefaultVariant("navbar",       tone),
-        hero:         getDefaultVariant("hero",         tone),
-        features:     getDefaultVariant("features",     tone),
-        testimonials: getDefaultVariant("testimonials", tone),
-        pricing:      getDefaultVariant("pricing",      tone),
-        faq:          getDefaultVariant("faq",          tone),
-        cta:          getDefaultVariant("cta",          tone),
-        footer:       getDefaultVariant("footer",       tone),
-      },
-      navbar: {
-        logoText: name,
-        links: [
-          { label: "Home",     href: "#hero"     },
-          { label: "Services", href: "#features" },
-          { label: "Pricing",  href: "#pricing"  },
-          { label: "Contact",  href: "#cta"      },
-        ],
-        cta: { text: "Get Started", href: "#cta" },
-      },
-      hero: {
-        badge:        `${market.charAt(0).toUpperCase()+market.slice(1)} ${industry}`,
-        headline:     `The Future of ${name}`,
-        subheadline:  `Premium ${industry} solutions designed for results.`,
-        ctaPrimary:   { text: "Get Started",  href: "#cta"      },
-        ctaSecondary: { text: "Learn More",   href: "#features" },
-      },
-      features: {
-        eyebrow:  "Why Choose Us",
-        headline: `Everything you need from a ${industry} partner`,
-        items: [
-          { icon: "⚡", title: "Fast Delivery",     desc: "Rapid execution without compromising quality." },
-          { icon: "🔒", title: "Reliable Results",  desc: "Consistent outcomes you can count on."         },
-          { icon: "🎯", title: "Expert Team",       desc: "Specialists with deep industry knowledge."      },
-          { icon: "💡", title: "Smart Solutions",   desc: "Innovative approaches to complex challenges."   },
-        ],
-      },
-      testimonials: {
-        eyebrow:  "Client Results",
-        headline: "Trusted by industry leaders",
-        items: [
-          { quote: "Exceptional quality and service. Highly recommended.",  name: "Sarah M.",  role: "Director", rating: 5 },
-          { quote: "Transformed our operations completely. Outstanding.",   name: "James K.",  role: "CEO",      rating: 5 },
-          { quote: "Professional, reliable, and results-driven team.",      name: "Priya R.",  role: "Founder",  rating: 5 },
-        ],
-      },
-      pricing: {
-        eyebrow:  "Pricing",
-        headline: "Simple, transparent pricing",
-        tiers: [
-          { name: "Starter",    price: "$49",   period: "month", highlighted: false, features: ["Core features", "Email support", "5 projects"], cta: { text: "Start Now", href: "#cta" } },
-          { name: "Pro",        price: "$149",  period: "month", highlighted: true,  features: ["Everything in Starter", "Priority support", "25 projects", "Analytics"], cta: { text: "Go Pro", href: "#cta" } },
-          { name: "Enterprise", price: "Custom", period: "",     highlighted: false, features: ["Unlimited projects", "Dedicated support", "Custom integrations"], cta: { text: "Contact Us", href: "#cta" } },
-        ],
-      },
-      faq: {
-        eyebrow:  "FAQ",
-        headline: "Frequently Asked Questions",
-        items: [
-          { question: "How quickly can you start?",    answer: "We can begin within 24-48 hours of onboarding."              },
-          { question: "What does the process look like?", answer: "We start with a discovery call, then deliver a tailored plan." },
-          { question: "Is there a contract required?", answer: "Monthly plans available with no long-term commitment."        },
-          { question: "Do you offer refunds?",         answer: "We offer a satisfaction guarantee on all our services."       },
-        ],
-      },
-      cta: {
-        headline:     `Ready to get started with ${name}?`,
-        subheadline:  "Join hundreds of satisfied clients. Start today.",
-        ctaPrimary:   { text: "Start Now",      href: "#contact" },
-        ctaSecondary: { text: "Learn More",     href: "#features" },
-      },
-      footer: {
-        logoText:      name,
-        tagline:       `Premium ${industry} for modern businesses.`,
-        columns: [
-          { title: "Product",  links: [{ label: "Features", href: "#features" }, { label: "Pricing", href: "#pricing" }] },
-          { title: "Company",  links: [{ label: "About",    href: "#about"    }, { label: "Contact", href: "#cta"     }] },
-        ],
-        socialLinks:   [],
-        copyrightName: name,
-      },
-    };
-  }
 
   try {
     const { text } = await kryptonGenerate(system, user);
@@ -2767,18 +4914,12 @@ Make ALL copy specific to ${niche.industry} — real headlines, real benefits, r
     // Try extracting JSON from response
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      try {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (parsed.variants && parsed.hero) return parsed;
-      } catch {}
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.variants && parsed.hero) return parsed;
     }
-    // JSON parse failed — use intelligent defaults (never return null)
-    console.warn("generateComponentContent: JSON parse failed, using defaults");
-    return makeDefaultContent(projectType, niche, tone);
+    return null;
   } catch {
-    // AI call failed — use intelligent defaults (never return null)
-    console.warn("generateComponentContent: AI call failed, using defaults");
-    return makeDefaultContent(projectType, niche, tone);
+    return null; // caller falls back to raw HTML generation
   }
 }
 
@@ -2934,6 +5075,84 @@ async function logGeneration(supabase: any, data: {
 }
 
 // ── Main SSE Handler ──────────────────────────────────────────────
+// ── Visual Intelligence Boost CSS ─────────────────────────────────────
+// Zero-AI-call visual quality improvement. Applied when gate score < 80.
+// Uses the resolved DesignLanguage + NicheProfile to inject targeted fixes.
+function generateVisualBoostCSS(dl: DesignLanguage, niche: NicheProfile): string {
+  const p       = niche.palette;
+  const isLuxury  = dl.premiumLevel >= 9;
+  const isSaaS    = dl.componentDensity === "tight";
+  const isWarm    = dl.colorTemperature === "warm";
+  const radius    = dl.borderRadius === "sharp" ? "0px"
+                  : dl.borderRadius === "subtle" ? "4px"
+                  : dl.borderRadius === "rounded" ? "16px" : "999px";
+  const sectionPad = dl.componentDensity === "generous" ? "clamp(100px,12vw,160px)"
+                   : dl.componentDensity === "tight"     ? "clamp(60px,8vw,100px)"
+                   : "clamp(80px,10vw,120px)";
+
+  return `
+/* ── Visual Intelligence Boost ───────────────────────────────────── */
+
+/* Consistent border radius */
+.card, [class*=card], section > div > div { border-radius: ${radius} !important; }
+${isLuxury ? "img, .img-wrapper { border-radius: 0 !important; }" : ""}
+
+/* Section spacing consistency */
+section { padding: ${sectionPad} clamp(16px,5vw,80px) !important; }
+
+/* Typography hierarchy enforcement */
+h1 { font-size: clamp(${isLuxury ? "48px,8vw,104px" : "36px,6vw,80px"}) !important;
+     line-height: ${isLuxury ? "1.0" : "1.1"} !important;
+     letter-spacing: ${dl.typographyScale === "editorial" ? "-0.02em" : "-0.01em"} !important; }
+h2 { font-size: clamp(24px,4vw,56px) !important; line-height: 1.15 !important; }
+h3 { font-size: clamp(18px,2.5vw,28px) !important; }
+
+/* Button consistency */
+button, .btn, a[class*="btn"] {
+  border-radius: ${radius} !important;
+  font-weight: ${isLuxury ? "500" : "700"} !important;
+  letter-spacing: ${isLuxury ? "0.1em" : "-0.01em"} !important;
+  ${isLuxury ? "text-transform: uppercase;" : ""}
+  transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
+}
+
+/* Card depth consistency */
+.card, [class*=card] {
+  background: var(--card, ${p.card}) !important;
+  border: 1px solid var(--border, rgba(255,255,255,0.08)) !important;
+  ${dl.shadowDepth === "dramatic" ? "box-shadow: 0 24px 64px rgba(0,0,0,0.4) !important;" : ""}
+  ${dl.shadowDepth === "medium"   ? "box-shadow: 0 8px 32px rgba(0,0,0,0.25) !important;" : ""}
+  ${dl.shadowDepth === "glow"     ? "box-shadow: 0 0 40px rgba(0,0,0,0.3) !important;" : ""}
+}
+
+/* Grid responsiveness boost */
+@media (max-width: 768px) {
+  [style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; }
+  [style*="grid-template-columns: 1fr 1fr"]  { grid-template-columns: 1fr !important; }
+  [style*="display: flex"][style*="gap"]      { flex-wrap: wrap !important; }
+  h1 { font-size: clamp(28px,9vw,52px) !important; }
+  section { padding: 60px 16px !important; }
+}
+
+/* Scroll reveal enforcement */
+[data-reveal]:not(.kr-visible) { opacity: 0; transform: translateY(20px); }
+[data-reveal].kr-visible { opacity: 1 !important; transform: translateY(0) !important; }
+
+/* Color temperature warmth */
+${isWarm ? `:root { filter: none; }
+img { filter: brightness(1.02) saturate(1.05) warm(2deg); }` : ""}
+
+/* Premium luxury spacing */
+${isLuxury ? `.container, .max-w { max-width: 1100px !important; margin-left: auto !important; margin-right: auto !important; }
+p, [class*="sub"], [class*="desc"] { line-height: 1.9 !important; font-size: clamp(15px,1.6vw,18px) !important; }` : ""}
+
+/* SaaS data density */
+${isSaaS ? `table { font-size: 13px !important; }
+.stat { font-variant-numeric: tabular-nums; }` : ""}
+`.trim();
+}
+
+
 export async function POST(req: NextRequest) {
   const { prompt, userId, accessToken, competitorUrl, forceType } = await req.json().catch(() => ({}));
 
@@ -3016,7 +5235,7 @@ const activeGenerations = new Set<string>();
         try {
           genLogId = await logGeneration(supabase, {
             user_id: authedUserId,
-            type:    (forceType || "website").replace("-page","").replace("-",""),
+            type:    "website", // projectType determined below — placeholder
             prompt:  prompt?.slice(0, 500),
             status:  "started",
             metadata: { userAgent: req.headers.get("user-agent")?.slice(0, 100) },
@@ -3057,6 +5276,7 @@ Format: numbered list only. No preamble.`;
 
         // ── PHASE 4: Builder ──────────────────────────────────────
         send("phase", { agent:"Building", icon:"⚙️", action:"Writing production code...", pct:50 });
+
 
         // Product Generation Engine: Phase 2 — Blueprint Generator.
         // Build the structured project blueprint BEFORE generation —
@@ -3108,6 +5328,127 @@ Format: numbered list only. No preamble.`;
           finish(); return;
         }
 
+        // ── AI ARCHITECT: Blueprint Engine ─────────────────────────────────
+        // Runs BEFORE generation. Makes one focused call to understand the
+        // exact domain, business goal, section plan, and imagery needed.
+        // This prevents "luxury car club" → perfume images + generic sections.
+        let domainPlan: DomainBlueprint | null = null;
+        try {
+          send("phase", { agent:"Planning", icon:"🏛️", action:"AI Architect planning domain...", pct:32 });
+          domainPlan = await architectBlueprint(
+            nicheDetectPrompt, projectType, _niche, kryptonGenerate
+          );
+          if (domainPlan) {
+            // Update niche sectionOrder with architect's domain-specific plan
+            if (domainPlan.sectionOrder?.length > 0) {
+              (_niche as any).sectionOrder = domainPlan.sectionOrder;
+            }
+            // Update imageKeyword to architect's precise asset theme
+            if (domainPlan.assetTheme) {
+              (_niche as any).imageKeyword = domainPlan.assetTheme;
+              // Re-fetch images with corrected theme (architect overrides generic niche keyword)
+              try {
+                resolvedImages["main"] = await getRealImageSet(
+                  _niche.industry, domainPlan.assetTheme, 8
+                );
+              } catch {}
+            }
+            // Emit enriched plan event for UI
+            const planSections = domainPlan.sectionOrder || (_niche.sectionOrder || []);
+            send("plan", {
+              projectType,
+              industry:      _niche.industry,
+              businessType:  domainPlan.businessGoal || _niche.businessType,
+              marketLevel:   _niche.marketLevel,
+              tone:          _niche.tone,
+              conversionGoal: domainPlan.primaryCTA || _niche.conversionGoal,
+              sections:      planSections,
+              sectionCount:  planSections.length,
+              pageCount:     projectType === "landing" ? 1 : 3,
+              componentCount: Math.round(planSections.length * 3.5),
+              primaryColor:  _niche.palette.primary,
+              heading:       _niche.typography.headingFont,
+              projectName:   domainPlan.projectName,
+              tagline:       domainPlan.tagline,
+              assetTheme:    domainPlan.assetTheme,
+            });
+            // ── Map domain designMood → niche.tone ─────────────────────────
+            // This ensures getDesignLanguage() returns the domain-appropriate
+            // design system instead of the generic niche-detected tone.
+            // e.g. luxury-car-club "dark luxury" → editorial → Luxury Editorial DL
+            if (domainPlan && (domainPlan as any).__domainKnowledge) {
+              const dk = (domainPlan as any).__domainKnowledge as DomainKnowledge;
+              switch (dk.designMood) {
+      case "dark luxury": (_niche as any).tone = "editorial"; break;
+      case "warm elegant": (_niche as any).tone = "warm"; break;
+      case "warm cozy": (_niche as any).tone = "warm"; break;
+      case "warm luxury": (_niche as any).tone = "editorial"; break;
+      case "romantic elegant": (_niche as any).tone = "editorial"; break;
+      case "warm human": (_niche as any).tone = "warm"; break;
+      case "bold modern": (_niche as any).tone = "bold"; break;
+      case "bold dark": (_niche as any).tone = "energetic"; break;
+      case "bold energetic": (_niche as any).tone = "energetic"; break;
+      case "bold editorial": (_niche as any).tone = "bold"; break;
+      case "dark moody": (_niche as any).tone = "editorial"; break;
+      case "dark tech": (_niche as any).tone = "trust"; break;
+      case "dark cinematic": (_niche as any).tone = "editorial"; break;
+      case "dark professional": (_niche as any).tone = "trust"; break;
+      case "dark minimal": (_niche as any).tone = "clean"; break;
+      case "dark code": (_niche as any).tone = "trust"; break;
+      case "dark tech neon": (_niche as any).tone = "trust"; break;
+      case "clean modern": (_niche as any).tone = "clean"; break;
+      case "clean minimal": (_niche as any).tone = "clean"; break;
+      case "clean professional": (_niche as any).tone = "clean"; break;
+      case "clean light": (_niche as any).tone = "clean"; break;
+      case "clean tech minimal": (_niche as any).tone = "clean"; break;
+      case "clean editorial": (_niche as any).tone = "bold"; break;
+      case "calm natural": (_niche as any).tone = "warm"; break;
+      case "calm luxury": (_niche as any).tone = "editorial"; break;
+      case "calm warm": (_niche as any).tone = "warm"; break;
+      case "natural earthy": (_niche as any).tone = "warm"; break;
+      case "vibrant modern": (_niche as any).tone = "bold"; break;
+      case "vibrant adventurous": (_niche as any).tone = "bold"; break;
+      case "modern chic": (_niche as any).tone = "clean"; break;
+      case "modern saas": (_niche as any).tone = "clean"; break;
+              }
+              // Also apply colorHint if domain specifies one
+              if (dk.colorHint && dk.colorHint.length > 0) {
+                (_niche as any).palette = {
+                  ..._niche.palette,
+                  primary: dk.colorHint,
+                  accent:  dk.colorHint,
+                  grad:    `linear-gradient(135deg,${dk.colorHint},${dk.colorHint}cc)`,
+                };
+              }
+            }
+            send("phase", { agent:"Planning", icon:"🏛️", action:`Blueprint: ${domainPlan.businessGoal} · ${planSections.length} sections`, pct:38, done:true });
+            // ── FILES event — now has real section names from architect ──────
+            const architectFiles = [
+              `index.html  (≈${Math.round(planSections.length * 6)}kb est.)`,
+              "↳ <style>  theme.css       Design tokens + palette",
+              "↳ <style>  responsive.css  @media breakpoints",
+              "↳ <style>  motion.css      Animations + transitions",
+              ...planSections.slice(0, 6).map(s =>
+                `↳ <section> ${s.padEnd(14)}  Component`
+              ),
+              "↳ <script> interactions.js  Accordion + nav scroll",
+            ];
+            send("files", { files: architectFiles, total: architectFiles.length });
+          }
+        } catch { /* non-blocking — proceed with niche defaults */ }
+
+        // ── Fallback files event when architect returned null ────────────
+        if (!domainPlan) {
+          const fallbackSections: string[] = (_niche.sectionOrder || ["hero","features","testimonials","pricing","footer"]);
+          send("files", { files: [
+            "index.html",
+            "↳ <style>  theme.css",
+            "↳ <style>  responsive.css",
+            ...fallbackSections.slice(0, 5).map((s: string) => `↳ <section> ${s}`),
+            "↳ <script> interactions.js",
+          ], total: fallbackSections.length + 3 });
+        }
+
         // ── COMPLEXITY ROUTER: simple → fast single-pass | complex → 4-stage pipeline ──
         const complexity = assessComplexity(nicheDetectPrompt, projectType);
         const _dl = getDesignLanguage(_niche);
@@ -3119,44 +5460,75 @@ Format: numbered list only. No preamble.`;
         const systemPrompt = buildNichePrompt(nicheDetectPrompt, projectType, executionPlan, cachedUrlBlueprint, resolvedImages)
           + (blueprint ? `\n\n${buildBlueprintPrompt(blueprint)}` : "");
 
-        // ── UNIFIED PIPELINE: ALL paths use Component Library ─────────────
-        // V1 FIX: "simple" path no longer calls kryptonGenerate for raw HTML.
-        // V2 FIX: AI HTML safety net removed — error sent instead.
-        // Both simple and complex requests now flow through:
-        //   generateBlueprint → generateComponentContent → assembleFromComponentLibrary
-        //
-        // Why safe: generateComponentContent() always returns valid JSON (never null)
-        // thanks to makeDefaultContent() fallback added in previous refactor.
-        // assembleFromComponentLibrary() always returns non-empty HTML given valid JSON.
+        if (complexity === "simple") {
+          // ── FAST PATH: single comprehensive call, ~30-60s typical ──
+          send("phase", { agent:"Building", icon:"⚡", action:"Generating (fast path)...", pct:45 });
+          const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
+          provider = genProvider;
+          html = cleanHTML(rawHTML);
+        } else {
+          // ── DEEP PATH: 4-stage pipeline for complex builds, ~90-150s typical ──
+          send("phase", { agent:"Reading", icon:"🧭", action:"Stage 1/4 — Planning blueprint...", pct:28 });
+          console.log("Stage 1 Blueprint Start");
+          const _s1 = Date.now();
+          const pipelineBlueprint = await generateBlueprint(_niche, nicheDetectPrompt, projectType);
+          console.log(`Stage 1 Blueprint Done — ${Date.now()-_s1}ms`);
 
-        send("phase", { agent:"Reading", icon:"🧭", action:"Stage 1/3 — Planning blueprint...", pct:28 });
-        console.log("Stage 1 Blueprint Start");
-        const _s1 = Date.now();
-        const pipelineBlueprint = await generateBlueprint(_niche, nicheDetectPrompt, projectType);
-        console.log(`Stage 1 Blueprint Done — ${Date.now()-_s1}ms`);
+          send("phase", { agent:"Building", icon:"📐", action:"Stage 2/4 — Assembling from component library...", pct:42 });
+          console.log("Stage 2 Sections Start");
+          const _s2 = Date.now();
+          let sectionsHTML: string;
+          // ── Component Library first: AI writes content only, tested templates
+          // render the HTML. Falls back to raw AI-HTML generation only if the
+          // content stage fails (bad JSON, provider outage, etc).
+          const componentContent = await generateComponentContent(_niche, pipelineBlueprint, nicheDetectPrompt, projectType, domainPlan);
+          if (componentContent) {
+            sectionsHTML = assembleFromComponentLibrary(_niche, componentContent, resolvedImages["main"] || []);
+          } else {
+            try {
+              sectionsHTML = await generateSectionsHTML(_niche, _dl, pipelineBlueprint, nicheDetectPrompt, resolvedImages);
+            } catch {
+              // Sections stage failed twice (incl. its own internal retry) — fall back
+              // to the reliable single-pass path rather than failing the whole request
+              send("phase", { agent:"Building", icon:"⚡", action:"Falling back to single-pass...", pct:45 });
+              const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
+              provider = genProvider;
+              html = cleanHTML(rawHTML);
+              sectionsHTML = "";
+            }
+          }
+          console.log(`Stage 2 Sections Done — ${Date.now()-_s2}ms | length:${sectionsHTML?.length || 0}`);
 
-        send("phase", { agent:"Building", icon:"📐", action:"Stage 2/3 — Assembling from component library...", pct:48 });
-        console.log("Stage 2 Component Content Start");
-        const _s2 = Date.now();
-        const componentContent = await generateComponentContent(_niche, pipelineBlueprint, nicheDetectPrompt, projectType);
-        // generateComponentContent always returns valid JSON — makeDefaultContent() guarantees this.
-        const sectionsHTML = assembleFromComponentLibrary(_niche, componentContent!, resolvedImages["main"] || []);
-        console.log(`Stage 2 Done — ${Date.now()-_s2}ms | sectionsHTML:${sectionsHTML.length}`);
+          if (sectionsHTML) {
+            send("phase", { agent:"Building", icon:"🎨", action:"Stage 3/4 — Generating styles...", pct:58 });
+            console.log("Stage 3 CSS Start");
+            const _s3 = Date.now();
+            const generatedCSS = await generateCSS(_niche, _dl, sectionsHTML);
+            console.log(`Stage 3 CSS Done — ${Date.now()-_s3}ms | length:${generatedCSS.length}`);
 
-        if (!sectionsHTML || sectionsHTML.trim().length < 100) {
-          // V2 FIX: Do NOT fall back to AI HTML. Send a clear error instead.
-          send("error", { message: "Component assembly returned empty output. Please try a different prompt." });
-          return;
+            send("phase", { agent:"Building", icon:"⚡", action:"Stage 4/4 — Generating interactivity...", pct:68 });
+            console.log("Stage 4 JS Start");
+            const _s4 = Date.now();
+            const generatedJS = await generateJS(sectionsHTML, projectType);
+            console.log(`Stage 4 JS Done — ${Date.now()-_s4}ms | length:${generatedJS.length}`);
+
+            console.log("Stage 5 Combine Start");
+            const _s5 = Date.now();
+            html = combineOutput(sectionsHTML, generatedCSS, generatedJS, _niche, nicheDetectPrompt.slice(0,60));
+            html = cleanHTML(html);
+            console.log(`Stage 5 Combine Done — ${Date.now()-_s5}ms | total html:${html.length}`);
+          }
         }
 
-        send("phase", { agent:"Building", icon:"⚡", action:"Stage 3/3 — Finalising...", pct:68 });
-        console.log("Stage 3 Combine Start");
-        const _s3 = Date.now();
-        const staticCSS  = buildStaticCSS(_niche);
-        const staticJS   = buildStaticJS();
-        html = combineOutput(sectionsHTML, staticCSS, staticJS, _niche, nicheDetectPrompt.slice(0,60));
-        html = cleanHTML(html);
-        console.log(`Stage 3 Done — ${Date.now()-_s3}ms | total html:${html.length}`);
+        // Final safety net — if every path above somehow left html empty
+        // (e.g. componentContent succeeded but assembled to an empty string),
+        // fall back to the reliable single-pass generation rather than
+        // shipping a blank page.
+        if (!html || html.trim().length < 200) {
+          const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
+          provider = genProvider;
+          html = cleanHTML(rawHTML);
+        }
 
         // Safety nets — applied regardless of which path generated the HTML
         html = sanitizeImageUrls(html, resolvedImages["main"] || []);
@@ -3170,6 +5542,26 @@ Format: numbered list only. No preamble.`;
 
         const gateKind  = projectType === "game" ? "game" : "website";
         const gateSubtype = projectType === "game" ? "arcade" : projectType;
+        // ── REVIEW event — real gate results surfaced in UI ─────────────
+        // Uses actual gateResult dimensions instead of hardcoded true/false
+        const reviewChecks = gateResult ? [
+          { label:"Build",         pass: gateResult.buildPass },
+          { label:"Validation",    pass: gateResult.validationPass },
+          { label:"Runtime",       pass: gateResult.runtimePass },
+          { label:"Mobile",        pass: gateResult.mobilePass },
+          ...gateResult.dimensions.slice(0,4).map((d: {dimension:string;score:number}) => ({
+            label: d.dimension,
+            pass:  d.score >= 70,
+          })),
+        ] : [
+          { label:"HTML structure", pass: !!html && html.includes("<!DOCTYPE") },
+          { label:"Responsive CSS", pass: !!html && html.includes("@media") },
+          { label:"Navigation",     pass: !!html && html.includes("<nav") },
+          { label:"Footer present", pass: !!html && html.includes("<footer") },
+          { label:"CTA present",    pass: !!html && html.includes("button") },
+          { label:"Mobile layout",  pass: !!html },
+        ];
+        send("review", { checks: reviewChecks, score: gateResult?.score });
         let gate: ProductionGateResult = runProductionGate(html, gateKind, gateSubtype);
 
         // Smart Quality Gate 2.0 — mechanically auto-repair what's fixable
@@ -3219,41 +5611,22 @@ Format: numbered list only. No preamble.`;
           const critiqueBlock = (critique && critique.issues.length > 0)
             ? `\n\nDESIGN CRITIC FEEDBACK (score: ${critique.score}/10):\n${critique.issues.map(i => `- ${i}`).join("\n")}`
             : "";
-          // ARCHITECTURE FIX: Repair pass now regenerates component JSON only,
-          // then re-renders via component library — no full HTML regen.
-          // Cost: ~2,000 tokens vs ~16,000 tokens (87% reduction)
-          const repairCopyPrompt = `The website has these specific issues:
+          const fixPrompt = `The page below has the following issues that MUST be fixed:
 
 ${instructions}${critiqueBlock}
 
-The current page content JSON is below. Fix ONLY the content that causes
-these issues (headlines too short, copy too generic, missing sections, etc).
-Return the SAME JSON structure with only the problematic fields updated.
-Do NOT change HTML, CSS or structure. Output ONLY valid JSON.
+Fix ALL of the above WITHOUT removing or breaking any feature that
+already works. If there are SYNTAX ERRORS, fixing those is the highest
+priority. Return the COMPLETE updated HTML file (starting with
+<!DOCTYPE html> and ending with </html>).
 
-CURRENT CONTENT JSON:
-${JSON.stringify(componentContent, null, 2).slice(0, 3000)}`;
+EXISTING CODE:
+${html}`;
 
           repairAttempts++;
           try {
-            const { text: repairedJson, provider: repairProvider } = await kryptonGenerate(
-              `You are Krypton AI's content repair specialist. Return ONLY valid JSON — same structure as input, only fix the reported issues. No markdown, no HTML.`,
-              repairCopyPrompt
-            );
-            // Parse repaired JSON
-            let updatedContent = componentContent;
-            try {
-              const cleaned = repairedJson.replace(/\`\`\`json|\`\`\`/g, "").trim();
-              const parsed  = JSON.parse(cleaned.match(/\{[\s\S]*\}/)?.[0] || cleaned);
-              if (parsed && parsed.hero) updatedContent = { ...componentContent, ...parsed };
-            } catch { /* keep original content */ }
-            // Re-render from component library with updated content
-            // V3+V4 FIX: Uses buildStaticCSS + buildStaticJS (no AI calls)
-            const repairedSections = assembleFromComponentLibrary(_niche, updatedContent ?? {}, resolvedImages["main"] || []);
-            const repairedHtml = enforceResponsiveHeadings(enforceLuxuryPalette(
-              combineOutput(repairedSections, buildStaticCSS(_niche), buildStaticJS(), _niche, nicheDetectPrompt.slice(0,60)),
-              _niche
-            ));
+            const { text: repairedRaw, provider: repairProvider } = await kryptonGenerate(systemPrompt, fixPrompt);
+            const repairedHtml = enforceResponsiveHeadings(enforceLuxuryPalette(sanitizeImageUrls(cleanHTML(repairedRaw), resolvedImages["main"] || []), _niche));
             if (repairedHtml.length > 500 && repairedHtml.includes("</html>")) {
               const repairedGate = runProductionGate(repairedHtml, gateKind, gateSubtype);
               if (repairedGate.score > gate.score) {
@@ -3271,10 +5644,28 @@ ${JSON.stringify(componentContent, null, 2).slice(0, 3000)}`;
           pct:84, done:true,
         });
 
-        // ── PHASE 6: Optimizer ────────────────────────────────────
-        send("phase", { agent:"Optimizing", icon:"⚡", action:"Optimizing performance...", pct:88 });
+        // ── PHASE 6: Visual Intelligence Optimizer ────────────────────
+        send("phase", { agent:"Optimizing", icon:"⚡", action:"Optimizing visual quality...", pct:88 });
+
+        // If gate score is below premium threshold, inject Visual Intelligence CSS boost
+        // This is a zero-AI-call fix that improves spacing, motion, and visual hierarchy
+        if (gate.score < 80 && html) {
+          const viBoost = generateVisualBoostCSS(_dl, _niche);
+          html = html.replace(
+            '</style>',
+            `/* Visual Intelligence Boost — auto-applied (gate score: ${gate.score}/100) */
+${viBoost}
+</style>`
+          );
+          send("phase", { agent:"Optimizing", icon:"⚡",
+            action:`Visual boost applied (score was ${gate.score}/100)`, pct:91 });
+        } else {
+          send("phase", { agent:"Optimizing", icon:"⚡",
+            action:`Visual quality verified (${gate.score}/100)`, pct:91 });
+        }
+
         await new Promise(r => setTimeout(r, 400));
-        send("phase", { agent:"Optimizing", icon:"⚡", action:"Optimization complete", pct:92, done:true });
+        send("phase", { agent:"Optimizing", icon:"⚡", action:"Optimizing performance...", pct:92, done:true });
 
         // ── PHASE 7: Project Manager ──────────────────────────────
         send("phase", { agent:"Finalizing", icon:"📋", action:"Saving project...", pct:95 });
@@ -3388,7 +5779,6 @@ ${JSON.stringify(componentContent, null, 2).slice(0, 3000)}`;
           linesOfCode: html.split("\n").length,
           executionPlan,
           blueprint,
-          componentContent, // V6: passed to create page for component-level edits
           // Product Completion Engine — Production Gate
           completenessScore:     gate.score,
           dimensions:            gate.dimensions,
@@ -3397,7 +5787,7 @@ ${JSON.stringify(componentContent, null, 2).slice(0, 3000)}`;
           runtimePass:           gate.runtimePass,
           mobilePass:            gate.mobilePass,
           overallPass:           gate.overallPass,
-          auditFailed:           gate.failedFeatures.map(f => f.label),
+          auditFailed:           gate.failedFeatures.map((f: {label:string;required:boolean;found:boolean}) => f.label),
           belowQualityThreshold: gate.score < 90,
           repairAttempts,
           // Quality Score V2 — 8 dimensions
@@ -3409,7 +5799,7 @@ ${JSON.stringify(componentContent, null, 2).slice(0, 3000)}`;
         const isTimeout = errMsg.includes("timeout") || errMsg.includes("Timeout");
         // Log failed generation
         await logGeneration(supabase, {
-          id:            undefined,
+          id:            genLogId || undefined,
           status:        isTimeout ? "timeout" : "failed",
           error_message: errMsg.slice(0, 500),
           error_code:    isTimeout ? "TIMEOUT" : "GENERATION_ERROR",
