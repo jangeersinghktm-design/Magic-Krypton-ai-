@@ -5336,11 +5336,6 @@ Format: numbered list only. No preamble.`;
             const _domainId = (domainPlan as any).__domainKnowledge
               ? ((domainPlan as any).__domainKnowledge as DomainKnowledge).domain
               : "";
-            designRef = getDesignReference(_domainId, competitorStyle, _niche);
-            composed  = composeDesignStrategy(
-              _domainId, competitorStyle, _niche,
-              domainPlan.businessGoal || _niche.conversionGoal || "lead"
-            );
             // Update niche sectionOrder with architect's domain-specific plan
             if (domainPlan.sectionOrder?.length > 0) {
               (_niche as any).sectionOrder = domainPlan.sectionOrder;
