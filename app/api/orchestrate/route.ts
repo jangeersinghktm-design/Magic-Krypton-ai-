@@ -41,7 +41,7 @@ interface StreamController {
 }
 
 // ── Krypton Intelligence Engine — Multi-provider system ───────────
-async function callClaude(system: string, user: string, maxTokens = 12000): Promise<string> {
+async function callClaude(system: string, user: string, maxTokens = 6000): Promise<string> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("ANTHROPIC_API_KEY not set");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
