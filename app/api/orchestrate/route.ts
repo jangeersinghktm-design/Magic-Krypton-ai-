@@ -5774,7 +5774,7 @@ ${viBoost}
           runtimePass:           gate.runtimePass,
           mobilePass:            gate.mobilePass,
           overallPass:           gate.overallPass,
-          auditFailed:           gate.failedFeatures.map((f: {label:string;required:boolean;found:boolean}) => f.label),
+          auditFailed:           gate.failedFeatures.map((f: any) => f.label),
           belowQualityThreshold: gate.score < 90,
           repairAttempts,
           // Quality Score V2 — 8 dimensions
