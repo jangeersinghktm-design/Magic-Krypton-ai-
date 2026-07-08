@@ -5540,24 +5540,15 @@ Format: numbered list only. No preamble.`;
         const gateSubtype = projectType === "game" ? "arcade" : projectType;
         // ── REVIEW event — real gate results surfaced in UI ─────────────
         // Uses actual gateResult dimensions instead of hardcoded true/false
-        const reviewChecks = gate ? [
-          { label:"Build",         pass: gate.buildPass },
-          { label:"Validation",    pass: gate.validationPass },
-          { label:"Runtime",       pass: gate.runtimePass },
-          { label:"Mobile",        pass: gate.mobilePass },
-          ...gate.dimensions.slice(0,4).map((d: {dimension:string;score:number}) => ({
-            label: d.dimension,
-            pass:  d.score >= 70,
-          })),
-        ] : [
+        const reviewChecks = html ? [
           { label:"HTML structure", pass: !!html && html.includes("<!DOCTYPE") },
           { label:"Responsive CSS", pass: !!html && html.includes("@media") },
           { label:"Navigation",     pass: !!html && html.includes("<nav") },
           { label:"Footer present", pass: !!html && html.includes("<footer") },
           { label:"CTA present",    pass: !!html && html.includes("button") },
           { label:"Mobile layout",  pass: !!html },
-        ];
-        send("review", { checks: reviewChecks, score: gate?.score });
+        ] : [];
+        send("review", { checks: reviewChecks });
         let gate: ProductionGateResult = runProductionGate(html, gateKind, gateSubtype);
 
         // Smart Quality Gate 2.0 — mechanically auto-repair what's fixable
