@@ -65,7 +65,7 @@ async function callClaude(system: string, user: string, maxTokens = 12000): Prom
       ],
       messages: [{ role: "user", content: user }],
     }),
-    signal: AbortSignal.timeout(120000),
+    signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) throw new Error(`Claude ${res.status}`);
   const d = await res.json();
@@ -79,7 +79,7 @@ async function callOpenAI(system: string, user: string, maxTokens = 16000): Prom
     method: "POST",
     headers: { "Content-Type":"application/json","Authorization":`Bearer ${key}` },
     body: JSON.stringify({ model:"gpt-4o", max_tokens:maxTokens, messages:[{role:"system",content:system},{role:"user",content:user}] }),
-    signal: AbortSignal.timeout(120000),
+    signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
   const d = await res.json();
@@ -93,7 +93,7 @@ async function callGemini(system: string, user: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:16000} }),
-    signal: AbortSignal.timeout(120000),
+    signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}`);
   const d = await res.json();
