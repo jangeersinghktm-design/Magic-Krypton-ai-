@@ -1945,8 +1945,8 @@ function detectNiche(prompt: string): NicheProfile {
 
 // ── PHASE 2-6: MASTER PROMPT BUILDER ────────────────────────────
 
-function buildNichePrompt(userPrompt: string, type: string, plan: string, cachedBlueprint?: any, realImages?: Record<string,string[]>): string {
-  const niche = detectNiche(userPrompt);
+function buildNichePrompt(userPrompt: string, type: string, plan: string, cachedBlueprint?: any, realImages?: Record<string,string[]>, presetNiche?: NicheProfile): string {
+     const niche = presetNiche || detectNiche(userPrompt);
   const p = niche.palette;
   const t = niche.typography;
   const v = niche.brandVoice;
@@ -1971,8 +1971,9 @@ function buildNichePrompt(userPrompt: string, type: string, plan: string, cached
     || detectCompetitorStyle(userPrompt, niche.tone)
     || niche.competitorStyle;
   // designRef and composed populated after architect runs (domainPlan available then)
-  const designRef = getDesignReference("", competitorStyle, niche);
-  const composed  = composeDesignStrategy("", competitorStyle, niche,
+  const _domainIdForRef = presetNiche ? ((presetNiche as any).__domainId || "") : "";
+  const designRef = getDesignReference(_domainIdForRef, competitorStyle, niche);
+  const composed  = composeDesignStrategy(_domainIdForRef, competitorStyle, niche,
     niche.conversionGoal || "lead"
   );
   const audienceDim = niche.audienceDimensions || detectAudienceDimensions(userPrompt, niche.industry, niche.marketLevel);
@@ -5089,7 +5090,7 @@ function generateVisualBoostCSS(dl: DesignLanguage, niche: NicheProfile): string
 /* ── Visual Intelligence Boost ───────────────────────────────────── */
 
 /* Consistent border radius */
-.card, [class*=card], section > div > div { border-radius: ${radius} !important; }
+.card, [class*=card] { border-radius: ${radius} !important; }
 ${isLuxury ? "img, .img-wrapper { border-radius: 0 !important; }" : ""}
 
 /* Section spacing consistency */
@@ -5122,7 +5123,7 @@ button, .btn, a[class*="btn"] {
 
 /* Grid responsiveness boost */
 @media (max-width: 768px) {
-  [style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; }
+  [style*="grid-template-columns: repeat(3"],[style*="grid-template-columns:repeat(3"] { grid-template-columns: 1fr !important; }
   [style*="grid-template-columns: 1fr 1fr"]  { grid-template-columns: 1fr !important; }
   [style*="display: flex"][style*="gap"]      { flex-wrap: wrap !important; }
   h1 { font-size: clamp(28px,9vw,52px) !important; }
@@ -5135,7 +5136,7 @@ button, .btn, a[class*="btn"] {
 
 /* Color temperature warmth */
 ${isWarm ? `:root { filter: none; }
-img { filter: brightness(1.02) saturate(1.05) warm(2deg); }` : ""}
+img { filter: brightness(1.02) saturate(1.05) sepia(0.06); }
 
 /* Premium luxury spacing */
 ${isLuxury ? `.container, .max-w { max-width: 1100px !important; margin-left: auto !important; margin-right: auto !important; }
@@ -5336,9 +5337,10 @@ Format: numbered list only. No preamble.`;
           );
           if (domainPlan) {
             const _domainId = (domainPlan as any).__domainKnowledge
-              ? ((domainPlan as any).__domainKnowledge as DomainKnowledge).domain
-              : "";
-            // Update niche sectionOrder with architect's domain-specific plan
+           ? ((domainPlan as any).__domainKnowledge as DomainKnowledge).domain
+           : "";
+          (_niche as any).__domainId = _domainId;
+          // Update niche sectionOrder with architect's domain-specific plan
             if (domainPlan.sectionOrder?.length > 0) {
               (_niche as any).sectionOrder = domainPlan.sectionOrder;
             }
@@ -5456,8 +5458,8 @@ Format: numbered list only. No preamble.`;
 
         // systemPrompt always built — used directly for simple path, and reused
         // by the repair pass later regardless of which path generated the first draft
-        const systemPrompt = buildNichePrompt(nicheDetectPrompt, projectType, executionPlan, cachedUrlBlueprint, resolvedImages)
-          + (blueprint ? `\n\n${buildBlueprintPrompt(blueprint)}` : "");
+        const systemPrompt = buildNichePrompt(nicheDetectPrompt, projectType, executionPlan, cachedUrlBlueprint, resolvedImages, _niche)
+       + (blueprint ? `\n\n${buildBlueprintPrompt(blueprint)}` : "");
 
         if (complexity === "simple") {
           // ── FAST PATH: single comprehensive call, ~30-60s typical ──
@@ -5485,7 +5487,7 @@ Format: numbered list only. No preamble.`;
             sectionsHTML = assembleFromComponentLibrary(_niche, componentContent, resolvedImages["main"] || []);
           } else {
             try {
-              sectionsHTML = await generateSectionsHTML(_niche, _dl, pipelineBlueprint, nicheDetectPrompt, resolvedImages);
+              sectionsHTML = await generateSectionsHTML(_niche, _dl, domainPlan ? `${pipelineBlueprint}\n\nEXACT CTA: "${domainPlan.primaryCTA}"\nAVOID: ${domainPlan.avoidMistakes?.join("; ")}` : pipelineBlueprint, nicheDetectPrompt, resolvedImages);
             } catch {
               // Sections stage failed twice (incl. its own internal retry) — fall back
               // to the reliable single-pass path rather than failing the whole request
