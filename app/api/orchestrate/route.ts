@@ -5215,7 +5215,8 @@ const activeGenerations = new Set<string>();
                 }).eq("id", authedUserId);
                 pc.used_credits = 0;
               }
-              const rem = (pc.total_credits || 5) - (pc.used_credits || 0);
+              const rem = (pc.total_credits ?? 5) - (pc.used_credits ?? 0);
+              console.log(`[credit-check] user:${authedUserId} total:${pc.total_credits} used:${pc.used_credits} rem:${rem}`);
               if (rem < 1) {
                 send("error", { message:"No credits remaining. Free plan resets daily. Upgrade for unlimited access.", code:"NO_CREDITS" });
                 finish(); return;
