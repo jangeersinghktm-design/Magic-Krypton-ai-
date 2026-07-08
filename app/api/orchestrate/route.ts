@@ -1973,7 +1973,7 @@ function buildNichePrompt(userPrompt: string, type: string, plan: string, cached
   // designRef and composed populated after architect runs (domainPlan available then)
   const designRef = getDesignReference("", competitorStyle, niche);
   const composed  = composeDesignStrategy("", competitorStyle, niche,
-    pipelineBlueprint?.businessGoal || niche.conversionGoal || "lead"
+    niche.conversionGoal || "lead"
   );
   const audienceDim = niche.audienceDimensions || detectAudienceDimensions(userPrompt, niche.industry, niche.marketLevel);
 
