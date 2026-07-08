@@ -2009,7 +2009,7 @@ COMPONENT VARIANTS SELECTED (composition-driven):
 ${Object.entries(composed.componentVariants).map(([k,v]) => `  ${k}: ${v}`).join("\n")}
 
 NEVER DO (merged quality rules):
-${composed.never.slice(0, 12).map(n => `  ✗ ${n}`).join("\n")}
+${(composed?.never ?? []).slice(0, 12).map((n: string) => `  ✗ ${n}`).join("\n")}
 Conversion Goal:   ${niche.conversionGoal} ← OPTIMIZE ENTIRE PAGE FOR THIS
 
 CONVERSION PATH: ${
