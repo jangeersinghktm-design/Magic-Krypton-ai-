@@ -1967,12 +1967,14 @@ function buildNichePrompt(userPrompt: string, type: string, plan: string, cached
       }
     : detectCompetitorFromURL(userPrompt);
   // Phase 2: Competitor style
-  // Pass domainId so detectCompetitorStyle uses domain-accurate reference brands
   const competitorStyle = urlBlueprint?.style
     || detectCompetitorStyle(userPrompt, niche.tone)
     || niche.competitorStyle;
-  let designRef: ReturnType<typeof getDesignReference> = null;
-  let composed: any = null;
+  // designRef and composed populated after architect runs (domainPlan available then)
+  const designRef = getDesignReference("", competitorStyle, niche);
+  const composed  = composeDesignStrategy("", competitorStyle, niche,
+    pipelineBlueprint?.businessGoal || niche.conversionGoal || "lead"
+  );
   const audienceDim = niche.audienceDimensions || detectAudienceDimensions(userPrompt, niche.industry, niche.marketLevel);
 
   const BASE = `You are Krypton AI — a world-class UI/UX designer creating websites comparable to premium agencies.
@@ -1987,29 +1989,29 @@ Audience:          ${niche.audience} · ${audienceDim.gender} · ${audienceDim.a
 Sophistication:    ${audienceDim.sophistication} · motivated by: ${audienceDim.motivation}
 Design Tone:       ${niche.tone}
 Competitor Style:  ${competitorStyle} (match this design quality/feel — NOT content)
-Reference Brands:  ${composed?.brands.join(", ") ?? competitorStyle}
+Reference Brands:  ${composed?.brands?.join(", ") ?? competitorStyle}
 Quality Target:    ${composed?.qualityTarget ?? "Premium agency quality"}
 
-DESIGN COMPOSITION (${composed?.composition.length ?? 1} references merged):
-${composed.composition.map((c: any) => `  ${c.role}: ${c.brand} — ${c.why}`).join("\n")}
+DESIGN COMPOSITION (${composed?.composition?.length ?? 1} references merged):
+${(composed?.composition ?? []).map((c:{role:string;brand:string;why:string}) => `  ${c.role}: ${c.brand} — ${c.why}`).join("\n")}
 
 COMPOSED DESIGN DIRECTIVES (implement precisely):
-Hero Layout:   ${composed.heroDirective}
-Typography:    ${composed.typographyDirective}
-Motion:        ${composed.motionDirective}
-Photography:   ${composed.photoDirective}
-Cards:         ${composed.cardDirective}
-CTA:           ${composed.ctaDirective}
-Spacing:       ${composed.spacingDirective}
+Hero Layout:   ${composed?.heroDirective ?? ""}
+Typography:    ${composed?.typographyDirective ?? ""}
+Motion:        ${composed?.motionDirective ?? ""}
+Photography:   ${composed?.photoDirective ?? ""}
+Cards:         ${composed?.cardDirective ?? ""}
+CTA:           ${composed?.ctaDirective ?? ""}
+Spacing:       ${composed?.spacingDirective ?? ""}
 
 CSS DIRECTIVES (from merged references — implement these patterns):
-${composed.cssDirectives}
+${composed?.cssDirectives ?? ""}
 
 COMPONENT VARIANTS SELECTED (composition-driven):
-${Object.entries(composed.componentVariants).map(([k,v]) => `  ${k}: ${v}`).join("\n")}
+${Object.entries(composed?.componentVariants ?? {}).map(([k,v]) => `  ${k}: ${String(v)}`).join("\n")}
 
 NEVER DO (merged quality rules):
-${(composed?.never ?? []).slice(0, 12).map((n: string) => `  ✗ ${n}`).join("\n")}
+${(composed?.never ?? []).slice(0, 12).map((n:string) => `  ✗ ${n}`).join("\n")}
 Conversion Goal:   ${niche.conversionGoal} ← OPTIMIZE ENTIRE PAGE FOR THIS
 
 CONVERSION PATH: ${
@@ -5331,10 +5333,14 @@ Format: numbered list only. No preamble.`;
             nicheDetectPrompt, projectType, _niche, kryptonGenerate
           );
           if (domainPlan) {
-              const _domainId = (domainPlan as any).__domainKnowledge
+            const _domainId = (domainPlan as any).__domainKnowledge
               ? ((domainPlan as any).__domainKnowledge as DomainKnowledge).domain
               : "";
-             
+            designRef = getDesignReference(_domainId, competitorStyle, _niche);
+            composed  = composeDesignStrategy(
+              _domainId, competitorStyle, _niche,
+              domainPlan.businessGoal || _niche.conversionGoal || "lead"
+            );
             // Update niche sectionOrder with architect's domain-specific plan
             if (domainPlan.sectionOrder?.length > 0) {
               (_niche as any).sectionOrder = domainPlan.sectionOrder;
@@ -5538,16 +5544,15 @@ Format: numbered list only. No preamble.`;
 
         const gateKind  = projectType === "game" ? "game" : "website";
         const gateSubtype = projectType === "game" ? "arcade" : projectType;
-        // ── REVIEW event — real gate results surfaced in UI ─────────────
-        // Uses actual gateResult dimensions instead of hardcoded true/false
-        const reviewChecks = html ? [
+        // ── REVIEW event — html-based checks (gate runs after this point) ──
+        const reviewChecks = [
           { label:"HTML structure", pass: !!html && html.includes("<!DOCTYPE") },
           { label:"Responsive CSS", pass: !!html && html.includes("@media") },
           { label:"Navigation",     pass: !!html && html.includes("<nav") },
           { label:"Footer present", pass: !!html && html.includes("<footer") },
           { label:"CTA present",    pass: !!html && html.includes("button") },
           { label:"Mobile layout",  pass: !!html },
-        ] : [];
+        ];
         send("review", { checks: reviewChecks });
         let gate: ProductionGateResult = runProductionGate(html, gateKind, gateSubtype);
 
