@@ -4833,7 +4833,7 @@ async function generateComponentContent(
     // Deduplicate while preserving order
     const seen = new Set<string>();
     categories = (["navbar", ...mapped, "footer"] as ComponentCategory[])
-      .filter(c => { if (seen.has(c)) return false; seen.add(c); return true; });
+      ;
   } else if (projectType === "dashboard") {
     categories = ["navbar", "dashboard", "footer"];
   } else if (projectType === "ecommerce" || projectType === "store") {
@@ -5013,6 +5013,7 @@ function combineOutput(htmlStructure: string, css: string, js: string, niche: Ni
 <style>
 ${rootTokens}
 ${css}
+/* Krypton QA */img{max-width:100%;display:block;}img:not([style*="height"]){object-fit:cover;}[class*="hero"]{min-height:clamp(400px,60vh,800px);overflow:hidden;}section{padding:clamp(60px,8vw,120px) clamp(16px,5vw,80px);}@media(max-width:768px){[style*="grid-template-columns:repeat(3"]{grid-template-columns:1fr!important;}h1{font-size:clamp(28px,8vw,52px)!important;}section{padding:48px 16px!important;}img{width:100%!important;height:auto!important;}}
 </style>
 </head>
 <body>
