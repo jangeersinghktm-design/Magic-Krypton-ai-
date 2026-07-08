@@ -93,7 +93,7 @@ async function callGemini(system: string, user: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ contents:[{parts:[{text:`${system}\n\n${user}`}]}], generationConfig:{maxOutputTokens:16000} }),
-    signal: AbortSignal.timeout(45000),
+    signal: AbortSignal.timeout(30000),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}`);
   const d = await res.json();
