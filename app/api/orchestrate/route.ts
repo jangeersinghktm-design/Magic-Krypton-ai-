@@ -5136,7 +5136,7 @@ button, .btn, a[class*="btn"] {
 
 /* Color temperature warmth */
 ${isWarm ? `:root { filter: none; }
-img { filter: brightness(1.02) saturate(1.05) sepia(0.06); }
+img { filter: brightness(1.02) saturate(1.05) sepia(0.06); }` : ""}
 
 /* Premium luxury spacing */
 ${isLuxury ? `.container, .max-w { max-width: 1100px !important; margin-left: auto !important; margin-right: auto !important; }
