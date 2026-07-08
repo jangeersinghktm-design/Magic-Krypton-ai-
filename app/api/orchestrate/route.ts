@@ -5522,7 +5522,7 @@ Format: numbered list only. No preamble.`;
         // (e.g. componentContent succeeded but assembled to an empty string),
         // fall back to the reliable single-pass generation rather than
         // shipping a blank page.
-        if (!html || html.trim().length < 200) {
+        if (!html || html.trim().length < 200 || !/<!DOCTYPE|<html[\s>]/i.test(html)) {
           const { text: rawHTML, provider: genProvider } = await kryptonGenerate(systemPrompt, prompt);
           provider = genProvider;
           html = cleanHTML(rawHTML);
@@ -5573,7 +5573,7 @@ Format: numbered list only. No preamble.`;
         }
 
         let repairAttempts = 0;
-        const MAX_REPAIR_ATTEMPTS = 0; // websites get 1 repair pass (vs 2 for dedicated game route)
+        const MAX_REPAIR_ATTEMPTS = 1; // websites get 1 repair pass (vs 2 for dedicated game route)
 
         // Critic-driven repair: trigger even if the structural gate already
         // passed, IF the critic found real issues on a low score — subjective
@@ -5757,7 +5757,10 @@ ${viBoost}
             mobilePass:    gate.mobilePass,
           },
         });
-
+        if (!/<!DOCTYPE|<html[\s>]/i.test(html)) {
+         send("error", { message: "Generation failed — AI returned non-HTML output. Please retry." });
+         return;
+        }
         send("complete", {
           html,
           projectId:   savedProjectId,
