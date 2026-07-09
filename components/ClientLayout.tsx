@@ -25,7 +25,7 @@ export default function ClientLayout({
         <main
           className="main-content"
           style={{
-            marginLeft: showSidebar ? "240px" : "0",
+          marginLeft: "0",
             flex: 1,
             height: "100dvh",
             overflow: "hidden",
