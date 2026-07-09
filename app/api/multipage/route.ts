@@ -340,7 +340,7 @@ function buildZip(files: {name:string;content:string}[]): Buffer {
 
 // ── Main handler ─────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const { homeHtml, prompt, accessToken, userId, selectedPages } =
+  const { homeHtml, prompt, accessToken, userId, selectedPages, responseFormat } =
     await req.json().catch(() => ({}));
 
   if (!homeHtml || !prompt) {
@@ -429,15 +429,24 @@ DEPLOY:
 `,
   });
 
-  const zip = buildZip(zipFiles);
-
-  // Deduct credits
+  // Deduct credits — applies to both response modes (generation already happened above)
   await supabase.from("profiles")
     .update({ used_credits: (profile?.used_credits||0)+2 }).eq("id", uid);
   try {
     await supabase.from("credit_transactions")
       .insert({ user_id:uid, type:"debit", amount:2, description:`Multi-page (${pages.length+1}p)` });
   } catch {}
+
+  // ── Opt-in JSON mode — additive, used by the in-app File Explorer.
+  //    Default (no responseFormat, or any value other than "json")
+  //    keeps the original zip-download behavior below, unchanged.
+  if (responseFormat === "json") {
+    return NextResponse.json({
+      files: zipFiles.map(f => ({ name: f.name, content: f.content })),
+    });
+  }
+
+  const zip = buildZip(zipFiles);
 
   const slug = prompt.slice(0,30).replace(/[^a-z0-9]/gi,"-").toLowerCase();
   return new NextResponse(new Uint8Array(zip), {
