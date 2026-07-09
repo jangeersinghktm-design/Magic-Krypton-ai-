@@ -3,29 +3,18 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { distributedRateLimit } from "./rate-limit";
 
-// ── Rate Limiting (in-memory) ──────────────────────────────────────
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-export function rateLimit(
+// ── Rate Limiting ───────────────────────────────────────────────────
+// Delegates to lib/rate-limit.ts (Upstash Redis-backed, globally shared
+// across all Vercel instances). Kept as an async function under the same
+// name/import path so existing call sites only need to add `await`.
+export async function rateLimit(
   key: string,
   limit: number,
   windowMs: number
-): { allowed: boolean; remaining: number } {
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remaining: limit - 1 };
-  }
-
-  if (entry.count >= limit) {
-    return { allowed: false, remaining: 0 };
-  }
-
-  entry.count++;
-  return { allowed: true, remaining: limit - entry.count };
+): Promise<{ allowed: boolean; remaining: number }> {
+  return distributedRateLimit(key, limit, windowMs);
 }
 
 // ── Auth Check ────────────────────────────────────────────────────
@@ -143,7 +132,7 @@ export async function secureRoute(
   if (options.rateLimit) {
     const ip = req.headers.get("x-forwarded-for") || "unknown";
     const key = `${options.rateLimit.key}:${ip}`;
-    const { allowed, remaining } = rateLimit(
+    const { allowed, remaining } = await rateLimit(
       key,
       options.rateLimit.limit,
       options.rateLimit.windowMs
@@ -182,3 +171,4 @@ export async function secureRoute(
   return {};
 }
 
+      
