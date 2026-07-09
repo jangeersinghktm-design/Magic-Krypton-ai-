@@ -430,7 +430,7 @@ function ThinkingPanel({
 }
 
 // ── File Explorer Panel ───────────────────────────────────────────
-function FilesPanel({ html, projectName, extraFiles }: { html:string; projectName:string; extraFiles?:{name:string;content:string}[] }) {
+function FilesPanel({ html, projectName, extraFiles, onSelectPage }: { html:string; projectName:string; extraFiles?:{name:string;content:string}[]; onSelectPage?:(name:string)=>void }) {
   const [activeFile, setActiveFile] = useState("index.html");
   const [copied, setCopied] = useState(false);
   const files = [
@@ -464,7 +464,7 @@ function FilesPanel({ html, projectName, extraFiles }: { html:string; projectNam
       {/* File tabs */}
       <div style={{ display:"flex", gap:2, padding:"8px 12px", borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
         {files.map(f=>(
-          <button key={f.name} onClick={()=>setActiveFile(f.name)} style={{ padding:"5px 12px", borderRadius:8, border:"none", background:activeFile===f.name?"rgba(245,245,245,0.15)":"transparent", color:activeFile===f.name?C.purple:C.muted, fontSize:11.5, fontWeight:activeFile===f.name?600:400, cursor:"pointer", display:"flex", alignItems:"center", gap:5, transition:"all .15s" }}>
+          <button key={f.name} onClick={()=>{setActiveFile(f.name); if(f.name.endsWith(".html")) onSelectPage?.(f.name);}} style={{ padding:"5px 12px", borderRadius:8, border:"none", background:activeFile===f.name?"rgba(245,245,245,0.15)":"transparent", color:activeFile===f.name?C.purple:C.muted, fontSize:11.5, fontWeight:activeFile===f.name?600:400, cursor:"pointer", display:"flex", alignItems:"center", gap:5, transition:"all .15s" }}>
             <span>{f.icon}</span><span>{f.name}</span><span style={{opacity:.5,fontSize:10}}>{f.size}</span>
           </button>
         ))}
@@ -500,6 +500,8 @@ function CreatePageInner() {
   const [urlAnalyzing, setUrlAnalyzing]   = useState(false);
   const [result, setResult]     = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const messagesRef = useRef<ChatMessage[]>([]);
+  useEffect(()=>{ messagesRef.current = messages; },[messages]);
   const [loading, setLoading]   = useState(false);
   const [projectId, setProjectId]     = useState("");
   const [projectName, setProjectName] = useState("New Project");
@@ -523,6 +525,10 @@ function CreatePageInner() {
   const [saved, setSaved]       = useState(false);
   const [versions, setVersions] = useState<Version[]>([]);
   const [multiPageFiles, setMultiPageFiles] = useState<{name:string;content:string}[]>([]);
+  const [pageBlobs, setPageBlobs] = useState<Record<string,string>>({});
+  const [activePage, setActivePage] = useState<string>("index.html");
+  const activeBlobsRef = useRef<string[]>([]);
+  const pageHistoryRef = useRef<{stack:string[];idx:number}>({stack:["index.html"],idx:0});
   const [projectMemory, setProjectMemory] = useState<ProjectMemory|null>(null);
     // Production Gate score — state (not just a runFlow-local) so runEdit's
   // post-edit gate re-check (A3) can read/update it across calls.
@@ -549,6 +555,61 @@ function CreatePageInner() {
   useEffect(()=>{ const c=()=>setIsMobile(window.innerWidth<900); c(); window.addEventListener("resize",c); return()=>window.removeEventListener("resize",c); },[]);
   useEffect(()=>{ chatEndRef.current?.scrollIntoView({behavior:"smooth"}); },[messages]);
   useEffect(()=>{ initSession(); },[]);
+
+  // ── Multi-page Preview Router ───────────────────────────────────
+  // Builds one Blob URL per generated page. Works for any number of
+  // pages (not hardcoded to about/pricing/contact) because it scans
+  // for known filenames rather than a fixed list. Each page gets a
+  // tiny injected script that intercepts clicks on <a href="X.html">
+  // and asks the parent (this component) to switch pages — this
+  // sidesteps the circular-reference problem of trying to rewrite
+  // blob URLs into each other's HTML before all blobs exist.
+  const buildPageBlobs = useCallback((pages:{name:string;content:string}[]) => {
+    activeBlobsRef.current.forEach(u=>{ try{URL.revokeObjectURL(u);}catch{} });
+    activeBlobsRef.current = [];
+    if (!pages.length){ setPageBlobs({}); return; }
+    const knownNames = pages.map(p=>p.name);
+    const navScript = `<script>document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest("a[href]"):null;if(!a)return;var href=a.getAttribute("href");if(${JSON.stringify(knownNames)}.indexOf(href)>-1){e.preventDefault();parent.postMessage({type:"krypton-nav",page:href},"*");}});</script>`;
+    const map:Record<string,string> = {};
+    const urls:string[] = [];
+    for (const p of pages){
+      const injected = p.content.includes("</body>") ? p.content.replace("</body>", navScript+"</body>") : p.content+navScript;
+      const url = URL.createObjectURL(new Blob([injected],{type:"text/html"}));
+      map[p.name]=url; urls.push(url);
+    }
+    activeBlobsRef.current = urls;
+    setPageBlobs(map);
+    setActivePage("index.html");
+    pageHistoryRef.current = {stack:["index.html"],idx:0};
+  },[]);
+
+  const navigateToPage = useCallback((page:string, pushHistory=true) => {
+    setActivePage(page);
+    if (pushHistory){
+      const h = pageHistoryRef.current;
+      h.stack = h.stack.slice(0,h.idx+1); h.stack.push(page); h.idx = h.stack.length-1;
+      try{ window.history.pushState({krypton_page:page},"",window.location.href); }catch{}
+    }
+  },[]);
+
+  // Real click-driven navigation from inside the preview iframe
+  useEffect(()=>{
+    const handler=(e:MessageEvent)=>{ if(e.data?.type==="krypton-nav" && pageBlobs[e.data.page]) navigateToPage(e.data.page); };
+    window.addEventListener("message",handler);
+    return ()=>window.removeEventListener("message",handler);
+  },[pageBlobs,navigateToPage]);
+
+  // Browser Back/Forward support for in-preview page switches — pushes
+  // history entries without changing the URL, so it never navigates the
+  // user away from /create; only affects pages we ourselves pushed.
+  useEffect(()=>{
+    const onPop=(e:PopStateEvent)=>{ if(e.state?.krypton_page && pageBlobs[e.state.krypton_page]) setActivePage(e.state.krypton_page); };
+    window.addEventListener("popstate",onPop);
+    return ()=>window.removeEventListener("popstate",onPop);
+  },[pageBlobs]);
+
+  useEffect(()=>()=>{ activeBlobsRef.current.forEach(u=>{ try{URL.revokeObjectURL(u);}catch{} }); },[]);
+
 
   const initSession = async () => {
     const {data:{session}} = await supabase.auth.getSession();
@@ -622,6 +683,14 @@ function CreatePageInner() {
                   : addMsg({role:"ai",type:"text",content:"Project loaded. Describe changes below."});
     const {data:vers} = await supabase.from("project_versions").select("*").eq("project_id",id).order("version_number",{ascending:false}).limit(20);
     if (vers) setVersions(vers as Version[]);
+    const latestSnapshot = (vers as Version[]|null)?.[0]?.code_snapshot as Record<string,string>|undefined;
+    if (latestSnapshot){
+      const extra = Object.entries(latestSnapshot).filter(([n])=>n!=="index.html").map(([name,content])=>({name,content}));
+      if (extra.length){
+        setMultiPageFiles(extra);
+        buildPageBlobs([{name:"index.html",content:html},...extra]);
+      }
+    }
 
     // Backfill DB for old rows that had no stored memory at all
     if (!storedGameMemory && !storedProjectMemory && (restoredGameMemory || restoredProjectMemory)) {
@@ -649,7 +718,7 @@ function CreatePageInner() {
     const usePid = pid||projectId;
     // Serialize chat history for persistence — fixes bug where reopening
     // a project showed only the live preview but lost all prior chat messages.
-    const historyPayload = messages.map(m => ({ role:m.role, type:m.type, content:m.content }));
+    const historyPayload = messagesRef.current.map(m => ({ role:m.role, type:m.type, content:m.content }));
     if (usePid) {
       await supabase.from("projects").update({ name, title:name, conversation_history:historyPayload, updated_at:new Date().toISOString() }).eq("id",usePid);
     } else {
@@ -833,7 +902,7 @@ function CreatePageInner() {
       try {
         const fr=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:userPrompt}),signal:AbortSignal.timeout(280000)});
         const fd=await fr.json();
-        if(fd.html){html=fd.html;credUsed=fd.creditsUsed||1;savedPid=fd.projectId||"";}
+        if(fd.html){html=fd.html;credUsed=fd.creditsUsed||1;savedPid=fd.projectId||"";receivedProjectType=fd.projectType||"";}
         if(fd.code==="NO_CREDITS"){updateMsg(thinkId,{type:"error",content:"⚡ No credits remaining. Upgrade to continue.",isActive:false});setLoading(false);return;}
       } catch {}
     }
@@ -857,7 +926,10 @@ function CreatePageInner() {
         if (mpRes.ok && Array.isArray(mpData?.files)){
           extraFiles = mpData.files.filter((f:any)=>f?.name && f.name!=="index.html");
           setMultiPageFiles(extraFiles);
-          if (extraFiles.length) credUsed += 2;
+          if (extraFiles.length){
+            credUsed += 2;
+            buildPageBlobs([{name:"index.html",content:html},...extraFiles]);
+          }
         }
       }catch{}
     }
@@ -894,7 +966,7 @@ function CreatePageInner() {
       try{
         const {data:{session:s}}=await supabase.auth.getSession(); if(!s) return;
         let finalPid=pidToUse;
-        const historyPayload = messages.map(m=>({role:m.role,type:m.type,content:m.content}));
+        const historyPayload = messagesRef.current.map(m=>({role:m.role,type:m.type,content:m.content}));
         if(!finalPid){
           const {data:proj}=await supabase.from("projects").insert({user_id:s.user.id,name:pName,title:pName,html_code:html,prompt:promptRef.current,conversation_history:historyPayload,status:"completed",created_at:new Date().toISOString(),updated_at:new Date().toISOString()}).select("id").single();
           if(proj?.id){finalPid=proj.id;setProjectId(proj.id);window.history.replaceState({},"",`/create?id=${proj.id}`);}
@@ -1156,7 +1228,7 @@ function CreatePageInner() {
             </button>
           </div>
           <div className="kr-preview-bg" style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"center",justifyContent:"center",background:"#050816",overflow:"auto"}}>
-            <iframe srcDoc={result}
+            <iframe {...(pageBlobs["index.html"] ? {src:pageBlobs[activePage]||pageBlobs["index.html"]} : {srcDoc:result})}
               style={{border:"none",width:device==="desktop"?"100%":device==="tablet"?"min(768px,92vw)":"min(390px,88vw)",height:device==="desktop"?"100%":"min(100%,84vh)",minHeight:device==="desktop"?"100%":undefined,background:"#fff",
                 boxShadow:device!=="desktop"?"0 0 0 10px #11151F,0 20px 60px rgba(0,0,0,0.8)":"none",
                 borderRadius:device==="mobile"?"36px":device==="tablet"?"16px":"0",flexShrink:0,margin:device!=="desktop"?"16px 0":0}}
@@ -1462,7 +1534,7 @@ function CreatePageInner() {
             {rightTab==="preview"&&(
               <div className="kr-preview-bg" style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#050816":device==="tablet"?"#0B1020":"#050816",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto"}}>
                 {result
-                  ? <iframe key={`${result.length}-${device}`} srcDoc={result} style={{
+                  ? <iframe key={`${result.length}-${device}-${activePage}`} {...(pageBlobs["index.html"] ? {src:pageBlobs[activePage]||pageBlobs["index.html"]} : {srcDoc:result})} style={{
                       border:"none",
                       width:device==="desktop"?"100%":device==="tablet"?"min(768px,100%)":"min(390px,100%)",
                       height:device==="desktop"?"100%":"auto",
@@ -1529,7 +1601,7 @@ function CreatePageInner() {
             )}
 
             {/* Files */}
-            {rightTab==="files"&&<FilesPanel html={result} projectName={projectName} extraFiles={multiPageFiles}/>}
+            {rightTab==="files"&&<FilesPanel html={result} projectName={projectName} extraFiles={multiPageFiles} onSelectPage={(name)=>{navigateToPage(name);setRightTab("preview");}}/>}
 
             {/* Deploy */}
             {rightTab==="deploy"&&(
