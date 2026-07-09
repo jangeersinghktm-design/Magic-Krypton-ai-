@@ -825,7 +825,7 @@ function CreatePageInner() {
       }
     } catch {
       try {
-        const fr=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:userPrompt}),signal:AbortSignal.timeout(280000)});
+        const fr=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:userPrompt}),signal:AbortSignal.timeout(110000)});
         const fd=await fr.json();
         if(fd.html){html=fd.html;credUsed=fd.creditsUsed||1;savedPid=fd.projectId||"";}
         if(fd.code==="NO_CREDITS"){updateMsg(thinkId,{type:"error",content:"⚡ No credits remaining. Upgrade to continue.",isActive:false});setLoading(false);return;}
@@ -1230,7 +1230,6 @@ function CreatePageInner() {
                     {[
                       {label:"🌐 Website",prompt:"Build a modern SaaS landing page"},
                       {label:"🛒 Store",prompt:"Create a luxury perfume store"},
-                      {label:"🎮 Game",prompt:"Make a Snake game with dark theme"},
                       {label:"📊 Dashboard",prompt:"Build an analytics dashboard"},
                       {label:"📱 App",prompt:"Create a task manager kanban app"},
                       {label:"🎨 Portfolio",prompt:"Design a creative portfolio"},
@@ -1245,7 +1244,7 @@ function CreatePageInner() {
                   <div style={{width:"100%",maxWidth:340}}>
                     <div style={{fontSize:11,color:C.muted,marginBottom:8,letterSpacing:"0.06em",textTransform:"uppercase"}}>Popular prompts</div>
                     <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                      {["Build a restaurant website with menu","Make a Zombie Survival shooter game","Create a fitness coaching landing page","Build a real estate agency website"].map(s=>(
+                      {["Build a restaurant website with menu","Create a SaaS landing page","Create a fitness coaching landing page","Build a real estate agency website"].map(s=>(
                         <button key={s} onClick={()=>setPrompt(s)}
                           style={{padding:"8px 12px",background:"rgba(255,255,255,0.03)",border:`1px solid ${C.border}`,borderRadius:8,color:C.sub,fontSize:12,cursor:"pointer",textAlign:"left",transition:"all .15s",display:"flex",alignItems:"center",gap:8}}>
                           <span style={{opacity:.4,fontSize:10}}>→</span>{s}
