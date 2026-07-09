@@ -253,27 +253,6 @@ function SettingsInner() {
             ))}
 
             <div style={{ height:1, background:C.border, margin:"12px 0" }}/>
-
-            {/* Real page links */}
-            {[
-              { icon:"🏠", label:"Home",      path:"/" },
-              { icon:"✨", label:"Create",    path:"/create" },
-              { icon:"📊", label:"Dashboard", path:"/dashboard" },
-              { icon:"📈", label:"Analytics", path:"/analytics" },
-              { icon:"⭐", label:"Templates", path:"/templates" },
-              { icon:"🤖", label:"Chatbot",   path:"/chatbot" },
-            ].map(item => (
-              <button key={item.path} className="nav-item" onClick={()=>router.push(item.path)} style={{
-                width:"100%", textAlign:"left", padding:"9px 14px", marginBottom:3,
-                borderRadius:9, border:"none", background:"transparent",
-                color:C.muted, fontSize:13, cursor:"pointer",
-                display:"flex", alignItems:"center", gap:9, transition:"all .15s",
-              }}>
-                {item.icon} {item.label}
-              </button>
-            ))}
-
-            <div style={{ height:1, background:C.border, margin:"12px 0" }}/>
             <button onClick={handleLogout} style={{
               width:"100%", padding:"9px 14px", borderRadius:10,
               border:"1px solid rgba(229,115,107,0.2)", background:"rgba(229,115,107,0.06)",
