@@ -29,12 +29,20 @@
     },
     "app/api/reverse-engineer/status/[jobId]/route.ts": {
       "maxDuration": 30
+    },
+    "app/api/cron/process-account-deletions/route.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [
     {
       "path": "/api/credits/reset",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/process-account-deletions",
+      "schedule": "0 3 * * *"
     }
   ]
 }
+
