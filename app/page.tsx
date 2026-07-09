@@ -177,7 +177,7 @@ export default function HomePage() {
           </div>
 
           {/* ── Prompt Box ── */}
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:18, padding:"16px 18px", boxShadow:"0 0 48px rgba(245,245,245,.04)", marginBottom:56, animation:"fadeUp .5s .1s ease both" }}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:18, padding:"16px 18px", boxShadow:"0 0 48px rgba(245,245,245,.04)", marginBottom:64, animation:"fadeUp .5s .1s ease both" }}>
             <textarea
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
@@ -227,7 +227,7 @@ export default function HomePage() {
           </div>
 
           {/* ── Recent Projects ── */}
-          <div style={{ animation:"fadeUp .5s .2s ease both" }}>
+          <div style={{ animation:"fadeUp .5s .2s ease both", paddingTop:28, borderTop:`1px solid ${C.border}` }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
               <p style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:".1em" }}>Recent Projects</p>
               <button onClick={() => router.push("/dashboard")} style={{ fontSize:11, color:C.gold, background:"none", border:"none", cursor:"pointer", fontWeight:500 }}>
