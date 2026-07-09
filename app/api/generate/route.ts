@@ -676,8 +676,8 @@ export async function POST(req: NextRequest) {
         usedProvider = attempt.provider;
 
         // ✅ Use HTML if it has any meaningful content — never reject good output
-        if (html && html.length > 200) {
-          break; // Got content — stop cascade, use it
+        if (html && html.length > 200 && /<!DOCTYPE|<html[\s>]/i.test(html)) {
+          break; // Got real HTML — stop cascade, use it
         }
 
         // Empty response — try next provider silently
