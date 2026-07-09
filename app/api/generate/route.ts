@@ -764,6 +764,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       html,
       projectId: savedProjectId,
+      projectType: reqProjectType,
       creditsUsed: creditCost,
       creditsRemaining: freshRemaining,
       category,
