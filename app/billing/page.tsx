@@ -4,8 +4,8 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const G  = "linear-gradient(135deg, #F5F5F5 0%, #5FB88A 100%)";
-const T  = { gold: "#F5F5F5", green: "#5FB88A", border: "rgba(245,197,66,0.12)", muted: "#5B6472", card: "#0B1020" };
+const G  = "linear-gradient(135deg, #F5D800 0%, #FFFFFF 100%)";
+const T  = { gold: "#F5D800", green: "#F5D800", border: "rgba(245,197,66,0.12)", muted: "#5B6472", card: "#0B1020" };
 
 const PLANS = [
   {
