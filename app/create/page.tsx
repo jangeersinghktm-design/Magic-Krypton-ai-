@@ -430,10 +430,13 @@ function ThinkingPanel({
 }
 
 // ── File Explorer Panel ───────────────────────────────────────────
-function FilesPanel({ html, projectName }: { html:string; projectName:string }) {
+function FilesPanel({ html, projectName, extraFiles }: { html:string; projectName:string; extraFiles?:{name:string;content:string}[] }) {
   const [activeFile, setActiveFile] = useState("index.html");
   const [copied, setCopied] = useState(false);
-  const files = extractFiles(html, projectName);
+  const files = [
+    ...extractFiles(html, projectName),
+    ...(extraFiles||[]).map(f=>({ name:f.name, lang:"html", icon:"📄", content:f.content, size:`${(f.content.length/1024).toFixed(1)}KB` })),
+  ];
   const active = files.find(f=>f.name===activeFile) || files[0];
 
   const handleCopy = async () => {
@@ -519,6 +522,7 @@ function CreatePageInner() {
   const [saving, setSaving]     = useState(false);
   const [saved, setSaved]       = useState(false);
   const [versions, setVersions] = useState<Version[]>([]);
+  const [multiPageFiles, setMultiPageFiles] = useState<{name:string;content:string}[]>([]);
   const [projectMemory, setProjectMemory] = useState<ProjectMemory|null>(null);
     // Production Gate score — state (not just a runFlow-local) so runEdit's
   // post-edit gate re-check (A3) can read/update it across calls.
@@ -762,6 +766,7 @@ function CreatePageInner() {
     let html=""; let credUsed=1; let savedPid="";
     let completenessScore:number|null=null; let auditFailed:string[]=[];
     let receivedBlueprint:any=null;
+    let receivedProjectType=""; let extraFiles:{name:string;content:string}[]=[];
     let gateResult:any=null;
     const livePhases:AgentPhaseEvent[]=[];
 
@@ -793,6 +798,7 @@ function CreatePageInner() {
         if (em[1]==="review") { updateMsg(thinkId, { review: data.checks as ReviewCheck[], isActive:true }); }
         if (em[1]==="complete"){
           html=data.html||""; credUsed=data.creditCost||1; savedPid=data.projectId||"";
+          receivedProjectType = data.projectType||"";
           completenessScore = typeof data.completenessScore === "number" ? data.completenessScore : null;
           auditFailed = Array.isArray(data.auditFailed) ? data.auditFailed : [];
           receivedBlueprint = data.blueprint || null;
@@ -837,6 +843,25 @@ function CreatePageInner() {
       setLoading(false); return;
     }
 
+    // ── Automatic multi-page generation — same rule orchestrate already
+    // uses for its own pageCount stat (projectType!=="landing" → 3 pages).
+    // Non-blocking on failure: single-page result is already valid either way.
+    if (receivedProjectType && receivedProjectType!=="landing"){
+      try{
+        const mpRes=await fetch("/api/multipage",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({homeHtml:html,prompt:userPrompt,accessToken:session.access_token,userId:session.user.id,responseFormat:"json"}),
+          signal:AbortSignal.timeout(280000),
+        });
+        const mpData=await mpRes.json().catch(()=>null);
+        if (mpRes.ok && Array.isArray(mpData?.files)){
+          extraFiles = mpData.files.filter((f:any)=>f?.name && f.name!=="index.html");
+          setMultiPageFiles(extraFiles);
+          if (extraFiles.length) credUsed += 2;
+        }
+      }catch{}
+    }
+
     setResult(html);
     if (isMobile) setMobilePanel("preview");
     setCredits(c=>({...c,used:c.used+credUsed}));
@@ -877,7 +902,7 @@ function CreatePageInner() {
           await supabase.from("projects").update({conversation_history:historyPayload}).eq("id",finalPid);
         }
         if(finalPid){
-          const {data:ver}=await supabase.from("project_versions").insert({project_id:finalPid,code_snapshot:{"index.html":html},message:`Generated: ${pName.slice(0,30)}`,type:"auto",version_number:1,size_bytes:html.length}).select().single();
+          const {data:ver}=await supabase.from("project_versions").insert({project_id:finalPid,code_snapshot:{"index.html":html,...Object.fromEntries(extraFiles.map(f=>[f.name,f.content]))},message:`Generated: ${pName.slice(0,30)}`,type:"auto",version_number:1,size_bytes:html.length}).select().single();
           if(ver)setVersions([ver as Version]);
         }
       }catch{}
@@ -1504,7 +1529,7 @@ function CreatePageInner() {
             )}
 
             {/* Files */}
-            {rightTab==="files"&&<FilesPanel html={result} projectName={projectName}/>}
+            {rightTab==="files"&&<FilesPanel html={result} projectName={projectName} extraFiles={multiPageFiles}/>}
 
             {/* Deploy */}
             {rightTab==="deploy"&&(
