@@ -260,7 +260,9 @@ async function kryptonGenerate(system: string, prompt: string): Promise<{text:st
         if (text?.trim()) return { text, provider: name };
         break;
       } catch (e: any) {
-        if (attempt === 0 && String(e?.message||"").includes("429")) {
+          const status = e?.status ?? e?.response?.status ?? "";
+          const is429 = status === 429 || String(e?.message||"").includes("429");
+          if (attempt === 0 && is429) {
           await new Promise(r => setTimeout(r, 1500));
           continue;
         }
