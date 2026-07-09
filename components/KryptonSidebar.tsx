@@ -96,17 +96,6 @@ const NAV: NavItem[] = [
     href:  "/settings",
     icon:  I.settings,
     dividerBefore: true,
-    children: [
-      { label: "Profile",       href: "/settings?tab=profile",       icon: I.user     },
-      { label: "Account",       href: "/settings?tab=account",       icon: I.user     },
-      { label: "Appearance",    href: "/settings?tab=theme",         icon: I.palette  },
-      { label: "Notifications", href: "/settings?tab=notifications", icon: I.settings },
-      { label: "Security",      href: "/settings?tab=security",      icon: I.settings },
-      { label: "API Keys",      href: "/settings?tab=apikeys",       icon: I.cpu      },
-      { label: "Billing",       href: "/billing",                    icon: I.billing  },
-      { label: "Invoices",      href: "/billing?tab=invoices",       icon: I.receipt  },
-      { label: "Logout",        href: "#logout",                     icon: I.signout, isAction: true },
-    ],
   },
 ];
 
