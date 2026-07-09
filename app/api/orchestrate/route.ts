@@ -254,10 +254,19 @@ async function getRealImageSet(industry: string, keyword: string, count = 6): Pr
 
 async function kryptonGenerate(system: string, prompt: string): Promise<{text:string;provider:string}> {
   for (const [fn, name] of [[callClaude, "claude"],[callOpenAI,"openai"],[callGemini,"gemini"]] as const) {
-    try {
-      const text = await (fn as Function)(system, prompt);
-      if (text?.trim()) return { text, provider: name };
-    } catch { continue; }
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const text = await (fn as Function)(system, prompt);
+        if (text?.trim()) return { text, provider: name };
+        break;
+      } catch (e: any) {
+        if (attempt === 0 && String(e?.message||"").includes("429")) {
+          await new Promise(r => setTimeout(r, 1500));
+          continue;
+        }
+        break;
+      }
+    }
   }
   throw new Error("All AI providers failed");
 }
