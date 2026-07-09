@@ -5,7 +5,7 @@ import KryptonLogo from "@/components/branding/KryptonLogo";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const G = "linear-gradient(135deg, #F5C542 0%, #00D084 100%)";
+const G = "linear-gradient(135deg, #F5D800 0%, #FFFFFF 100%)";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -76,7 +76,7 @@ export default function LoginPage() {
       {/* Background */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
         <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "55vw", height: "55vw", borderRadius: "50%", filter: "blur(80px)", background: "radial-gradient(circle, rgba(245,197,66,0.35) 0%, rgba(245,197,66,0.12) 35%, transparent 70%)", animation: "gradMove 18s ease-in-out infinite" }} />
-        <div style={{ position: "absolute", bottom: "-10%", right: "-10%", width: "50vw", height: "50vw", borderRadius: "50%", filter: "blur(80px)", background: "radial-gradient(circle, rgba(0,208,132,0.30) 0%, rgba(0,208,132,0.10) 35%, transparent 70%)", animation: "gradMove2 22s ease-in-out infinite" }} />
+        <div style={{ position: "absolute", bottom: "-10%", right: "-10%", width: "50vw", height: "50vw", borderRadius: "50%", filter: "blur(80px)", background: "radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 35%, transparent 70%)", animation: "gradMove2 22s ease-in-out infinite" }} />
         <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(245,197,66,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,66,0.02) 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
       </div>
 
@@ -86,7 +86,7 @@ export default function LoginPage() {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "2rem" }}>
           <KryptonLogo size={56} showText={true} animated={true}/>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(245,197,66,0.07)", border: "1px solid rgba(245,197,66,0.15)", borderRadius: "20px", padding: "5px 14px", fontSize: "12px" }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00D084", display: "inline-block" }} />
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#F5D800", display: "inline-block" }} />
             <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 600 }}>Welcome back to Krypton AI</span>
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function LoginPage() {
               {forgotSent ? (
                 <div style={{ background: "rgba(0,208,132,0.08)", border: "1px solid rgba(0,208,132,0.25)", borderRadius: "12px", padding: "20px", textAlign: "center" }}>
                   <div style={{ fontSize: 36, marginBottom: 10 }}>📧</div>
-                  <p style={{ color: "#00D084", fontWeight: 700, marginBottom: 6 }}>Reset link sent!</p>
+                  <p style={{ color: "#F5D800", fontWeight: 700, marginBottom: 6 }}>Reset link sent!</p>
                   <p style={{ color: "#6B7280", fontSize: 13 }}>Check your email: <strong>{forgotEmail}</strong></p>
                 </div>
               ) : (
