@@ -5197,9 +5197,12 @@ const activeGenerations = new Set<string>();
         } catch {}
       };
 
+      const heartbeat = setInterval(() => send("ping", {}), 15000);
+
       const finish = () => {
         if (closed) return;
         closed = true;
+        clearInterval(heartbeat);
         try { controller.close(); } catch {}
       };
 
