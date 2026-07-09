@@ -825,7 +825,7 @@ function CreatePageInner() {
       }
     } catch {
       try {
-        const fr=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:userPrompt}),signal:AbortSignal.timeout(110000)});
+        const fr=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:userPrompt}),signal:AbortSignal.timeout(280000)});
         const fd=await fr.json();
         if(fd.html){html=fd.html;credUsed=fd.creditsUsed||1;savedPid=fd.projectId||"";}
         if(fd.code==="NO_CREDITS"){updateMsg(thinkId,{type:"error",content:"⚡ No credits remaining. Upgrade to continue.",isActive:false});setLoading(false);return;}
@@ -1146,7 +1146,7 @@ function CreatePageInner() {
         {/* ── TOP BAR — Premium ── */}
         <div style={{height:52,flexShrink:0,padding:"0 16px",borderBottom:`1px solid ${C.border}`,background:C.surface,display:"flex",alignItems:"center",gap:10,zIndex:100,backdropFilter:"blur(8px)"}}>
           {/* Logo */}
-          <KryptonLogo size={24} showText={false} animated={false} onClick={()=>router.push("/")} style={{cursor:"pointer",flexShrink:0}}/>
+          <KryptonLogo size={24} showText={true} animated={false} onClick={()=>router.push("/")} style={{cursor:"pointer",flexShrink:0}}/>
           <div style={{width:1,height:18,background:"rgba(255,255,255,0.08)",flexShrink:0}}/>
 
           {/* Project Name */}
