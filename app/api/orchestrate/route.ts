@@ -5486,7 +5486,9 @@ Format: numbered list only. No preamble.`;
           send("phase", { agent:"Reading", icon:"🧭", action:"Stage 1/4 — Planning blueprint...", pct:28 });
           console.log("Stage 1 Blueprint Start");
           const _s1 = Date.now();
-          const pipelineBlueprint = await generateBlueprint(_niche, nicheDetectPrompt, projectType);
+          const pipelineBlueprint = domainPlan
+            ? `SECTIONS: ${domainPlan.sectionOrder.join(", ")}\nKEY_COMPONENTS: ${Object.entries(domainPlan.sectionPurpose).map(([s,p])=>`${s} (${p})`).join("; ")}\nCONTENT_FOCUS: ${domainPlan.businessGoal} — ${domainPlan.tagline}. ${domainPlan.copyTone} Key benefits: ${domainPlan.keyBenefits.join(", ")}. Avoid: ${domainPlan.avoidMistakes.join(", ")}.`
+            : await generateBlueprint(_niche, nicheDetectPrompt, projectType);
           console.log(`Stage 1 Blueprint Done — ${Date.now()-_s1}ms`);
 
           send("phase", { agent:"Building", icon:"📐", action:"Stage 2/4 — Assembling from component library...", pct:42 });
@@ -5581,7 +5583,7 @@ Format: numbered list only. No preamble.`;
         // one extra AI call). Catches what regex can't: weak headlines,
         // buried CTAs, undifferentiated pricing tiers.
         let critique: DesignCritique | null = null;
-        if (complexity === "complex" && gateKind === "website") {
+        if (complexity === "complex" && gateKind === "website" && gate.score < 90) {
           send("phase", { agent:"Validating", icon:"🎨", action:"Running design critique...", pct:82 });
           console.log("Design Critic Start");
           const _sc = Date.now();
