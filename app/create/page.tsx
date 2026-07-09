@@ -14,6 +14,7 @@ import KryptonLogo from "@/components/branding/KryptonLogo";
 import AgentTimeline, { AgentPhaseEvent } from "@/components/workspace/AgentTimeline";
 import { runProductionGate } from "@/lib/completion-engine";
 import { detectGameType, buildGameMemory, formatGameMemoryForAI, type GameProjectMemory } from "@/lib/game-builder";
+import UpgradeModal from "@/components/UpgradeModal";
 
 // ── Design Tokens ─────────────────────────────────────────────────
 const C = {
@@ -521,6 +522,7 @@ function CreatePageInner() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"chat"|"preview">("chat");
   const [credits, setCredits]   = useState({ total:5, used:0 });
+  const [upgradeModal, setUpgradeModal] = useState<{open:boolean; reason?:string; remainingCredits?:number}>({open:false});
   const [saving, setSaving]     = useState(false);
   const [saved, setSaved]       = useState(false);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -555,6 +557,52 @@ function CreatePageInner() {
   useEffect(()=>{ const c=()=>setIsMobile(window.innerWidth<900); c(); window.addEventListener("resize",c); return()=>window.removeEventListener("resize",c); },[]);
   useEffect(()=>{ chatEndRef.current?.scrollIntoView({behavior:"smooth"}); },[messages]);
   useEffect(()=>{ initSession(); },[]);
+
+  // ── Centralized HTTP 402 / upgrade-required handling ────────────
+  // Single source of truth for all 3 generation routes — future-proofed
+  // for both credit-based and subscription-based lock codes.
+  const handleGeneration402 = useCallback((status:number, code?:string, message?:string): boolean => {
+    const CREDIT_CODES = ["NO_CREDITS","INSUFFICIENT_CREDITS","DAILY_LIMIT"];
+    const SUBSCRIPTION_CODES = ["SUBSCRIPTION_REQUIRED","PREMIUM_REQUIRED"];
+    const isCreditIssue = CREDIT_CODES.includes(code||"");
+    const isSubscriptionIssue = SUBSCRIPTION_CODES.includes(code||"");
+    if (status!==402 && !isCreditIssue && !isSubscriptionIssue) return false;
+    setUpgradeModal({
+      open: true,
+      reason: message || (isSubscriptionIssue ? "This feature requires a higher plan." : "Top up your credits to continue generating."),
+      remainingCredits: isSubscriptionIssue ? undefined : 0,
+    });
+    setLoading(false);
+    return true;
+  }, []);
+
+  // Read-only — never writes credits/subscription, only reflects current values.
+  const refreshCreditsAndClose = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    const { data: p } = await supabase.from("profiles").select("total_credits,used_credits,plan,daily_reset_date").eq("id",session.user.id).single();
+    if (p) {
+      setCredits({ total:p.total_credits||5, used:p.used_credits||0 });
+      const remaining = Math.max(0,(p.total_credits||0)-(p.used_credits||0));
+      if (remaining > 0) setUpgradeModal(m=>({...m, open:false}));
+    }
+  },[]);
+
+  // While the modal is open: check on tab-focus (user returning from /billing)
+  // AND poll every 7s as a fallback (e.g. payment webhook lands while tab stays
+  // in the background). Both stop automatically the instant the modal closes.
+  useEffect(()=>{
+    if (!upgradeModal.open) return;
+    window.addEventListener("focus", refreshCreditsAndClose);
+    document.addEventListener("visibilitychange", refreshCreditsAndClose);
+    const poll = setInterval(refreshCreditsAndClose, 7000);
+    return () => {
+      window.removeEventListener("focus", refreshCreditsAndClose);
+      document.removeEventListener("visibilitychange", refreshCreditsAndClose);
+      clearInterval(poll);
+    };
+  },[upgradeModal.open, refreshCreditsAndClose]);
+
 
   // ── Multi-page Preview Router ───────────────────────────────────
   // Builds one Blob URL per generated page. Works for any number of
@@ -884,10 +932,7 @@ function CreatePageInner() {
           updateMsg(thinkId,{phases:[...livePhases],isActive:false});
         }
         if (em[1]==="error"){
-          if (data.code==="NO_CREDITS"){
-            updateMsg(thinkId,{type:"error",content:"⚡ No credits. Free plan resets daily. Tap ⚡ to upgrade.",isActive:false});
-            setLoading(false); return;
-          }
+          if (handleGeneration402(0, data.code, data.message)) return;
           throw new Error(data.message);
         }
       };
@@ -903,7 +948,7 @@ function CreatePageInner() {
         const fr=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({prompt:userPrompt}),signal:AbortSignal.timeout(280000)});
         const fd=await fr.json();
         if(fd.html){html=fd.html;credUsed=fd.creditsUsed||1;savedPid=fd.projectId||"";receivedProjectType=fd.projectType||"";}
-        if(fd.code==="NO_CREDITS"){updateMsg(thinkId,{type:"error",content:"⚡ No credits remaining. Upgrade to continue.",isActive:false});setLoading(false);return;}
+        if(handleGeneration402(fr.status, fd.code, fd.error)) return;
       } catch {}
     }
 
@@ -930,6 +975,8 @@ function CreatePageInner() {
             credUsed += 2;
             buildPageBlobs([{name:"index.html",content:html},...extraFiles]);
           }
+        } else {
+          handleGeneration402(mpRes.status, mpData?.code, mpData?.error);
         }
       }catch{}
     }
@@ -1181,6 +1228,12 @@ function CreatePageInner() {
 
   return (
     <>
+      <UpgradeModal
+        isOpen={upgradeModal.open}
+        onClose={()=>setUpgradeModal(m=>({...m, open:false}))}
+        reason={upgradeModal.reason}
+        remainingCredits={upgradeModal.remainingCredits}
+      />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
