@@ -33,14 +33,19 @@ const I = {
 };
 
 // ── Navigation structure ─────────────────────────────────────────────
-interface NavChild { label: string; href: string; icon: React.ReactNode; badge?: string; }
+interface NavChild { label: string; href: string; icon: React.ReactNode; badge?: string; isAction?: boolean; }
 interface NavItem  { label: string; href: string; icon: React.ReactNode; children?: NavChild[]; dividerBefore?: boolean; }
 
 const NAV: NavItem[] = [
   {
     label: "Home",
-    href:  "/dashboard",
+    href:  "/",
     icon:  I.home,
+  },
+  {
+    label: "Dashboard",
+    href:  "/dashboard",
+    icon:  I.dashboard2,
   },
   {
     label: "AI Builder",
@@ -92,8 +97,15 @@ const NAV: NavItem[] = [
     icon:  I.settings,
     dividerBefore: true,
     children: [
-      { label: "Billing",   href: "/billing",  icon: I.billing  },
-      { label: "Invoices",  href: "/billing?tab=invoices", icon: I.receipt },
+      { label: "Profile",       href: "/settings?tab=profile",       icon: I.user     },
+      { label: "Account",       href: "/settings?tab=account",       icon: I.user     },
+      { label: "Appearance",    href: "/settings?tab=theme",         icon: I.palette  },
+      { label: "Notifications", href: "/settings?tab=notifications", icon: I.settings },
+      { label: "Security",      href: "/settings?tab=security",      icon: I.settings },
+      { label: "API Keys",      href: "/settings?tab=apikeys",       icon: I.cpu      },
+      { label: "Billing",       href: "/billing",                    icon: I.billing  },
+      { label: "Invoices",      href: "/billing?tab=invoices",       icon: I.receipt  },
+      { label: "Logout",        href: "#logout",                     icon: I.signout, isAction: true },
     ],
   },
 ];
@@ -160,13 +172,13 @@ export default function KryptonSidebar() {
   };
 
   const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/" || pathname === "/dashboard";
+    if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(href + "?") || pathname.startsWith(href + "/");
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push("/");
+    router.push("/auth/login");
   };
 
   const creditsUsed  = profile?.used_credits  ?? 0;
@@ -193,8 +205,8 @@ export default function KryptonSidebar() {
         borderBottom:  "1px solid rgba(255,255,255,0.06)",
         flexShrink:    0,
       }}>
-        <Link href="/dashboard" style={{ textDecoration: "none" }}>
-          <KryptonLogo size={24} />
+        <Link href="/" style={{ textDecoration: "none" }}>
+          <KryptonLogo size={24} showText />
         </Link>
         {isMobile && (
           <button onClick={() => setMobileOpen(false)} style={{
@@ -287,7 +299,35 @@ export default function KryptonSidebar() {
                   marginBottom: "4px",
                 }}>
                   {item.children!.map(child => {
-                    const childActive = isActive(child.href);
+                    const childActive = !child.isAction && isActive(child.href);
+
+                    if (child.isAction) {
+                      return (
+                        <div
+                          key={child.label}
+                          onClick={() => { handleSignOut(); isMobile && setMobileOpen(false); }}
+                          style={{
+                            display:       "flex",
+                            alignItems:    "center",
+                            gap:           "8px",
+                            padding:       "8px 10px",
+                            borderRadius:  "7px",
+                            marginBottom:  "1px",
+                            cursor:        "pointer",
+                            color:         "rgba(239,68,68,0.75)",
+                            fontSize:      "12.5px",
+                            fontWeight:    400,
+                            transition:    "all 0.15s ease",
+                          }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "rgba(239,68,68,0.08)"; (e.currentTarget as HTMLDivElement).style.color = "#EF4444"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; (e.currentTarget as HTMLDivElement).style.color = "rgba(239,68,68,0.75)"; }}
+                        >
+                          <span style={{ opacity: 0.7, display: "flex" }}>{child.icon}</span>
+                          {child.label}
+                        </div>
+                      );
+                    }
+
                     return (
                       <Link
                         key={child.href}
