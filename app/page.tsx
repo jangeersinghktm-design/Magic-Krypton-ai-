@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import KryptonLogo from "@/components/branding/KryptonLogo";
+import ModeSelector, { type AIMode } from "@/components/ModeSelector";
 
 const GRAD = "linear-gradient(135deg,#F5F5F5 0%,#D9D9D9 50%,#BFC5CC 100%)";
 const C = {
@@ -29,6 +30,7 @@ export default function HomePage() {
 
   const [user, setUser]       = useState<any>(null);
   const [prompt, setPrompt]   = useState("");
+  const [aiMode, setAiMode]   = useState<AIMode>("auto");
   const [buildType, setBuildType]     = useState("Website");
   const [showTypeMenu, setShowTypeMenu] = useState(false);
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
@@ -94,7 +96,7 @@ export default function HomePage() {
     if (!prompt.trim()) return;
     const fullPrompt = buildType !== "Website" ? `Build a ${buildType}: ${prompt}` : prompt;
     const typeParam = buildType.toLowerCase().replace(/ /g,"-");
-    window.open(`/create?prompt=${encodeURIComponent(fullPrompt)}&forceType=${encodeURIComponent(typeParam)}`, "_blank");
+    window.open(`/create?prompt=${encodeURIComponent(fullPrompt)}&forceType=${encodeURIComponent(typeParam)}&mode=${aiMode}`, "_blank");
   };
 
   const handleVoice = () => {
@@ -207,7 +209,8 @@ export default function HomePage() {
                 )}
               </div>
 
-              <div style={{ display:"flex", gap:8 }}>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <ModeSelector mode={aiMode} onChange={setAiMode}/>
                 <button onClick={handleVoice}
                   style={{ width:34, height:34, borderRadius:"50%", background:listening?C.gold:"#1e1e1e", border:`1px solid ${listening?C.gold:C.border}`, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
