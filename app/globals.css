@@ -12,10 +12,15 @@
   --text-muted:#6B7280;
   --text-dim:  #444444;
 
-  /* Accent — Gold Green (Default) */
+  /* Accent — Gold Green (Legacy, kept for backward compatibility) */
   --accent-1:  #F5D800;
   --accent-2:  #00CC44;
   --gradient:  linear-gradient(135deg, #F5D800 0%, #00CC44 100%);
+
+  /* Primary — Premium Black + Rich Yellow + White (current design system) */
+  --primary:       #FFD84D;
+  --primary-hover: #FFE57A;
+  --primary-glow:  rgba(255,216,77,.25);
 
   --radius-sm: 8px;
   --radius-md: 12px;
