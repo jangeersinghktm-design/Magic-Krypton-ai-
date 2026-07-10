@@ -13,7 +13,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 let redisClient: Redis | null = null;
 let redisInitAttempted = false;
 
-function getRedis(): Redis | null {
+export function getRedis(): Redis | null {
   if (redisInitAttempted) return redisClient;
   redisInitAttempted = true;
 
@@ -83,4 +83,3 @@ export async function distributedRateLimit(
     return { allowed: true, remaining: limit };
   }
 }
-
