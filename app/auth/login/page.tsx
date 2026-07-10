@@ -4,8 +4,9 @@ import { useState } from "react";
 import KryptonLogo from "@/components/branding/KryptonLogo";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { HEADLINE_GRADIENT, PRIMARY } from "@/lib/theme-tokens";
 
-const G = "linear-gradient(135deg, #F5D800 0%, #FFFFFF 100%)";
+const G = HEADLINE_GRADIENT;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -86,7 +87,7 @@ export default function LoginPage() {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: "2rem" }}>
           <KryptonLogo size={56} showText={true} animated={true}/>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(245,197,66,0.07)", border: "1px solid rgba(245,197,66,0.15)", borderRadius: "20px", padding: "5px 14px", fontSize: "12px" }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#F5D800", display: "inline-block" }} />
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: PRIMARY, display: "inline-block" }} />
             <span style={{ background: G, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 600 }}>Welcome back to Krypton AI</span>
           </div>
         </div>
@@ -106,7 +107,7 @@ export default function LoginPage() {
               {forgotSent ? (
                 <div style={{ background: "rgba(0,208,132,0.08)", border: "1px solid rgba(0,208,132,0.25)", borderRadius: "12px", padding: "20px", textAlign: "center" }}>
                   <div style={{ fontSize: 36, marginBottom: 10 }}>📧</div>
-                  <p style={{ color: "#F5D800", fontWeight: 700, marginBottom: 6 }}>Reset link sent!</p>
+                  <p style={{ color: PRIMARY, fontWeight: 700, marginBottom: 6 }}>Reset link sent!</p>
                   <p style={{ color: "#6B7280", fontSize: 13 }}>Check your email: <strong>{forgotEmail}</strong></p>
                 </div>
               ) : (
