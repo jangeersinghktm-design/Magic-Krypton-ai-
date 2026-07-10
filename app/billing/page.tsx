@@ -1,49 +1,15 @@
 "use client";
 
-// app/billing/page.tsx — Production Ready v2
+// app/billing/page.tsx — Production Ready v3 (shared plan/token data)
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { PLANS } from "@/lib/plans";
+import { TOPUPS } from "@/lib/payment-plans";
+import { HEADLINE_GRADIENT, PRIMARY, BORDER, SOFT_GRAY } from "@/lib/theme-tokens";
+import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 
-const G  = "linear-gradient(135deg, #F5D800 0%, #FFFFFF 100%)";
-const T  = { gold: "#F5D800", green: "#F5D800", border: "rgba(245,197,66,0.12)", muted: "#5B6472", card: "#0B1020" };
-
-const PLANS = [
-  {
-    id: "free", name: "Free", emoji: "○",
-    monthlyUsd: 0, yearlyUsd: 0, monthlyInr: 0, yearlyInr: 0,
-    creditsLabel: "20 Generations / Day", cta: "Current Plan", highlight: false,
-    features: ["Website Generator","App Generator","Live Preview","Download HTML","Community Support"],
-    locked: ["Save Projects","Project History","Advanced AI Model","Team Workspace","API Access","Priority Support"],
-  },
-  {
-    id: "pro", name: "Pro", emoji: "◆",
-    monthlyUsd: 25, yearlyUsd: 20, monthlyInr: 2099, yearlyInr: 1679,
-    creditsLabel: "100 Generations / Month", cta: "Upgrade to Pro", highlight: true, badge: "Most Popular",
-    features: ["Everything in Free","Save Projects","Project History","Faster Generation","Better AI Quality","Export Source Code","Private Projects","Premium Templates","Email Support"],
-    locked: ["Team Workspace","API Access"],
-  },
-  {
-    id: "premium", name: "Premium", emoji: "◇",
-    monthlyUsd: 69, yearlyUsd: 55, monthlyInr: 5799, yearlyInr: 4639,
-    creditsLabel: "300 Generations / Month", cta: "Upgrade to Premium", highlight: false,
-    features: ["Everything in Pro","Fastest AI Model","Unlimited Project Saves","Version History","Team (5 Users)","Screenshot to App","AI Project Manager","Priority Support"],
-    locked: ["API Access"],
-  },
-  {
-    id: "business", name: "Business", emoji: "▣",
-    monthlyUsd: 149, yearlyUsd: 119, monthlyInr: 12499, yearlyInr: 9999,
-    creditsLabel: "Unlimited / Day", cta: "Contact Sales", highlight: false,
-    features: ["Everything in Premium","API Access","Unlimited Team","Admin Dashboard","White Label","Custom AI Training","Business SLA","Dedicated Support"],
-    locked: [],
-  },
-];
-
-const TOPUPS = [
-  { id: "topup_50",  credits: 50,  usd: 15,  inr: 1299 },
-  { id: "topup_100", credits: 100, usd: 30,  inr: 2599 },
-  { id: "topup_200", credits: 200, usd: 60,  inr: 4999 },
-  { id: "topup_500", credits: 500, usd: 150, inr: 11999 },
-];
+const G  = HEADLINE_GRADIENT;
+const T  = { gold: PRIMARY, green: PRIMARY, border: BORDER, muted: SOFT_GRAY, card: "#0B1020" };
 
 type Tab = "plans" | "history" | "invoices";
 
@@ -98,65 +64,29 @@ export default function BillingPage() {
     }
 
     setPaymentLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = "/auth/login"; return; }
+
+    const plan = PLANS.find(p => p.id === planId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { window.location.href = "/auth/login"; return; }
-
-      const res = await fetch("/api/payment/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
-        body: JSON.stringify({ planId, billing, currency, promoCode: promoApplied ? promoCode : "" }),
+      await openRazorpayCheckout({
+        planId, billing, currency,
+        promoCode: promoApplied ? promoCode : "",
+        accessToken: session.access_token,
+        planName: `${plan?.name || planId} Plan — ${billing === "yearly" ? "Yearly" : "Monthly"}`,
+        onSuccess: (result) => {
+          alert(`✅ Payment successful!\n${result.message}\nInvoice: ${result.invoiceNumber}`);
+          setPaymentLoading(false);
+          loadData();
+        },
+        onFailure: (message) => {
+          alert(message);
+          setPaymentLoading(false);
+        },
+        onDismiss: () => setPaymentLoading(false),
       });
-
-      const order = await res.json();
-      if (!res.ok) { alert(order.error || "Payment failed"); return; }
-
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      document.body.appendChild(script);
-      script.onload = () => {
-        const plan = PLANS.find(p => p.id === planId);
-        const rzp = new (window as any).Razorpay({
-          key: order.keyId,
-          amount: order.amount,
-          currency: order.currency || "INR",
-          name: "Krypton AI",
-          description: `${plan?.name} Plan — ${billing === "yearly" ? "Yearly" : "Monthly"}`,
-          image: "/logo.png",
-          order_id: order.orderId,
-          prefill: order.prefill,
-          theme: { color: "#F5F5F5" },
-          method: {
-            card: true, upi: true, netbanking: true,
-            wallet: true, emi: true,
-          },
-          handler: async (response: any) => {
-            const verifyRes = await fetch("/api/payment/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                planId, billing, currency,
-                idempotencyKey: order.idempotencyKey,
-              }),
-            });
-            const result = await verifyRes.json();
-            if (result.success) {
-              alert(`✅ Payment successful!\n${result.message}\nInvoice: ${result.invoiceNumber}`);
-              loadData();
-            } else {
-              alert("❌ Payment verification failed. Contact support.");
-            }
-          },
-          modal: { ondismiss: () => setPaymentLoading(false) },
-        });
-        rzp.open();
-      };
     } catch (err: any) {
       alert("Payment error: " + err.message);
-    } finally {
       setPaymentLoading(false);
     }
   };
