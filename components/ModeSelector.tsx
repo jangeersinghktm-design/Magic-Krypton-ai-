@@ -93,4 +93,3 @@ export default function ModeSelector({ mode, onChange }: { mode: AIMode; onChang
     </div>
   );
 }
-
