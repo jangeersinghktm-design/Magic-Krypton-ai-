@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { kryptonGenerate } from "@/lib/ai-providers";
+import { kryptonGenerate, kryptonGenerateVision } from "@/lib/ai-providers";
 import { rateLimit } from "@/lib/api-security";
 
 export const runtime = "nodejs";
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   const { allowed } = await rateLimit(`chat-assistant:${user.id}`, 20, 60_000);
   if (!allowed) return NextResponse.json({ error: "Too many requests. Slow down." }, { status: 429 });
 
-  const { message, history, mode, fileName, fileContent } = await req.json().catch(() => ({}));
+  const { message, history, mode, fileName, fileContent, attachment } = await req.json().catch(() => ({}));
   if (!message || typeof message !== "string" || !message.trim()) {
     return NextResponse.json({ error: "Message is required." }, { status: 400 });
   }
@@ -84,7 +84,21 @@ export async function POST(req: NextRequest) {
     userPrompt = `${historyBlock}User's request to plan: ${message.trim()}`;
   }
 
+  // ── Real attachment handling — not a fake preview ────────────────
+  // Image: genuine vision call. Text/code/PDF: real extracted content
+  // folded directly into the prompt so the AI actually reads it.
+  const hasImageAttachment = attachment?.type === "image" && typeof attachment?.dataUrl === "string";
+  const hasTextAttachment = attachment && attachment.type !== "image" && typeof attachment?.textContent === "string" && attachment.textContent.trim();
+
+  if (hasTextAttachment) {
+    userPrompt = `Attached file: ${attachment.name}\n\`\`\`\n${attachment.textContent.slice(0, 20000)}\n\`\`\`\n\n${userPrompt}`;
+  }
+
   try {
+    if (hasImageAttachment) {
+      const { text } = await kryptonGenerateVision(systemPrompt, userPrompt, attachment.dataUrl);
+      return NextResponse.json({ reply: text || "I'm not sure how to answer that — could you rephrase?" });
+    }
     const { text } = await kryptonGenerate(systemPrompt, userPrompt);
     return NextResponse.json({ reply: text || "I'm not sure how to answer that — could you rephrase?" });
   } catch (err: any) {
