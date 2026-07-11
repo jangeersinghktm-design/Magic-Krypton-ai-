@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import KryptonLogo from "@/components/branding/KryptonLogo";
 import ModeSelector, { type AIMode } from "@/components/ModeSelector";
+import AttachmentMenu, { type Attachment } from "@/components/AttachmentMenu";
 
 const GRAD = "linear-gradient(135deg,#F5F5F5 0%,#D9D9D9 50%,#BFC5CC 100%)";
 const C = {
@@ -22,7 +23,9 @@ const PLACEHOLDERS = [
   "Create a productivity tool...",
 ];
 
-const BUILD_TYPES = ["Website","Landing Page","App","Dashboard","Tool","E-Commerce","Portfolio"];
+// Build-type dropdown removed (Feature 1) — project-type is auto-detected
+// server-side via detectProjectType(), matching how it already worked for
+// every request that didn't explicitly use this override.
 
 export default function HomePage() {
   const router  = useRouter();
@@ -31,8 +34,7 @@ export default function HomePage() {
   const [user, setUser]       = useState<any>(null);
   const [prompt, setPrompt]   = useState("");
   const [aiMode, setAiMode]   = useState<AIMode>("auto");
-  const [buildType, setBuildType]     = useState("Website");
-  const [showTypeMenu, setShowTypeMenu] = useState(false);
+  const [attachment, setAttachment] = useState<Attachment | null>(null);
   const [placeholder, setPlaceholder] = useState(PLACEHOLDERS[0]);
   const [pidx, setPidx]       = useState(0);
   const [typed, setTyped]     = useState("");
@@ -40,8 +42,7 @@ export default function HomePage() {
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [listening, setListening] = useState(false);
   const [credits, setCredits] = useState({ total:5, used:0 });
-  const silenceRef = useRef<any>(null);
-  const typeMenuRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     (async () => {
@@ -51,15 +52,6 @@ export default function HomePage() {
       fetchProjects(session.user.id);
       fetchCredits(session.user.id);
     })();
-  }, []);
-
-  // Close type menu on outside click
-  useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (typeMenuRef.current && !typeMenuRef.current.contains(e.target as Node)) setShowTypeMenu(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
   }, []);
 
   const fetchProjects = async (uid: string) => {
@@ -74,6 +66,52 @@ export default function HomePage() {
     // Filter client-side to show only projects with content
     setProjects((data || []).filter((p: any) => p.html_code || p.title || p.name));
     setLoadingProjects(false);
+  };
+
+  // ── Real card actions — each performs an actual backend operation ──
+  const handleDeleteProject = async (id: string) => {
+    if (!confirm("Delete this project? This cannot be undone.")) return;
+    const { error } = await supabase.from("projects").delete().eq("id", id);
+    if (error) { alert("Couldn't delete: " + error.message); return; }
+    setProjects(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleDuplicateProject = async (p: any) => {
+    if (!user) return;
+    const { data, error } = await supabase.from("projects").insert({
+      user_id: user.id,
+      title: `${p.title || p.name || "Untitled"} (copy)`,
+      name: `${p.title || p.name || "Untitled"} (copy)`,
+      prompt: p.prompt,
+      html_code: p.html_code,
+      status: "completed",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).select().single();
+    if (error) { alert("Couldn't duplicate: " + error.message); return; }
+    if (data) setProjects(prev => [data, ...prev]);
+  };
+
+  const handleRenameProject = async (p: any) => {
+    const currentName = p.title || p.name || "";
+    const newName = window.prompt("Rename project:", currentName);
+    if (!newName || !newName.trim() || newName === currentName) return;
+    const { error } = await supabase.from("projects").update({ title: newName.trim(), name: newName.trim() }).eq("id", p.id);
+    if (error) { alert("Couldn't rename: " + error.message); return; }
+    setProjects(prev => prev.map(x => x.id === p.id ? { ...x, title: newName.trim(), name: newName.trim() } : x));
+  };
+
+  const handleShareProject = async (p: any) => {
+    // Reuses the existing project_shares table + app/share/[slug] page —
+    // real, working share link, not a placeholder.
+    const slug = `${p.id.slice(0,8)}-${Math.random().toString(36).slice(2,8)}`;
+    const { error } = await supabase.from("project_shares").insert({
+      project_id: p.id, slug, is_public: true, views: 0,
+    });
+    if (error) { alert("Couldn't create share link: " + error.message); return; }
+    const url = `${window.location.origin}/share/${slug}`;
+    try { await navigator.clipboard.writeText(url); alert(`Share link copied:\n${url}`); }
+    catch { alert(`Share link:\n${url}`); }
   };
 
   const fetchCredits = async (uid: string) => {
@@ -94,23 +132,56 @@ export default function HomePage() {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    const fullPrompt = buildType !== "Website" ? `Build a ${buildType}: ${prompt}` : prompt;
-    const typeParam = buildType.toLowerCase().replace(/ /g,"-");
-    window.open(`/create?prompt=${encodeURIComponent(fullPrompt)}&forceType=${encodeURIComponent(typeParam)}&mode=${aiMode}`, "_blank");
+    if (attachment) {
+      try { sessionStorage.setItem("krypton_pending_attachment", JSON.stringify(attachment)); } catch {}
+    }
+    window.open(`/create?prompt=${encodeURIComponent(prompt)}&mode=${aiMode}`, "_blank");
   };
 
   const handleVoice = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    const r = new SR(); r.continuous = true; r.interimResults = true;
+    if (!SR) { alert("Voice input isn't supported in this browser. Try Chrome or Edge."); return; }
+    if (listening) { recognitionRef.current?.stop(); setListening(false); return; }
+    const r = new SR();
+    // Same fix already proven on the Create page: continuous + interim
+    // results for real-time feedback, en-IN locale (handles Hindi-English
+    // code-switching far better than the previous unset/en-US default),
+    // resultIndex-based incremental processing (previous version re-read
+    // the ENTIRE results array every callback, causing duplicated/garbled
+    // text as more speech came in).
+    r.continuous = true;
+    r.interimResults = true;
+    r.maxAlternatives = 3;
+    r.lang = "en-IN";
+    let finalTranscript = "";
+    let silenceTimer: any = null;
+
     r.onstart = () => setListening(true);
     r.onresult = (e: any) => {
-      const t = Array.from(e.results).map((r: any) => r[0].transcript).join("");
-      setPrompt(t);
-      clearTimeout(silenceRef.current);
-      silenceRef.current = setTimeout(() => r.stop(), 4000);
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          let clean = transcript.trim();
+          if (clean) clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+          finalTranscript += (finalTranscript ? " " : "") + clean;
+        } else {
+          interim = transcript;
+        }
+      }
+      const combined = (finalTranscript + (interim ? " " + interim : "")).trim();
+      if (combined) setPrompt(combined);
+
+      if (silenceTimer) clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => { r.stop(); }, 2500);
     };
-    r.onend = () => setListening(false);
+    r.onerror = (e: any) => {
+      setListening(false);
+      if (e.error === "no-speech") return;
+      alert("Voice recognition error. Please try again.");
+    };
+    r.onend = () => { setListening(false); if (silenceTimer) clearTimeout(silenceTimer); };
+    recognitionRef.current = r;
     r.start();
   };
 
@@ -140,7 +211,6 @@ export default function HomePage() {
 
       {/* Top bar */}
       <div style={{ padding:"10px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10, background:"rgba(5,5,5,.85)", backdropFilter:"blur(12px)", position:"sticky", top:0, zIndex:10 }}>
-        <span style={{ fontSize:12, color:C.muted }}>Home</span>
         <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
           <div style={{ padding:"4px 12px", borderRadius:20, background:"rgba(255,215,0,.08)", border:`1px solid ${C.border}`, fontSize:11, color:C.gold, fontWeight:600 }}>
             ⚡ {remaining} credits
@@ -179,7 +249,18 @@ export default function HomePage() {
           </div>
 
           {/* ── Prompt Box ── */}
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:18, padding:"16px 18px", boxShadow:"0 0 48px rgba(245,245,245,.04)", marginBottom:64, animation:"fadeUp .5s .1s ease both" }}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:18, padding:"16px 18px", boxShadow:"0 0 48px rgba(245,245,245,.04)", marginBottom:96, animation:"fadeUp .5s .1s ease both" }}>
+            {attachment && (
+              <div style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.04)", border:`1px solid ${C.border}`, borderRadius:10, padding:"6px 10px", marginBottom:10 }}>
+                {attachment.previewUrl ? (
+                  <img src={attachment.previewUrl} alt="" style={{ width:28, height:28, borderRadius:6, objectFit:"cover" }}/>
+                ) : (
+                  <span style={{ fontSize:16 }}>{attachment.type==="pdf"?"📄":attachment.type==="code"?"💻":"📎"}</span>
+                )}
+                <span style={{ fontSize:12, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{attachment.name}</span>
+                <button onClick={()=>setAttachment(null)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:14, padding:"2px 6px" }}>✕</button>
+              </div>
+            )}
             <textarea
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
@@ -189,25 +270,8 @@ export default function HomePage() {
               style={{ width:"100%", background:"none", border:"none", color:C.text, fontSize:15, resize:"none", outline:"none", fontFamily:"'DM Sans',sans-serif", lineHeight:1.65, caretColor:C.gold }}
             />
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>
-              {/* Build type selector */}
-              <div ref={typeMenuRef} style={{ position:"relative" }}>
-                <button onClick={() => setShowTypeMenu(v => !v)}
-                  style={{ padding:"6px 14px", background:"#1a1a1a", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-                  {buildType} <span style={{ fontSize:9, opacity:.6 }}>▾</span>
-                </button>
-                {showTypeMenu && (
-                  <div style={{ position:"absolute", bottom:44, left:0, background:"#111", border:`1px solid ${C.border}`, borderRadius:12, padding:6, zIndex:50, minWidth:140, boxShadow:"0 16px 40px rgba(0,0,0,.8)" }}>
-                    {BUILD_TYPES.map(t => (
-                      <button key={t} onClick={() => { setBuildType(t); setShowTypeMenu(false); }}
-                        style={{ width:"100%", textAlign:"left", padding:"8px 12px", background:"none", border:"none", color:t===buildType?C.gold:C.muted, fontSize:13, cursor:"pointer", borderRadius:8, fontWeight:t===buildType?600:400 }}
-                        onMouseEnter={e => { e.currentTarget.style.background="#1e1e1e"; e.currentTarget.style.color=C.text; }}
-                        onMouseLeave={e => { e.currentTarget.style.background="none"; e.currentTarget.style.color=t===buildType?C.gold:C.muted; }}>
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Attachment button (replaces the old Website type dropdown) */}
+              <AttachmentMenu onAttach={setAttachment}/>
 
               <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                 <ModeSelector mode={aiMode} onChange={setAiMode}/>
@@ -255,7 +319,7 @@ export default function HomePage() {
             )}
 
             {!loadingProjects && projects.length > 0 && (
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:12 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:10 }}>
                 {projects.map(p => {
                   const name = p.title || p.name || p.prompt?.slice(0,40) || "Untitled Project";
                   const date = new Date(p.updated_at || p.created_at);
@@ -321,11 +385,11 @@ export default function HomePage() {
                         )}
                       </div>
                       {/* Info */}
-                      <div style={{padding:"12px 14px", flex:1}}>
-                        <div style={{fontWeight:600, fontSize:13, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{name}</div>
-                        <div style={{fontSize:11, color:C.muted}}>{timeAgo}</div>
+                      <div style={{padding:"10px 12px", flex:1}}>
+                        <div style={{fontWeight:600, fontSize:12.5, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{name}</div>
+                        <div style={{fontSize:10.5, color:C.muted}}>{timeAgo}</div>
                       </div>
-                      {/* Actions */}
+                      {/* Primary actions */}
                       <div style={{display:"flex", borderTop:`1px solid ${C.border}`}}>
                         <button onClick={(e)=>{
                           e.stopPropagation();
@@ -333,19 +397,49 @@ export default function HomePage() {
                           const win = window.open("", "_blank");
                           if (win) { win.document.write(p.html_code); win.document.close(); }
                         }}
-                          style={{flex:1, padding:"8px 0", background:"none", border:"none", color:C.gold,
-                            fontSize:12, fontWeight:600, cursor:"pointer", transition:"background 0.15s"}}
+                          style={{flex:1, padding:"7px 0", background:"none", border:"none", color:C.gold,
+                            fontSize:11.5, fontWeight:600, cursor:"pointer", transition:"background 0.15s"}}
                            onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,215,0,0.06)")}
                           onMouseLeave={e=>(e.currentTarget.style.background="none")}>
                           Open ↗
                         </button>
                         <div style={{width:1, background:C.border}}/>
                         <button onClick={(e)=>{e.stopPropagation();router.push(`/create?id=${p.id}`);}}
-                          style={{flex:1, padding:"8px 0", background:"none", border:"none", color:C.muted,
-                            fontSize:12, cursor:"pointer", transition:"background 0.15s"}}
+                          style={{flex:1, padding:"7px 0", background:"none", border:"none", color:C.muted,
+                            fontSize:11.5, cursor:"pointer", transition:"background 0.15s"}}
                           onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
                           onMouseLeave={e=>(e.currentTarget.style.background="none")}>
                           Edit ✏️
+                        </button>
+                      </div>
+                      {/* Secondary actions — each performs a real backend operation */}
+                      <div style={{display:"flex", borderTop:`1px solid ${C.border}`}}>
+                        <button onClick={(e)=>{e.stopPropagation();handleDuplicateProject(p);}} title="Duplicate"
+                          style={{flex:1, padding:"6px 0", background:"none", border:"none", color:C.muted, fontSize:12, cursor:"pointer"}}
+                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
+                          onMouseLeave={e=>(e.currentTarget.style.background="none")}>
+                          ⧉
+                        </button>
+                        <div style={{width:1, background:C.border}}/>
+                        <button onClick={(e)=>{e.stopPropagation();handleRenameProject(p);}} title="Rename"
+                          style={{flex:1, padding:"6px 0", background:"none", border:"none", color:C.muted, fontSize:12, cursor:"pointer"}}
+                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
+                          onMouseLeave={e=>(e.currentTarget.style.background="none")}>
+                          ✎
+                        </button>
+                        <div style={{width:1, background:C.border}}/>
+                        <button onClick={(e)=>{e.stopPropagation();handleShareProject(p);}} title="Share"
+                          style={{flex:1, padding:"6px 0", background:"none", border:"none", color:C.muted, fontSize:12, cursor:"pointer"}}
+                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
+                          onMouseLeave={e=>(e.currentTarget.style.background="none")}>
+                          ⤴
+                        </button>
+                        <div style={{width:1, background:C.border}}/>
+                        <button onClick={(e)=>{e.stopPropagation();handleDeleteProject(p.id);}} title="Delete"
+                          style={{flex:1, padding:"6px 0", background:"none", border:"none", color:"#E5736B", fontSize:12, cursor:"pointer"}}
+                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(229,115,107,0.08)")}
+                          onMouseLeave={e=>(e.currentTarget.style.background="none")}>
+                          🗑
                         </button>
                       </div>
                     </div>
