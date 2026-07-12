@@ -32,6 +32,10 @@ const PLANNING_SYSTEM_PROMPT = `You are Krypton AI's in-app assistant, in PLANNI
 Never generate HTML/CSS/JS or any code artifact. Instead produce a structured plan covering whichever of these are relevant to their request:
 - Feature list / roadmap
 - User flow (step by step)
+- Recommended technology/stack (be specific, with a brief reason for each choice)
+- Recommended UI/design approach (layout style, key patterns, not actual code)
+- Recommended pages (list them, one line on the purpose of each)
+- Recommended components (reusable pieces implied by the pages above)
 - Database / data structure (entities and key fields, described conceptually)
 - Architecture overview (frontend/backend/services at a conceptual level)
 - API endpoints needed (method + purpose, no implementation)
