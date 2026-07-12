@@ -1878,7 +1878,8 @@ function CreatePageInner() {
             {rightTab==="preview"&&(
               <div className="kr-preview-bg" style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"flex-start",justifyContent:"center",overflow:"auto",background:device==="desktop"?"#050816":device==="tablet"?"#0B1020":"#050816",padding:device==="desktop"?"0":device==="tablet"?"32px auto":"40px auto"}}>
                 {result
-                  ? <iframe sandbox="allow-scripts allow-forms allow-popups allow-modals" key={`${result.length}-${device}-${activePage}`} {...(pageBlobs["index.html"] ? {src:pageBlobs[activePage]||pageBlobs["index.html"]} : {srcDoc:result})} style={{
+                  ? <iframe 
+                      key={`${result.length}-${device}-${activePage}`} {...(pageBlobs["index.html"] ? {src:pageBlobs[activePage]||pageBlobs["index.html"]} : {srcDoc:result})} style={{
                       border:"none",
                       width:device==="desktop"?"100%":device==="tablet"?"min(768px,100%)":"min(390px,100%)",
                       height:device==="desktop"?"100%":"auto",
