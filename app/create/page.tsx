@@ -1545,7 +1545,7 @@ function CreatePageInner() {
             </button>
           </div>
           <div className="kr-preview-bg" style={{flex:1,display:"flex",alignItems:device==="desktop"?"stretch":"center",justifyContent:"center",background:"#050816",overflow:"auto"}}>
-            <iframe sandbox="allow-scripts allow-forms allow-popups allow-modals" {...(pageBlobs["index.html"] ? {src:pageBlobs[activePage]||pageBlobs["index.html"]} : {srcDoc:result})}
+            <iframe {...(pageBlobs["index.html"] ? {src:pageBlobs[activePage]||pageBlobs["index.html"]} : {srcDoc:result})}
               style={{border:"none",width:device==="desktop"?"100%":device==="tablet"?"min(768px,92vw)":"min(390px,88vw)",height:device==="desktop"?"100%":"min(100%,84vh)",minHeight:device==="desktop"?"100%":undefined,background:"#fff",
                 boxShadow:device!=="desktop"?"0 0 0 10px #11151F,0 20px 60px rgba(0,0,0,0.8)":"none",
                 borderRadius:device==="mobile"?"36px":device==="tablet"?"16px":"0",flexShrink:0,margin:device!=="desktop"?"16px 0":0}}
