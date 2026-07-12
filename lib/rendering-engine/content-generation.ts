@@ -8,7 +8,7 @@ import type { NicheProfile } from "./types";
 import type { DomainBlueprint } from "./domain-knowledge";
 import { getSectionVariants } from "./domain-knowledge";
 import { kryptonGenerate } from "@/lib/ai-providers";
-import { renderComponent, listVariants, buildComponentContext } from "@/lib/component-library";
+import { renderComponent, listVariants, buildComponentContext, type ComponentCategory } from "@/lib/component-library";
 import { pickComponentVariant } from "@/lib/design-engine";
 
 export function buildGenericComponentContent(niche: NicheProfile): Record<string, any> {
@@ -194,4 +194,3 @@ export function assembleFromComponentLibrary(
 
   return html;
 }
-
