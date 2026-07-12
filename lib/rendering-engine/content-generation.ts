@@ -5,7 +5,7 @@
 // exactly one HTML-rendering pipeline in the repository.
 
 import type { NicheProfile } from "./types";
-import type { DomainBlueprint } from "./domain-knowledge";
+import type { DomainBlueprint, DomainKnowledge } from "./domain-knowledge";
 import { getSectionVariants } from "./domain-knowledge";
 import { kryptonGenerate } from "@/lib/ai-providers";
 import { renderComponent, listVariants, buildComponentContext, type ComponentCategory } from "@/lib/component-library";
@@ -194,3 +194,4 @@ export function assembleFromComponentLibrary(
 
   return html;
 }
+  
