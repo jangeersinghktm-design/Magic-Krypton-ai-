@@ -13,10 +13,12 @@ import { createClient } from "@supabase/supabase-js";
 import {
   renderComponent,
   getDefaultVariant,
+  listVariants,
   buildComponentContext,
   buildRootTokens,
   type ComponentCategory,
 } from "@/lib/component-library";
+import { generationSeedFromId, pickVariantFromSeed } from "@/lib/design-engine";
 
 export const runtime    = "nodejs";
 export const maxDuration = 300;
@@ -219,29 +221,21 @@ function assemblePage(
   pageJSON:   PageJSON | undefined,
   copy:       AllPagesJSON,
   brand:      ReturnType<typeof extractBrand>,
-  filename:   string
+  filename:   string,
+  sharedNavHtml: string,
+  sharedFooterHtml: string,
+  seed: number
 ): string {
   const niche   = makeNiche(brand);
   const ctx     = buildComponentContext(brand.primaryColor);
   const tokens  = buildRootTokens(niche);
-  const tone    = "default";
   const comps   = PAGE_STRUCTURE[pageName] || ["hero", "cta", "footer"];
 
-  // Shared nav
-  const navHTML = renderComponent("navbar", getDefaultVariant("navbar", tone), ctx, {
-    logoText: copy.nav.logoText,
-    links:    copy.nav.links,
-    cta:      copy.nav.cta,
-  });
-
-  // Shared footer
-  const footerHTML = renderComponent("footer", getDefaultVariant("footer", tone), ctx, {
-    logoText:      copy.footer.logoText,
-    tagline:       copy.footer.tagline,
-    columns:       copy.footer.columns,
-    socialLinks:   [],
-    copyrightName: copy.footer.copyrightName,
-  });
+  // Shared nav/footer — reused VERBATIM from index.html's actual generated
+  // HTML (passed in), never re-rendered with a hardcoded tone. Guarantees
+  // every page matches whatever variant orchestrate's own randomization picked.
+  const navHTML = sharedNavHtml;
+  const footerHTML = sharedFooterHtml;
 
   // Page sections — each from component library
   let bodyHTML = navHTML;
@@ -252,10 +246,13 @@ function assemblePage(
     const content = pageJSON?.[comp as keyof PageJSON];
     if (!content) continue;
 
-    // All HTML from renderComponent — never from AI
+    // All HTML from renderComponent — never from AI. Variant is seeded
+    // per-project (not a hardcoded "default"), so subpage-only sections
+    // (that don't exist on index.html to extract a reference from) still
+    // get real variety instead of always the same layout.
     bodyHTML += renderComponent(
       comp,
-      getDefaultVariant(comp, tone),
+      pickVariantFromSeed(listVariants(comp), comp, seed),
       ctx,
       content
     );
@@ -383,17 +380,33 @@ export async function POST(req: NextRequest) {
   }
 
   // ── STEP 3: Assemble pages from component library — 0 AI calls ──
-  // Sync index.html's navbar to the same shared nav used on every other
-  // page, so cross-page links (about.html, pricing.html, ...) work from
-  // the home page too — not just from the generated subpages.
+  // Real per-project seed (from homeHtml + prompt — deterministic, not
+  // Math.random()) drives variant selection for any component that has
+  // no ground-truth to extract from (i.e. sections that only exist on
+  // subpages, not on index.html).
+  const designSeed = generationSeedFromId(homeHtml.slice(0, 500) + prompt);
+
+  // Preserve index.html's ACTUAL navbar/footer — whatever variant
+  // orchestrate's own randomization picked — instead of overwriting it
+  // with a hardcoded "default". This guarantees Preview/Deploy show
+  // exactly the generated variant, unmutated, across every page.
   const niche0 = makeNiche(brand);
   const ctx0   = buildComponentContext(brand.primaryColor);
-  const sharedNavHtml = renderComponent("navbar", getDefaultVariant("navbar", "default"), ctx0, {
-    logoText: copy.nav.logoText,
-    links:    copy.nav.links,
-    cta:      copy.nav.cta,
-  });
-  const existingNavMatch = homeHtml.match(/<nav[^>]*>[\s\S]*?<\/nav>/i);
+  const existingNavMatch    = homeHtml.match(/<nav[^>]*>[\s\S]*?<\/nav>/i);
+  const existingFooterMatch = homeHtml.match(/<footer[^>]*>[\s\S]*?<\/footer>/i);
+
+  const sharedNavHtml = existingNavMatch
+    ? existingNavMatch[0]
+    : renderComponent("navbar", pickVariantFromSeed(listVariants("navbar"), "navbar", designSeed), ctx0, {
+        logoText: copy.nav.logoText, links: copy.nav.links, cta: copy.nav.cta,
+      });
+  const sharedFooterHtml = existingFooterMatch
+    ? existingFooterMatch[0]
+    : renderComponent("footer", pickVariantFromSeed(listVariants("footer"), "footer", designSeed), ctx0, {
+        logoText: copy.footer.logoText, tagline: copy.footer.tagline, columns: copy.footer.columns,
+        socialLinks: [], copyrightName: copy.footer.copyrightName,
+      });
+
   const syncedHomeHtml = existingNavMatch
     ? homeHtml.replace(existingNavMatch[0], sharedNavHtml)
     : homeHtml.replace(/<body[^>]*>/i, (m: string) => `${m}\n${sharedNavHtml}`);
@@ -405,7 +418,7 @@ export async function POST(req: NextRequest) {
     const pageJSON = (copy as any)[page] as PageJSON;
     zipFiles.push({
       name:    `${page}.html`,
-      content: assemblePage(page, pageJSON, copy, brand, `${page}.html`),
+      content: assemblePage(page, pageJSON, copy, brand, `${page}.html`, sharedNavHtml, sharedFooterHtml, designSeed),
     });
   }
 
