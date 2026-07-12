@@ -114,11 +114,108 @@ export function heroMinimalStatement(ctx: ComponentContext, c: HeroContent): str
 }
 
 
+// ── Variant 5: Image Right — mirror of split-image, image left / text right
+// (different visual reading-order and weight — genuinely distinct layout) ──
+export function heroImageRight(ctx: ComponentContext, c: HeroContent): string {
+  const inner = `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:${SPACING.xxl};align-items:center;" class="hero-grid-r">
+    <div style="position:relative;order:1;">
+      <img src="${c.imageUrl || ""}" alt="${c.headline}" loading="lazy" style="width:100%;height:auto;border-radius:${RADIUS.lg};box-shadow:0 30px 80px rgba(0,0,0,0.4);display:block;">
+    </div>
+    <div style="order:2;">
+      ${c.badge ? renderBadge(c.badge) : ""}
+      <h1 style="font-family:var(--heading-font);font-weight:var(--heading-weight);letter-spacing:var(--heading-spacing);font-size:clamp(32px,5vw,58px);line-height:1.1;color:var(--text);margin-bottom:${SPACING.sm};">${c.headline}</h1>
+      <p style="font-size:18px;color:var(--text-2);line-height:1.7;max-width:480px;margin-bottom:${SPACING.md};">${c.subheadline}</p>
+      ${renderBenefitList(c.benefits || [], ctx)}
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        ${renderButton(c.ctaPrimary, "primary", ctx)}
+        ${c.ctaSecondary ? renderButton(c.ctaSecondary, "secondary", ctx) : ""}
+      </div>
+    </div>
+  </div>
+  <style>@media(max-width:768px){.hero-grid-r{grid-template-columns:1fr !important;} .hero-grid-r>div{order:initial !important;}}</style>`;
+  return wrapSection("hero", inner, { extraStyle: "padding-top:120px;" });
+}
+
+// ── Variant 6: Full Background — full-bleed image/gradient with overlay text,
+// centered content over a dramatic backdrop (editorial/luxury/travel feel) ──
+export function heroFullBackground(ctx: ComponentContext, c: HeroContent): string {
+  const inner = `
+  <div style="position:relative;z-index:2;text-align:center;max-width:760px;margin:0 auto;">
+    ${c.badge ? `<div style="display:flex;justify-content:center;">${renderBadge(c.badge)}</div>` : ""}
+    <h1 style="font-family:var(--heading-font);font-weight:var(--heading-weight);letter-spacing:var(--heading-spacing);font-size:clamp(36px,7vw,72px);line-height:1.05;color:#fff;margin-bottom:${SPACING.sm};text-shadow:0 4px 24px rgba(0,0,0,0.4);">${c.headline}</h1>
+    <p style="font-size:19px;color:rgba(255,255,255,0.85);line-height:1.7;max-width:560px;margin:0 auto ${SPACING.md};text-shadow:0 2px 12px rgba(0,0,0,0.3);">${c.subheadline}</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+      ${renderButton(c.ctaPrimary, "primary", ctx)}
+      ${c.ctaSecondary ? renderButton(c.ctaSecondary, "secondary", ctx) : ""}
+    </div>
+  </div>
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.35) 0%,rgba(0,0,0,0.55) 100%);z-index:1;"></div>`;
+  return wrapSection("hero", inner, {
+    extraStyle: `position:relative;min-height:92vh;display:flex;align-items:center;justify-content:center;background:${c.imageUrl ? `url('${c.imageUrl}') center/cover no-repeat` : "var(--bg)"};overflow:hidden;`,
+  });
+}
+
+// ── Variant 7: Floating Cards — centered headline with floating stat/feature
+// cards overlapping the hero image (modern SaaS/product feel) ──
+export function heroFloatingCards(ctx: ComponentContext, c: HeroContent): string {
+  const cards = (c.benefits || []).slice(0, 3);
+  const inner = `
+  <div style="text-align:center;max-width:720px;margin:0 auto ${SPACING.lg};">
+    ${c.badge ? `<div style="display:flex;justify-content:center;">${renderBadge(c.badge)}</div>` : ""}
+    <h1 style="font-family:var(--heading-font);font-weight:var(--heading-weight);letter-spacing:var(--heading-spacing);font-size:clamp(32px,6vw,60px);line-height:1.08;color:var(--text);margin-bottom:${SPACING.sm};">${c.headline}</h1>
+    <p style="font-size:18px;color:var(--text-2);line-height:1.7;max-width:520px;margin:0 auto ${SPACING.md};">${c.subheadline}</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+      ${renderButton(c.ctaPrimary, "primary", ctx)}
+      ${c.ctaSecondary ? renderButton(c.ctaSecondary, "secondary", ctx) : ""}
+    </div>
+  </div>
+  <div style="position:relative;max-width:960px;margin:0 auto;">
+    <img src="${c.imageUrl || ""}" alt="${c.headline}" loading="lazy" style="width:100%;height:auto;border-radius:${RADIUS.lg};box-shadow:0 40px 100px rgba(0,0,0,0.5);display:block;">
+    ${cards.length ? `<div style="position:absolute;left:50%;bottom:-32px;transform:translateX(-50%);display:flex;gap:16px;flex-wrap:wrap;justify-content:center;width:90%;">
+      ${cards.map(b => `<div style="background:var(--card);border:1px solid var(--border);border-radius:${RADIUS.md};padding:14px 22px;box-shadow:0 12px 32px rgba(0,0,0,0.3);font-size:13px;font-weight:600;color:var(--text);">✓ ${b.text}</div>`).join("")}
+    </div>` : ""}
+  </div>`;
+  return wrapSection("hero", inner, { extraStyle: "padding-top:120px;padding-bottom:80px;" });
+}
+
+// ── Variant 8: Bento Hero — grid-based bento-box layout, headline + multiple
+// image/stat tiles in an asymmetric grid (trendy modern SaaS aesthetic) ──
+export function heroBento(ctx: ComponentContext, c: HeroContent): string {
+  const stats = (c.benefits || []).slice(0, 2);
+  const inner = `
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:${SPACING.md};align-items:stretch;" class="bento-grid">
+    <div style="display:flex;flex-direction:column;justify-content:center;">
+      ${c.badge ? renderBadge(c.badge) : ""}
+      <h1 style="font-family:var(--heading-font);font-weight:var(--heading-weight);letter-spacing:var(--heading-spacing);font-size:clamp(30px,5vw,54px);line-height:1.1;color:var(--text);margin-bottom:${SPACING.sm};">${c.headline}</h1>
+      <p style="font-size:17px;color:var(--text-2);line-height:1.7;margin-bottom:${SPACING.md};">${c.subheadline}</p>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        ${renderButton(c.ctaPrimary, "primary", ctx)}
+        ${c.ctaSecondary ? renderButton(c.ctaSecondary, "secondary", ctx) : ""}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-rows:1fr 1fr;gap:${SPACING.sm};">
+      <div style="border-radius:${RADIUS.lg};overflow:hidden;background:var(--card);border:1px solid var(--border);">
+        <img src="${c.imageUrl || ""}" alt="${c.headline}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;min-height:140px;">
+      </div>
+      <div style="display:grid;grid-template-columns:${stats.length>1?"1fr 1fr":"1fr"};gap:${SPACING.sm};">
+        ${stats.map(b => `<div style="background:var(--card);border:1px solid var(--border);border-radius:${RADIUS.md};padding:20px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;font-weight:600;color:var(--text);">${b.text}</div>`).join("") || `<div style="background:var(--card);border:1px solid var(--border);border-radius:${RADIUS.md};"></div>`}
+      </div>
+    </div>
+  </div>
+  <style>@media(max-width:768px){.bento-grid{grid-template-columns:1fr !important;}}</style>`;
+  return wrapSection("hero", inner, { extraStyle: "padding-top:120px;" });
+}
+
 export const HERO_VARIANTS = {
   "split-image":        heroSplitImage,
   "centered":            heroCentered,
   "product-showcase":   heroProductShowcase,
   "minimal-statement":  heroMinimalStatement,
+  "image-right":         heroImageRight,
+  "full-background":    heroFullBackground,
+  "floating-cards":      heroFloatingCards,
+  "bento-hero":          heroBento,
 } as const;
 
 export type HeroVariant = keyof typeof HERO_VARIANTS;
