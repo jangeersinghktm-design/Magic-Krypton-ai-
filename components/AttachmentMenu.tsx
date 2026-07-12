@@ -22,6 +22,26 @@ export interface Attachment {
 
 const CODE_EXTENSIONS = ["js","jsx","ts","tsx","py","java","c","cpp","cs","go","rb","php","html","css","json","yaml","yml","sql","sh","md"];
 
+// Genuinely unsafe file types — never accepted, regardless of size.
+// These can't be used by the AI (not readable as text/image) and pose a
+// real risk if ever executed or piped somewhere downstream.
+const BLOCKED_EXTENSIONS = ["exe","dll","bat","cmd","msi","app","com","scr","vbs","ps1","jar","apk","dmg","pkg","deb","rpm"];
+
+// Real size caps per type — prevents oversized uploads from blowing up
+// browser memory (base64 data URLs) or the PDF-extraction API payload.
+const MAX_SIZE_BYTES: Record<string, number> = {
+  image: 8  * 1024 * 1024,  // 8MB  — plenty for any real photo/screenshot
+  pdf:   15 * 1024 * 1024,  // 15MB — covers most real-world PDFs
+  text:  2  * 1024 * 1024,  // 2MB  — a 2MB text file is already ~40,000 lines
+  code:  2  * 1024 * 1024,
+  other: 5  * 1024 * 1024,
+};
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
 function classifyFile(file: File): Attachment["type"] {
   if (file.type.startsWith("image/")) return "image";
   if (file.type === "application/pdf") return "pdf";
@@ -74,9 +94,26 @@ export default function AttachmentMenu({ onAttach }: { onAttach: (a: Attachment)
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0]; // one attachment at a time — keeps context focused and cost predictable
-    setUploading(true);
-    const type = classifyFile(file);
     const id = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+    const type = classifyFile(file);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+
+    // ── Reject unsafe file types outright — never processed, never sent anywhere ──
+    if (BLOCKED_EXTENSIONS.includes(ext)) {
+      onAttach({ id, name: file.name, type: "other", mimeType: file.type, size: file.size, textContent: `[Blocked: ".${ext}" files aren't supported for security reasons]` });
+      setOpen(false);
+      return;
+    }
+
+    // ── Reject oversized files before reading/uploading them ──
+    const maxSize = MAX_SIZE_BYTES[type] ?? MAX_SIZE_BYTES.other;
+    if (file.size > maxSize) {
+      onAttach({ id, name: file.name, type, mimeType: file.type, size: file.size, textContent: `[File too large: ${formatSize(file.size)} — max ${formatSize(maxSize)} for this file type]` });
+      setOpen(false);
+      return;
+    }
+
+    setUploading(true);
 
     try {
       if (type === "image") {
@@ -120,6 +157,7 @@ export default function AttachmentMenu({ onAttach }: { onAttach: (a: Attachment)
         onClick={() => setOpen(o => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label="Attach a file"
         title="Attach a file"
         disabled={uploading}
         style={{
@@ -153,7 +191,7 @@ export default function AttachmentMenu({ onAttach }: { onAttach: (a: Attachment)
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px 8px" }}>
-                <button onClick={() => setShowPlugins(false)} style={{ background: "none", border: "none", color: "#8892A0", cursor: "pointer", fontSize: 13, padding: 0 }}>←</button>
+                <button onClick={() => setShowPlugins(false)} aria-label="Back to attachment menu" style={{ background: "none", border: "none", color: "#8892A0", cursor: "pointer", fontSize: 13, padding: 0 }}>←</button>
                 <span style={{ fontSize: 11, color: "#8892A0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Plugins</span>
               </div>
               {PLUGINS.map(p => (
@@ -194,4 +232,4 @@ function MenuItem({ icon, label, onClick }: { icon: string; label: string; onCli
     </button>
   );
 }
-
+              
