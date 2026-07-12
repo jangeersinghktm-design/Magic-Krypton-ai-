@@ -73,19 +73,24 @@ export async function POST(req: NextRequest) {
     : "";
   const historyBlock = historyText ? `Recent conversation:\n${historyText}\n\n` : "";
 
+  // ── Prompt-injection guard — same pattern as /api/chat: wrap the user's
+  // own current message in clear delimiters so it reads as data, not new
+  // instructions, even if it contains override attempts.
+  const wrapUserMsg = (t: string) => `<user_message>${t.replace(/<\/?user_message>/gi, "")}</user_message>`;
+
   let systemPrompt = SYSTEM_PROMPT;
-  let userPrompt = `${historyBlock}User's new message: ${message.trim()}`;
+  let userPrompt = `${historyBlock}User's new message: ${wrapUserMsg(message.trim())}`;
 
   if (isExplain && hasFileContent) {
     systemPrompt = EXPLAIN_SYSTEM_PROMPT;
-    userPrompt = `File: ${fileName || "index.html"}\n\`\`\`\n${fileContent}\n\`\`\`\n\n${historyBlock}User's question: ${message.trim()}`;
+    userPrompt = `File: ${fileName || "index.html"}\n\`\`\`\n${fileContent}\n\`\`\`\n\n${historyBlock}User's question: ${wrapUserMsg(message.trim())}`;
   } else if (isExplain && !hasFileContent) {
     // No project exists yet — explain the idea, not code that doesn't exist.
     systemPrompt = EXPLAIN_NO_PROJECT_PROMPT;
-    userPrompt = `${historyBlock}User's idea/question: ${message.trim()}`;
+    userPrompt = `${historyBlock}User's idea/question: ${wrapUserMsg(message.trim())}`;
   } else if (isPlanning) {
     systemPrompt = PLANNING_SYSTEM_PROMPT;
-    userPrompt = `${historyBlock}User's request to plan: ${message.trim()}`;
+    userPrompt = `${historyBlock}User's request to plan: ${wrapUserMsg(message.trim())}`;
   }
 
   // ── Real attachment handling — not a fake preview ────────────────
