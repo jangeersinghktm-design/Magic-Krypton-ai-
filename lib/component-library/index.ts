@@ -176,10 +176,10 @@ export function listVariants(category: ComponentCategory): string[] {
 }
 
 export const COMPONENT_LIBRARY_STATS = {
-  totalComponents: 46,
+  totalComponents: 50,
   categories: 11,
   breakdown: {
-    hero: 4, navbar: 4, features: 4, cta: 4, footer: 4, pricing: 5, dashboard: 5,
+    hero: 8, navbar: 4, features: 4, cta: 4, footer: 4, pricing: 5, dashboard: 5,
     testimonials: 4, faq: 4, portfolio: 4, ecommerce: 4,
   },
 };
