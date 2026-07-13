@@ -397,11 +397,12 @@ export function applyAutoRepairs(html: string, advancedIssues: string[]): string
     fixed = fixed.replace(/<\/body>/i, `${footer}</body>`);
   }
 
-  // Fix: missing CTA → inject a visible CTA button right after <body> opens
-  // (best-effort placement; AI repair pass can reposition it more precisely later)
+  // Fix: missing CTA → inject a proper CTA banner near the end of the page
+  // (before </body>, same correct pattern as the footer fix above — never
+  // before the navbar, which was the root cause of a random top button bug).
   if (advancedIssues.includes("Missing call-to-action button")) {
-    const cta = `<div style="text-align:center;padding:16px;"><a href="#contact" class="btn" style="display:inline-block;padding:14px 32px;border-radius:10px;background:#6366F1;color:#fff;font-weight:700;text-decoration:none;">Get Started</a></div>`;
-    fixed = fixed.replace(/(<body[^>]*>)/i, `$1${cta}`);
+    const cta = `<div style="text-align:center;padding:64px 24px;"><a href="#contact" class="btn" style="display:inline-block;padding:16px 40px;border-radius:10px;background:#6366F1;color:#fff;font-weight:700;text-decoration:none;font-size:16px;">Get Started</a></div>`;
+    fixed = fixed.replace(/<\/body>/i, `${cta}</body>`);
   }
 
   // Fix: missing responsive breakpoint → append a safe generic mobile breakpoint
