@@ -73,6 +73,53 @@ function structureScore(buildIssues: string[]): number {
   return Math.max(0, 100 - buildIssues.length * 25);
 }
 
+// ── Accessibility — deterministic, marker-based (never AI-guessed) ─────
+function accessibilityScore(html: string): number {
+  let score = 100;
+  const imgTags = html.match(/<img\b[^>]*>/gi) || [];
+  const imgsWithoutAlt = imgTags.filter(t => !/\balt\s*=\s*["'][^"']*["']/.test(t));
+  if (imgTags.length > 0) score -= Math.min(30, (imgsWithoutAlt.length / imgTags.length) * 30);
+
+  // Icon-only interactive elements (button/a with no text content, just an
+  // emoji/icon) should have an accessible name via aria-label or title.
+  const iconOnlyEls = html.match(/<(button|a)\b[^>]*>(\s*[^\w\s<]{1,4}\s*)<\/\1>/gi) || [];
+  const iconOnlyMissingLabel = iconOnlyEls.filter(t => !/aria-label\s*=|title\s*=/.test(t));
+  if (iconOnlyEls.length > 0) score -= Math.min(20, (iconOnlyMissingLabel.length / iconOnlyEls.length) * 20);
+
+  if (!/<html[^>]*\blang\s*=/i.test(html)) score -= 10;
+
+  const inputsWithoutLabel = (html.match(/<input\b(?![^>]*type\s*=\s*["'](hidden|submit|button)["'])[^>]*>/gi) || [])
+    .filter(t => !/aria-label\s*=|id\s*=/.test(t)); // has id → could be matched by a <label for=...>, best-effort
+  if (inputsWithoutLabel.length > 0) score -= 10;
+
+  return Math.max(0, Math.round(score));
+}
+
+// ── SEO — deterministic, marker-based ───────────────────────────────────
+function seoScore(html: string): number {
+  let score = 100;
+  if (!/<title>[^<]{3,}<\/title>/i.test(html)) score -= 20;
+  if (!/<meta\s+name=["']description["']\s+content=["'][^"']{20,}["']/i.test(html)) score -= 20;
+  const h1Count = (html.match(/<h1\b/gi) || []).length;
+  if (h1Count === 0) score -= 20;
+  else if (h1Count > 1) score -= 10; // multiple h1s hurt semantic clarity
+  if (!/<meta\s+property=["']og:/i.test(html)) score -= 15;
+  if (!/<meta\s+name=["']viewport["']/i.test(html)) score -= 15;
+  return Math.max(0, Math.round(score));
+}
+
+// ── Conversion — deterministic, marker-based ────────────────────────────
+function conversionScore(html: string): number {
+  let score = 100;
+  const ctaPattern = /get started|sign up|book now|contact us|buy now|start free|try free|request demo|apply now|join now|subscribe/i;
+  if (!ctaPattern.test(html)) score -= 30;
+  const hasTrustSignals = /testimonial|review|rating|trusted by|as seen in|customers|clients/i.test(html);
+  if (!hasTrustSignals) score -= 25;
+  const hasContactOrPricing = /<section[^>]*(pricing|contact)[^>]*>|id=["'](pricing|contact)["']/i.test(html);
+  if (!hasContactOrPricing) score -= 20;
+  return Math.max(0, Math.round(score));
+}
+
 export function runProductionGate(
   html: string,
   kind: ProductKind,
@@ -106,6 +153,11 @@ export function runProductionGate(
     ...checklistDims.filter(d => d.dimension === "Mobile"),
     { dimension: "Performance" as QualityDimension, score: perf.score, total: 0, earned: 0 },
     ...checklistDims.filter(d => d.dimension === "Completeness"),
+    ...(kind === "website" ? [
+      { dimension: "Accessibility" as QualityDimension, score: accessibilityScore(html), total: 0, earned: 0 },
+      { dimension: "SEO" as QualityDimension,           score: seoScore(html),           total: 0, earned: 0 },
+      { dimension: "Conversion" as QualityDimension,    score: conversionScore(html),     total: 0, earned: 0 },
+    ] : []),
   ];
 
   // Overall score = average of the 6 dimension scores
@@ -218,3 +270,4 @@ export const PRODUCTION_GATE_CONSTANTS = {
   VALIDATION_PASS_THRESHOLD,
   OVERALL_TARGET_SCORE,
 };
+  
