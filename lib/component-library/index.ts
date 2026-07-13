@@ -20,6 +20,7 @@ import { TESTIMONIALS_VARIANTS, TestimonialsVariant, TestimonialsContent } from 
 import { FAQ_VARIANTS, FAQVariant, FAQContent } from "./faq";
 import { PORTFOLIO_VARIANTS, PortfolioVariant, PortfolioContent } from "./portfolio";
 import { ECOMMERCE_VARIANTS, EcommerceVariant, EcommerceContent } from "./ecommerce";
+import { STATS_VARIANTS, StatsVariant, StatsContent } from "./stats";
 
 export * from "./tokens";
 export * from "./hero";
@@ -33,8 +34,9 @@ export * from "./testimonials";
 export * from "./faq";
 export * from "./portfolio";
 export * from "./ecommerce";
+export * from "./stats";
 
-export type ComponentCategory = "hero" | "navbar" | "features" | "cta" | "footer" | "pricing" | "dashboard" | "testimonials" | "faq" | "portfolio" | "ecommerce" | "contact";
+export type ComponentCategory = "hero" | "navbar" | "features" | "cta" | "footer" | "pricing" | "dashboard" | "testimonials" | "faq" | "portfolio" | "ecommerce" | "contact" | "stats";
 // ── Sensible default variant per niche marketLevel/tone — used when the
 // Blueprint stage doesn't specify a variant explicitly. Keeps generation
 // fast (no extra decision needed) while still picking something fitting.
@@ -151,6 +153,10 @@ export function renderComponent(
       const fn = ECOMMERCE_VARIANTS[variant as EcommerceVariant] || ECOMMERCE_VARIANTS["product-grid"];
       return fn(ctx, content as EcommerceContent);
     }
+    case "stats": {
+      const fn = STATS_VARIANTS[variant as StatsVariant] || STATS_VARIANTS["counter-grid"];
+      return fn(ctx, content as StatsContent);
+    }
     default:
       return "";
   }
@@ -171,15 +177,16 @@ export function listVariants(category: ComponentCategory): string[] {
     case "faq":           return Object.keys(FAQ_VARIANTS);
     case "portfolio":     return Object.keys(PORTFOLIO_VARIANTS);
     case "ecommerce":     return Object.keys(ECOMMERCE_VARIANTS);
+    case "stats":         return Object.keys(STATS_VARIANTS);
     default:              return [];
   }
 }
 
 export const COMPONENT_LIBRARY_STATS = {
-  totalComponents: 50,
-  categories: 11,
+  totalComponents: 54,
+  categories: 12,
   breakdown: {
     hero: 8, navbar: 4, features: 4, cta: 4, footer: 4, pricing: 5, dashboard: 5,
-    testimonials: 4, faq: 4, portfolio: 4, ecommerce: 4,
+    testimonials: 4, faq: 4, portfolio: 4, ecommerce: 4, stats: 4,
   },
 };
