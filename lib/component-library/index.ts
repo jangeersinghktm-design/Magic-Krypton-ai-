@@ -44,22 +44,22 @@ const NICHE_DEFAULTS: Record<string, Record<ComponentCategory, string>> = {
   luxury: {
     hero: "minimal-statement", navbar: "bold-split", features: "alternating",
     cta: "floating-card", footer: "minimal-centered", pricing: "single-highlight", dashboard: "analytics-charts",
-    testimonials: "featured", faq: "accordion", portfolio: "masonry", ecommerce: "featured-product", contact: "full-form",
+    testimonials: "featured", faq: "accordion", portfolio: "masonry", ecommerce: "featured-product", contact: "full-form", stats: "split",
   },
   energetic: {
     hero: "centered", navbar: "bordered-cta", features: "stat-highlight",
     cta: "banner-strip", footer: "newsletter-rich", pricing: "three-tier", dashboard: "topnav-cards",
-    testimonials: "grid", faq: "simple-list", portfolio: "filter-gallery", ecommerce: "scroll-cards", contact: "split",
+    testimonials: "grid", faq: "simple-list", portfolio: "filter-gallery", ecommerce: "scroll-cards", contact: "split", stats: "counter-grid",
   },
   trust: {
     hero: "split-image", navbar: "glass-sticky", features: "icon-grid",
     cta: "centered-gradient", footer: "four-column", pricing: "comparison-table", dashboard: "sidebar-stats",
-    testimonials: "logo-wall", faq: "highlighted", portfolio: "list", ecommerce: "product-grid", contact: "full-form",
+    testimonials: "logo-wall", faq: "highlighted", portfolio: "list", ecommerce: "product-grid", contact: "full-form", stats: "icon-cards",
   },
   default: {
     hero: "split-image", navbar: "glass-sticky", features: "icon-grid",
     cta: "centered-gradient", footer: "four-column", pricing: "three-tier", dashboard: "sidebar-stats",
-    testimonials: "grid", faq: "simple-list", portfolio: "featured-grid", ecommerce: "product-grid", contact: "full-form",
+    testimonials: "grid", faq: "simple-list", portfolio: "featured-grid", ecommerce: "product-grid", contact: "full-form", stats: "counter-grid",
   },
 };
 
