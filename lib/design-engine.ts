@@ -5,8 +5,6 @@
 // No Math.random() anywhere — seed comes from crypto.randomUUID() once
 // per generation, everything downstream derives from that seed.
 
-import { listVariants, type ComponentCategory } from "@/lib/component-library";
-
 // mulberry32 — compact, well-known deterministic PRNG.
 export function createSeededRandom(seed: number): () => number {
   let a = seed;
@@ -32,11 +30,4 @@ export function pickVariantFromSeed(options: string[], category: string, seed: n
   const categoryOffset = category.split("").reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 0);
   const rng = createSeededRandom((seed ^ categoryOffset) | 0);
   return options[Math.floor(rng() * options.length)];
-}
-
-/** Convenience wrapper — picks a real component-library variant for a
- *  category directly from its name, without the caller needing to import
- *  listVariants() itself first. Used by assembleFromComponentLibrary. */
-export function pickComponentVariant(category: string, seed: number): string {
-  return pickVariantFromSeed(listVariants(category as ComponentCategory), category, seed);
 }
