@@ -9,7 +9,7 @@ import type { DomainBlueprint, DomainKnowledge } from "./domain-knowledge";
 import { getSectionVariants } from "./domain-knowledge";
 import { kryptonGenerate } from "@/lib/ai-providers";
 import { renderComponent, listVariants, buildComponentContext, type ComponentCategory } from "@/lib/component-library";
-import { pickComponentVariant } from "@/lib/design-engine";
+import { computeVisualHierarchy, pickHeroForHierarchy, pickComponentForHierarchy } from "@/lib/design-director";
 
 export function buildGenericComponentContent(niche: NicheProfile): Record<string, any> {
   const industry = niche.industry || "Business";
@@ -142,6 +142,8 @@ ${variantOptions}
 Return JSON only (no \`\`\`json):
 {"variants":{"navbar":"...","hero":"...","features":"...","pricing":"...","cta":"...","footer":"..."},"navbar":{"logoText":"Brand","links":[{"label":"Home","href":"#hero"},{"label":"Features","href":"#features"},{"label":"Pricing","href":"#pricing"}],"cta":{"text":"Get Started","href":"#cta"}},"hero":{"badge":"Tagline","headline":"Specific headline for ${niche.industry}","subheadline":"2-sentence value prop","ctaPrimary":{"text":"Start Free","href":"#cta"},"benefits":[{"text":"Key benefit 1"},{"text":"Key benefit 2"},{"text":"Key benefit 3"}]},"features":{"eyebrow":"Why Us","headline":"Why Choose Us","items":[{"icon":"⚡","title":"Feature 1","desc":"Specific description","stat":"stat"}]},"pricing":{"eyebrow":"Pricing","headline":"Simple Pricing","tiers":[{"name":"Starter","price":"$0","period":"month","features":["Feature A","Feature B"],"cta":{"text":"Start Free","href":"#"},"highlighted":false},{"name":"Pro","price":"$29","period":"month","features":["Everything in Starter","Feature C","Feature D"],"cta":{"text":"Get Pro","href":"#"},"highlighted":true}]},"cta":{"headline":"Ready to start?","subheadline":"Join thousands of users","ctaPrimary":{"text":"Get Started Free","href":"#"}},"footer":{"logoText":"Brand","tagline":"Tagline","columns":[{"title":"Product","links":[{"label":"Features","href":"#"},{"label":"Pricing","href":"#"}]},{"title":"Company","links":[{"label":"About","href":"#"},{"label":"Contact","href":"#"}]}],"socialLinks":[{"label":"Twitter","href":"#"}],"copyrightName":"Brand"}}
 
+OPTIONAL: if credibility metrics genuinely fit this industry (SaaS/startup/agency), you may also include a "stats" key with this shape: {"eyebrow":"Trusted By","items":[{"value":"10,000+","label":"Customers"},{"value":"99.9%","label":"Uptime"},{"value":"4.9/5","label":"Rating"}]}
+
 Make ALL copy specific to ${niche.industry} — real headlines, real benefits, real feature names.`;
 
   try {
@@ -174,24 +176,66 @@ export function assembleFromComponentLibrary(
   let imgIdx = 0;
   const nextImg = () => realImages[imgIdx++ % Math.max(realImages.length, 1)] || "";
 
-  if (content.navbar) html += renderComponent("navbar", v.navbar || pickComponentVariant("navbar", seed), ctx, content.navbar);
+  // Design Director: computed once per generation, reused for every
+  // component below so the whole page reflects ONE consistent hierarchy
+  // decision, not a different one per section.
+  const hierarchy = computeVisualHierarchy(niche);
+
+  if (content.navbar) {
+    const d = pickComponentForHierarchy("navbar", hierarchy, listVariants("navbar"), seed, niche);
+    html += renderComponent("navbar", v.navbar || d.variant, ctx, content.navbar);
+  }
   if (content.hero) {
     const heroContent = { ...content.hero, imageUrl: content.hero.imageUrl || nextImg() };
-    html += renderComponent("hero", v.hero || pickComponentVariant("hero", seed), ctx, heroContent);
+    // Design Director: VisualHierarchy narrows the hero candidate set by
+    // this generation's primary focus (conversion/trust/brand/information)
+    // BEFORE the seeded picker runs — a conversion-focused business never
+    // gets a purely atmospheric hero, while still getting real variety
+    // within the focus-appropriate set.
+    const heroVariant = v.hero || pickHeroForHierarchy(hierarchy, listVariants("hero"), seed);
+    html += renderComponent("hero", heroVariant, ctx, heroContent);
   }
-  if (content.dashboard) html += renderComponent("dashboard", v.dashboard || pickComponentVariant("dashboard", seed), ctx, content.dashboard);
+  if (content.dashboard) {
+    const d = pickComponentForHierarchy("dashboard", hierarchy, listVariants("dashboard"), seed, niche);
+    html += renderComponent("dashboard", v.dashboard || d.variant, ctx, content.dashboard);
+  }
   if (content.features) {
     const items = (content.features.items || []).map((it: any) => ({ ...it, imageUrl: it.imageUrl || nextImg() }));
-    html += renderComponent("features", v.features || pickComponentVariant("features", seed), ctx, { ...content.features, items });
+    const d = pickComponentForHierarchy("features", hierarchy, listVariants("features"), seed, niche);
+    html += renderComponent("features", v.features || d.variant, ctx, { ...content.features, items });
   }
-  if (content.testimonials) html += renderComponent("testimonials", v.testimonials || pickComponentVariant("testimonials", seed), ctx, content.testimonials);
-  if (content.pricing) html += renderComponent("pricing", v.pricing || pickComponentVariant("pricing", seed), ctx, content.pricing);
-  if (content.faq) html += renderComponent("faq", v.faq || pickComponentVariant("faq", seed), ctx, content.faq);
-  if (content.portfolio) html += renderComponent("portfolio", v.portfolio || pickComponentVariant("portfolio", seed), ctx, content.portfolio);
-  if (content.ecommerce) html += renderComponent("ecommerce", v.ecommerce || pickComponentVariant("ecommerce", seed), ctx, content.ecommerce);
-  if (content.cta) html += renderComponent("cta", v.cta || pickComponentVariant("cta", seed), ctx, content.cta);
-  if (content.footer) html += renderComponent("footer", v.footer || pickComponentVariant("footer", seed), ctx, content.footer);
+  if (content.testimonials) {
+    const d = pickComponentForHierarchy("testimonials", hierarchy, listVariants("testimonials"), seed, niche);
+    html += renderComponent("testimonials", v.testimonials || d.variant, ctx, content.testimonials);
+  }
+  if (content.pricing) {
+    const d = pickComponentForHierarchy("pricing", hierarchy, listVariants("pricing"), seed, niche);
+    html += renderComponent("pricing", v.pricing || d.variant, ctx, content.pricing);
+  }
+  if (content.faq) {
+    const d = pickComponentForHierarchy("faq", hierarchy, listVariants("faq"), seed, niche);
+    html += renderComponent("faq", v.faq || d.variant, ctx, content.faq);
+  }
+  if (content.portfolio) {
+    const d = pickComponentForHierarchy("portfolio", hierarchy, listVariants("portfolio"), seed, niche);
+    html += renderComponent("portfolio", v.portfolio || d.variant, ctx, content.portfolio);
+  }
+  if (content.ecommerce) {
+    const d = pickComponentForHierarchy("ecommerce", hierarchy, listVariants("ecommerce"), seed, niche);
+    html += renderComponent("ecommerce", v.ecommerce || d.variant, ctx, content.ecommerce);
+  }
+  if (content.stats) {
+    const d = pickComponentForHierarchy("stats", hierarchy, listVariants("stats"), seed, niche);
+    html += renderComponent("stats", v.stats || d.variant, ctx, content.stats);
+  }
+  if (content.cta) {
+    const d = pickComponentForHierarchy("cta", hierarchy, listVariants("cta"), seed, niche);
+    html += renderComponent("cta", v.cta || d.variant, ctx, content.cta);
+  }
+  if (content.footer) {
+    const d = pickComponentForHierarchy("footer", hierarchy, listVariants("footer"), seed, niche);
+    html += renderComponent("footer", v.footer || d.variant, ctx, content.footer);
+  }
 
   return html;
 }
-  
