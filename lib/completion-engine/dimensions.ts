@@ -19,9 +19,9 @@
  * DimensionScore[] array.
  */
 
-export type QualityDimension = "Structure" | "Functionality" | "UX" | "Mobile" | "Performance" | "Completeness";
+export type QualityDimension = "Structure" | "Functionality" | "UX" | "Mobile" | "Performance" | "Completeness" | "Accessibility" | "SEO" | "Conversion";
 
-export const ALL_DIMENSIONS: QualityDimension[] = ["Structure", "Functionality", "UX", "Mobile", "Performance", "Completeness"];
+export const ALL_DIMENSIONS: QualityDimension[] = ["Structure", "Functionality", "UX", "Mobile", "Performance", "Completeness", "Accessibility", "SEO", "Conversion"];
 
 // Checklist-derived dimensions only (Structure & Performance come from elsewhere)
 type ChecklistDimension = "Functionality" | "UX" | "Mobile" | "Completeness";
