@@ -18,6 +18,7 @@ import { cleanHTML } from "@/lib/rendering-engine/html-utils";
 import { detectProjectType, getRealImageSet } from "@/lib/rendering-engine/generation-helpers";
 import { kryptonGenerate } from "@/lib/ai-providers";
 import { generationSeedFromId } from "@/lib/design-engine";
+import { acquireGenerationLock, releaseGenerationLock } from "@/lib/generation-lock";
 
 export const maxDuration = 308;
 export const runtime     = "nodejs"; // FIXED: was "edge" — Edge has hard 25s limit on Hobby plan
@@ -143,9 +144,8 @@ function getThinkingSteps(prompt: string): string[] {
 
 
 // ── Main Route Handler ───────────────────────────────────────────
-// Fix 6: Per-user generation lock
-const activeGens = new Set<string>();
-
+// Fix 6 + Priority 3/4: generation lock is now the shared distributed
+// one from lib/generation-lock.ts (see acquireGenerationLock below).
 export async function POST(req: NextRequest) {
   let lockedUserId = ""; // Fix 6: track for finally block
   try {
@@ -174,14 +174,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Session expired. Please login again." }, { status: 401 });
     }
 
-    // Fix 6: Block concurrent generations per user
-    if (activeGens.has(user.id)) {
+    // Fix 6 + Priority 3/4: same distributed lock orchestrate uses (Redis-
+    // backed via lib/generation-lock.ts), NOT a separate in-memory Set.
+    // This is the fix for the false-402 race: if orchestrate is still
+    // actively generating for this user, this route now correctly sees
+    // that lock and refuses to start a second, credit-charging attempt —
+    // previously this route's own local activeGens Set had no knowledge
+    // of orchestrate's lock at all, so a fallback call here could proceed
+    // completely independently and double-charge-check credits.
+    if (!(await acquireGenerationLock(user.id, 330))) {
       return NextResponse.json({
         error: "A generation is already in progress. Please wait.",
         code: "DUPLICATE_GEN",
       }, { status: 429 });
     }
-    activeGens.add(user.id);
     lockedUserId = user.id; // Fix 6: store for finally block
 
     const { prompt, projectId, isEdit = false } = await req.json();
@@ -400,6 +406,8 @@ export async function POST(req: NextRequest) {
     }, { status: 500 });
   } finally {
     // Fix 6: Always release generation lock (use userId string — accessible in scope)
-    if (lockedUserId) activeGens.delete(lockedUserId);
+    if (lockedUserId) await releaseGenerationLock(lockedUserId);
   }
 }
+
+  
