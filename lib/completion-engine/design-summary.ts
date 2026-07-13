@@ -11,7 +11,8 @@
 
 import type { NicheProfile } from "@/lib/rendering-engine/types";
 import type { DomainBlueprint } from "@/lib/rendering-engine/domain-knowledge";
-import type { ProductionGateResult, QualityDimension } from "./production-gate";
+import type { ProductionGateResult } from "./production-gate";
+import type { QualityDimension } from "./dimensions";
 
 export interface ScoreSummary {
   overall: number;
@@ -54,4 +55,3 @@ export function buildDesignSummary(
     scores: { overall: gate.score, breakdown },
   };
 }
-
