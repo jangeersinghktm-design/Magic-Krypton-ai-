@@ -30,6 +30,9 @@ const PAGE_STRUCTURE: Record<string, ComponentCategory[]> = {
   services: ["hero", "features", "pricing",      "cta", "footer"],
   pricing:  ["hero", "pricing",  "faq",          "cta", "footer"],
   contact:  ["hero", "contact",                       "footer"],
+  privacy:  ["hero", "features",                       "footer"],
+  terms:    ["hero", "features",                       "footer"],
+  blog:     ["hero", "features", "cta",               "footer"],
 };
 
 // ── Strict TypeScript types for AI-generated JSON ─────────────────
@@ -58,6 +61,9 @@ interface AllPagesJSON {
   services: PageJSON;
   pricing:  PageJSON;
   contact:  PageJSON;
+  privacy?: PageJSON;
+  terms?:   PageJSON;
+  blog?:    PageJSON;
 }
 
 // ── Extract brand from existing HTML (zero AI calls) ─────────────
@@ -106,6 +112,9 @@ async function generateCopyJSON(
       services: `"services":{"hero":{"badge":"What We Do","headline":"[services headline]","subheadline":"[2 sentence overview]","ctaPrimary":{"text":"View Pricing","href":"pricing.html"}},"features":{"eyebrow":"Our Services","headline":"[services section headline]","items":[{"icon":"⚡","title":"[service]","desc":"[2 sentences]"},{"icon":"🔒","title":"[service]","desc":"[2 sentences]"},{"icon":"📊","title":"[service]","desc":"[2 sentences]"},{"icon":"🎨","title":"[service]","desc":"[2 sentences]"}]},"pricing":{"eyebrow":"Service Plans","headline":"[pricing headline]","tiers":[{"name":"Starter","price":"$X","period":"month","features":["[feature]","[feature]","[feature]"],"cta":{"text":"Get Started","href":"contact.html"},"highlighted":false},{"name":"Pro","price":"$X","period":"month","features":["[feature]","[feature]","[feature]","[feature]"],"cta":{"text":"Get Pro","href":"contact.html"},"highlighted":true}]},"cta":{"headline":"[services cta]","subheadline":"[1 sentence]","ctaPrimary":{"text":"Get Started","href":"contact.html"}}}`,
       pricing:  `"pricing":{"hero":{"badge":"Pricing","headline":"[pricing hero headline]","subheadline":"[2 sentence pitch]","ctaPrimary":{"text":"Start Free","href":"contact.html"}},"pricing":{"eyebrow":"Choose Your Plan","headline":"[pricing section headline]","tiers":[{"name":"Free","price":"$0","period":"forever","features":["[feature]","[feature]","[feature]"],"cta":{"text":"Start Free","href":"contact.html"},"highlighted":false},{"name":"Pro","price":"$X","period":"month","features":["[feature]","[feature]","[feature]","[feature]"],"cta":{"text":"Get Pro","href":"contact.html"},"highlighted":true},{"name":"Enterprise","price":"Custom","period":"","features":["[feature]","[feature]","[feature]"],"cta":{"text":"Contact Us","href":"contact.html"},"highlighted":false}]},"faq":{"eyebrow":"Common Questions","headline":"Frequently Asked Questions","items":[{"question":"[realistic FAQ 1]","answer":"[clear answer]"},{"question":"[realistic FAQ 2]","answer":"[clear answer]"},{"question":"[realistic FAQ 3]","answer":"[clear answer]"},{"question":"[realistic FAQ 4]","answer":"[clear answer]"}]},"cta":{"headline":"[pricing bottom cta]","subheadline":"[1 sentence urgency]","ctaPrimary":{"text":"Get Started Now","href":"contact.html"}}}`,
       contact:  `"contact":{"hero":{"badge":"Contact Us","headline":"[contact headline]","subheadline":"[warm 1-2 sentence invitation]","ctaPrimary":{"text":"Send Message","href":"#contact"}},"contact":{"headline":"Send Us a Message","subheadline":"[response time promise]","email":"hello@${brand.brandName.toLowerCase().replace(/\s/,'')+".com"}","submitText":"Send Message"}}`,
+      privacy:  `"privacy":{"hero":{"badge":"Privacy Policy","headline":"Privacy Policy","subheadline":"Last updated: [current date]. This policy explains how we collect, use, and protect your data.","ctaPrimary":{"text":"Contact Us","href":"contact.html"}},"features":{"eyebrow":"Your Data","headline":"How We Handle Your Information","items":[{"icon":"📋","title":"Information We Collect","desc":"[2-3 sentences on what data is collected]"},{"icon":"🔒","title":"How We Use It","desc":"[2-3 sentences on data usage]"},{"icon":"🤝","title":"Sharing & Third Parties","desc":"[2-3 sentences on data sharing]"},{"icon":"✅","title":"Your Rights","desc":"[2-3 sentences on user rights]"}]}}`,
+      terms:    `"terms":{"hero":{"badge":"Terms of Service","headline":"Terms of Service","subheadline":"Last updated: [current date]. Please read these terms carefully before using our service.","ctaPrimary":{"text":"Contact Us","href":"contact.html"}},"features":{"eyebrow":"Agreement","headline":"Terms & Conditions","items":[{"icon":"📄","title":"Acceptance of Terms","desc":"[2-3 sentences]"},{"icon":"👤","title":"User Responsibilities","desc":"[2-3 sentences]"},{"icon":"⚖️","title":"Limitation of Liability","desc":"[2-3 sentences]"},{"icon":"🔄","title":"Changes to Terms","desc":"[2-3 sentences]"}]}}`,
+      blog:     `"blog":{"hero":{"badge":"Blog","headline":"[blog headline]","subheadline":"[1-2 sentence description]","ctaPrimary":{"text":"Subscribe","href":"contact.html"}},"features":{"eyebrow":"Latest Posts","headline":"Recent Articles","items":[{"icon":"📰","title":"[realistic post title 1]","desc":"[2 sentence excerpt]"},{"icon":"💡","title":"[realistic post title 2]","desc":"[2 sentence excerpt]"},{"icon":"📊","title":"[realistic post title 3]","desc":"[2 sentence excerpt]"}]},"cta":{"headline":"[newsletter headline]","subheadline":"[1 sentence]","ctaPrimary":{"text":"Subscribe","href":"contact.html"}}}`,
     };
     return specs[p] || `"${p}":{"hero":{"headline":"${p}","subheadline":"Content for ${p} page","ctaPrimary":{"text":"Learn More","href":"index.html"}}}`;
   }).join(",\n  ");
@@ -364,7 +373,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Multi-page costs 2 credits", code: "NO_CREDITS" }, { status: 402 });
   }
 
-  const valid   = ["about","services","pricing","contact"];
+  const valid   = ["about","services","pricing","contact","privacy","terms","blog"];
   const pages   = ((selectedPages || valid) as string[]).filter(p => valid.includes(p.toLowerCase())).map(p => p.toLowerCase());
   if (!pages.length) return NextResponse.json({ error: "No valid pages" }, { status: 400 });
 
@@ -407,18 +416,36 @@ export async function POST(req: NextRequest) {
         socialLinks: [], copyrightName: copy.footer.copyrightName,
       });
 
+  // ── Navigation validation + auto-repair ─────────────────────────
+  // Real, deterministic check: every internal href must point to a page
+  // that actually exists in this generation. Broken links (e.g. the AI
+  // wrote "blog.html" but "blog" wasn't in the selected pages) are
+  // repaired to index.html — the one page guaranteed to exist — rather
+  // than shipping a dead link.
+  const realPageNames = new Set(["index.html", ...pages.map(p => `${p}.html`)]);
+  function repairBrokenNav(html: string): { html: string; repaired: string[] } {
+    const repaired: string[] = [];
+    const fixedHtml = html.replace(/href="([a-zA-Z0-9_-]+\.html)(#[^"]*)?"/g, (match, page, hash) => {
+      if (realPageNames.has(page)) return match; // valid, unchanged
+      repaired.push(page);
+      return `href="index.html${hash || ""}"`;
+    });
+    return { html: fixedHtml, repaired };
+  }
+
   const syncedHomeHtml = existingNavMatch
     ? homeHtml.replace(existingNavMatch[0], sharedNavHtml)
     : homeHtml.replace(/<body[^>]*>/i, (m: string) => `${m}\n${sharedNavHtml}`);
   const zipFiles: {name:string;content:string}[] = [
-    { name: "index.html", content: syncedHomeHtml },
+    { name: "index.html", content: repairBrokenNav(syncedHomeHtml).html },
   ];
 
   for (const page of pages) {
     const pageJSON = (copy as any)[page] as PageJSON;
+    const assembled = assemblePage(page, pageJSON, copy, brand, `${page}.html`, sharedNavHtml, sharedFooterHtml, designSeed);
     zipFiles.push({
       name:    `${page}.html`,
-      content: assemblePage(page, pageJSON, copy, brand, `${page}.html`, sharedNavHtml, sharedFooterHtml, designSeed),
+      content: repairBrokenNav(assembled).html,
     });
   }
 
