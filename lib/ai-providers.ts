@@ -143,21 +143,44 @@ export async function callGeminiVision(system: string, userText: string, imageDa
   return d.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
+// Classifies whether an error from a provider call is worth retrying.
+// Timeouts/network failures and transient 5xx/429s are retryable — the
+// same request might succeed on a fresh attempt. Auth errors (401/403)
+// and bad-request errors (400) will fail identically every time, so
+// retrying them only wastes time and money.
+function isRetryableProviderError(e: any): boolean {
+  const name = e?.name || "";
+  if (name === "TimeoutError" || name === "AbortError") return true; // real network/timeout
+  const msg = String(e?.message || "");
+  const statusMatch = msg.match(/\b(\d{3})\b/);
+  if (!statusMatch) return true; // unknown error shape — err on the side of one retry
+  const status = parseInt(statusMatch[1], 10);
+  if (status === 400 || status === 401 || status === 403 || status === 404) return false; // never retryable
+  return true; // 429, 5xx, and anything else transient
+}
+
 export async function kryptonGenerate(system: string, prompt: string): Promise<{text:string;provider:string}> {
-  for (const [fn, name] of [[callClaude, "claude"],[callOpenAI,"openai"],[callGemini,"gemini"]] as const) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+  const providers: [Function, string, number][] = [
+    [callClaude, "claude", 3],
+    [callOpenAI, "openai", 2],
+    [callGemini, "gemini", 2],
+  ];
+  for (const [fn, name, maxAttempts] of providers) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const text = await (fn as Function)(system, prompt);
         if (text?.trim()) return { text, provider: name };
-        break;
+        break; // empty response — not worth retrying this provider further
       } catch (e: any) {
-        const status = e?.status ?? e?.response?.status ?? "";
-        const is429 = status === 429 || String(e?.message||"").includes("429");
-        if (attempt === 0 && is429) {
-          await new Promise(r => setTimeout(r, 1500));
+        if (attempt < maxAttempts - 1 && isRetryableProviderError(e)) {
+          // Real retry of the SAME provider — timeouts and other transient
+          // failures get a genuine retry before this provider is considered
+          // exhausted and we move on. Non-retryable errors (auth/bad-request)
+          // skip straight to the next provider.
+          await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
           continue;
         }
-        break;
+        break; // exhausted or non-retryable — move to next provider, never revisit
       }
     }
   }
@@ -176,16 +199,14 @@ export async function kryptonGenerateVision(system: string, userText: string, im
   ] as const;
 
   for (const [fn, name] of providers) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const text = await (fn as Function)(system, userText, imageDataUrl);
         if (text?.trim()) return { text, provider: name };
         break;
       } catch (e: any) {
-        const status = e?.status ?? e?.response?.status ?? "";
-        const is429 = status === 429 || String(e?.message||"").includes("429");
-        if (attempt === 0 && is429) {
-          await new Promise(r => setTimeout(r, 1500));
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
           continue;
         }
         break;
