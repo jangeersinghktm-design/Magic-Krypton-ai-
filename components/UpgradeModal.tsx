@@ -108,7 +108,6 @@ export default function UpgradeModal({ isOpen, onClose, feature, reason, remaini
 
   return (
     <div
-      onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)", padding: 16 }}
     >
       <style>{`
@@ -279,3 +278,4 @@ export default function UpgradeModal({ isOpen, onClose, feature, reason, remaini
     </div>
   );
 }
+        
