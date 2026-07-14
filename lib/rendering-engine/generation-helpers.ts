@@ -41,14 +41,27 @@ export async function fetchUnsplashImages(query: string, count: number): Promise
 }
 
 
+// Real, safe memoization — persists for the lifetime of this warm
+// serverless instance (not cross-instance/cross-cold-start, which would
+// need Redis; this is an honest, bounded optimization, not a fake global
+// cache). Prevents an identical Unsplash query from ever repeating within
+// one instance's lifetime.
+const imageSetCache = new Map<string, string[]>();
+
 export async function getRealImageSet(industry: string, keyword: string, count = 6): Promise<string[]> {
+  const cacheKey = `${keyword.toLowerCase().trim()}::${count}`;
+  const cached = imageSetCache.get(cacheKey);
+  if (cached) return cached;
+
+  let result: string[];
   try {
     const real = await fetchUnsplashImages(keyword, count);
-    if (real.length > 0) return real;
-  } catch {}
-
-  // Fallback — guaranteed-working Picsum images (no API key needed)
-  return getPicsumFallback(industry, count);
+    result = real.length > 0 ? real : getPicsumFallback(industry, count);
+  } catch {
+    result = getPicsumFallback(industry, count);
+  }
+  imageSetCache.set(cacheKey, result);
+  return result;
 }
 
 
@@ -234,4 +247,3 @@ ${isSaaS ? `table { font-size: 13px !important; }
 .stat { font-variant-numeric: tabular-nums; }` : ""}
 `.trim();
 }
-
