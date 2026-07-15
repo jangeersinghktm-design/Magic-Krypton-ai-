@@ -246,7 +246,7 @@ export async function POST(req: NextRequest) {
         }
 
         const realImages = await getRealImageSet(niche.industry, niche.imageKeyword || type, 6).catch(() => [] as string[]);
-        const sectionsHTML = assembleFromComponentLibrary(niche, componentContent, realImages, designSeed);
+        const sectionsHTML = await assembleFromComponentLibrary(niche, componentContent, realImages, designSeed);
 
         let html = "";
         const provider = "claude"; // same disclosed cosmetic limitation as orchestrate/generate
