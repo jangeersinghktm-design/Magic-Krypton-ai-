@@ -122,6 +122,17 @@ Domain-specific sections: ${(domainPlan.sectionOrder||[]).join(" → ")}
 Exact CTA to use: "${domainPlan.primaryCTA}" — never substitute a generic CTA
 Imagery rule: ${domainPlan.assetTheme}` : "";
 
+  // ── Single Master AI Call — when domainPlan is null (a genuinely
+  // unknown industry that matchDomain's free, deterministic lookup
+  // didn't cover), this is the ONLY remaining scenario that used to
+  // need a SEPARATE architectBlueprint AI call. Instead of two calls,
+  // the SAME request now also asks for blueprint fields, SEO, metadata,
+  // and image-plan keywords — everything required for rendering comes
+  // back in ONE response. Known industries (domainPlan already
+  // resolved for free) are completely unaffected by this branch.
+  const needsMasterBlueprint = !domainPlan;
+  const masterBlueprintSchema = needsMasterBlueprint ? `,"blueprint":{"projectName":"...","tagline":"...","businessGoal":"...","targetAudience":"...","primaryCTA":"specific action, never Get Started","secondaryCTA":"...","keyBenefits":["...","...","..."],"avoidMistakes":["cross-domain contamination to avoid"],"assetTheme":"exact image search keywords for THIS domain","sectionPurpose":{"hero":"...","pricing":"..."}},"seo":{"title":"...","description":"..."},"metadata":{"ogTitle":"...","ogDescription":"..."},"imagePlan":{"keywords":["keyword1","keyword2"]}` : "";
+
   const system = `You are Krypton AI's content specialist. Output ONLY valid JSON — no markdown fences, no preamble. Write real, specific copy for the user's niche.
 
 CRITICAL RULES:
@@ -140,7 +151,7 @@ Choose ONE variant per section from these options:
 ${variantOptions}
 
 Return JSON only (no \`\`\`json):
-{"variants":{"navbar":"...","hero":"...","features":"...","pricing":"...","cta":"...","footer":"..."},"navbar":{"logoText":"Brand","links":[{"label":"Home","href":"#hero"},{"label":"Features","href":"#features"},{"label":"Pricing","href":"#pricing"}],"cta":{"text":"Get Started","href":"#cta"}},"hero":{"badge":"Tagline","headline":"Specific headline for ${niche.industry}","subheadline":"2-sentence value prop","ctaPrimary":{"text":"Start Free","href":"#cta"},"benefits":[{"text":"Key benefit 1"},{"text":"Key benefit 2"},{"text":"Key benefit 3"}]},"features":{"eyebrow":"Why Us","headline":"Why Choose Us","items":[{"icon":"⚡","title":"Feature 1","desc":"Specific description","stat":"stat"}]},"pricing":{"eyebrow":"Pricing","headline":"Simple Pricing","tiers":[{"name":"Starter","price":"$0","period":"month","features":["Feature A","Feature B"],"cta":{"text":"Start Free","href":"#"},"highlighted":false},{"name":"Pro","price":"$29","period":"month","features":["Everything in Starter","Feature C","Feature D"],"cta":{"text":"Get Pro","href":"#"},"highlighted":true}]},"cta":{"headline":"Ready to start?","subheadline":"Join thousands of users","ctaPrimary":{"text":"Get Started Free","href":"#"}},"footer":{"logoText":"Brand","tagline":"Tagline","columns":[{"title":"Product","links":[{"label":"Features","href":"#"},{"label":"Pricing","href":"#"}]},{"title":"Company","links":[{"label":"About","href":"#"},{"label":"Contact","href":"#"}]}],"socialLinks":[{"label":"Twitter","href":"#"}],"copyrightName":"Brand"}}
+{"variants":{"navbar":"...","hero":"...","features":"...","pricing":"...","cta":"...","footer":"..."}${masterBlueprintSchema},"navbar":{"logoText":"Brand","links":[{"label":"Home","href":"#hero"},{"label":"Features","href":"#features"},{"label":"Pricing","href":"#pricing"}],"cta":{"text":"Get Started","href":"#cta"}},"hero":{"badge":"Tagline","headline":"Specific headline for ${niche.industry}","subheadline":"2-sentence value prop","ctaPrimary":{"text":"Start Free","href":"#cta"},"benefits":[{"text":"Key benefit 1"},{"text":"Key benefit 2"},{"text":"Key benefit 3"}]},"features":{"eyebrow":"Why Us","headline":"Why Choose Us","items":[{"icon":"⚡","title":"Feature 1","desc":"Specific description","stat":"stat"}]},"pricing":{"eyebrow":"Pricing","headline":"Simple Pricing","tiers":[{"name":"Starter","price":"$0","period":"month","features":["Feature A","Feature B"],"cta":{"text":"Start Free","href":"#"},"highlighted":false},{"name":"Pro","price":"$29","period":"month","features":["Everything in Starter","Feature C","Feature D"],"cta":{"text":"Get Pro","href":"#"},"highlighted":true}]},"cta":{"headline":"Ready to start?","subheadline":"Join thousands of users","ctaPrimary":{"text":"Get Started Free","href":"#"}},"footer":{"logoText":"Brand","tagline":"Tagline","columns":[{"title":"Product","links":[{"label":"Features","href":"#"},{"label":"Pricing","href":"#"}]},{"title":"Company","links":[{"label":"About","href":"#"},{"label":"Contact","href":"#"}]}],"socialLinks":[{"label":"Twitter","href":"#"}],"copyrightName":"Brand"}}
 
 OPTIONAL: if credibility metrics genuinely fit this industry (SaaS/startup/agency), you may also include a "stats" key with this shape: {"eyebrow":"Trusted By","items":[{"value":"10,000+","label":"Customers"},{"value":"99.9%","label":"Uptime"},{"value":"4.9/5","label":"Rating"}]}
 
@@ -167,9 +178,71 @@ Make ALL copy specific to ${niche.industry} — real headlines, real benefits, r
 }
 
 
-export function assembleFromComponentLibrary(
-  niche: NicheProfile, content: Record<string, any>, realImages: string[], seed: number = 0
-): string {
+/**
+ * Generates fresh content for exactly ONE component type — a real,
+ * focused AI call, not the whole-page generateComponentContent(). Used
+ * when only one component is dirty (edited/repaired) and every other
+ * component's already-generated content should be reused unchanged.
+ */
+export async function generateSingleComponentContent(
+  componentType: ComponentCategory,
+  niche: NicheProfile, blueprint: string, userPrompt: string,
+  domainPlan?: DomainBlueprint | null,
+  existingComponentContent?: Record<string, any> | null
+): Promise<any | null> {
+  const tone = niche.tone || "default";
+  const variants = listVariants(componentType);
+
+  const blueprintContext = domainPlan ? `
+Business: ${domainPlan.projectName} — ${domainPlan.tagline}
+Goal: ${domainPlan.businessGoal}
+Primary CTA: "${domainPlan.primaryCTA}"
+Copy Tone: ${domainPlan.copyTone}
+Key Benefits: ${domainPlan.keyBenefits?.join(" | ")}
+AVOID: ${domainPlan.avoidMistakes?.join("; ")}` : "";
+
+  const system = `You are Krypton AI's content specialist. Output ONLY valid JSON for a single "${componentType}" component — no markdown fences, no preamble, no other components. Write real, specific copy for the user's niche.`;
+
+  const existingSample = existingComponentContent?.[componentType]
+    ? `\nCurrent ${componentType} content (for reference — replace it, keep the same JSON shape): ${JSON.stringify(existingComponentContent[componentType]).slice(0, 500)}`
+    : "";
+
+  const user = `Build ONLY the "${componentType}" component for: "${userPrompt}"
+Niche: ${niche.industry} (${niche.marketLevel} tier, ${tone} tone)
+${blueprintContext}
+Blueprint context: ${blueprint.slice(0, 300)}
+${existingSample}
+
+Choose ONE variant from: [${variants.join(", ")}]
+
+Return JSON only (no \`\`\`json), with this exact top-level shape:
+{"variant": "<one of the variants above>", "content": { /* the ${componentType} component's own content object, same shape as generateComponentContent would produce for "${componentType}" */ }}
+
+Make ALL copy specific to ${niche.industry} — no generic stock phrases.`;
+
+  try {
+    const { text } = await kryptonGenerate(system, user);
+    const cleaned = text.replace(/```json|```/g, "").trim();
+    let parsed: any = null;
+    try { parsed = JSON.parse(cleaned); } catch {
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) { try { parsed = JSON.parse(jsonMatch[0]); } catch {} }
+    }
+    if (parsed && parsed.content) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+
+export async function assembleFromComponentLibrary(
+  niche: NicheProfile, content: Record<string, any>, realImages: string[], seed: number = 0,
+  cacheCtx?: {
+    supabase: any; projectId: string | null; promptHash: string;
+    versions?: import("@/lib/component-cache").ComponentVersions;
+  }
+): Promise<string> {
   const ctx = buildComponentContext(niche.palette.primary);
   const v = content.variants || {};
   let html = "";
@@ -181,9 +254,45 @@ export function assembleFromComponentLibrary(
   // decision, not a different one per section.
   const hierarchy = computeVisualHierarchy(niche);
 
+  // Phase 2: cache-aware render helper. If cacheCtx is provided, checks
+  // real Supabase-backed component_cache before rendering; on a hit,
+  // reuses the cached HTML and skips renderComponent entirely; on a
+  // miss, renders normally and stores the result for next time. Without
+  // cacheCtx (e.g. multipage/preview paths), behaves exactly as before.
+  const { getCachedComponent, setCachedComponent } = cacheCtx
+    ? await import("@/lib/component-cache")
+    : { getCachedComponent: null as any, setCachedComponent: null as any };
+
+  async function renderCached(
+    type: import("@/lib/component-cache").CachedComponentType,
+    variant: string,
+    componentContent: any
+  ): Promise<string> {
+    if (!cacheCtx) return renderComponent(type, variant, ctx, componentContent);
+    const { computeComponentContentHash } = await import("@/lib/component-cache");
+    // Content-aware key: combines the page-level promptHash with this
+    // component's OWN content-hash. Identical content (even across a
+    // fresh repair/edit attempt where the page prompt didn't change)
+    // always resolves to the same key -> cache hit -> skip render.
+    // Different content always resolves to a different key -> miss ->
+    // fresh render + store. This is the correctness fix that makes
+    // selective regeneration actually safe, not just "usually right".
+    const contentAwarePromptHash = `${cacheCtx.promptHash}::${computeComponentContentHash(componentContent)}`;
+    const hit = await getCachedComponent(
+      cacheCtx.supabase, cacheCtx.projectId, type, contentAwarePromptHash, variant, niche.tone, cacheCtx.versions
+    );
+    if (hit) return hit.html_code;
+    const rendered = renderComponent(type, variant, ctx, componentContent);
+    await setCachedComponent(
+      cacheCtx.supabase, cacheCtx.projectId, type, contentAwarePromptHash, variant, niche.tone, null,
+      { html_code: rendered }, cacheCtx.versions
+    );
+    return rendered;
+  }
+
   if (content.navbar) {
     const d = pickComponentForHierarchy("navbar", hierarchy, listVariants("navbar"), seed, niche);
-    html += renderComponent("navbar", v.navbar || d.variant, ctx, content.navbar);
+    html += await renderCached("navbar", v.navbar || d.variant, content.navbar);
   }
   if (content.hero) {
     const heroContent = { ...content.hero, imageUrl: content.hero.imageUrl || nextImg() };
@@ -193,49 +302,49 @@ export function assembleFromComponentLibrary(
     // gets a purely atmospheric hero, while still getting real variety
     // within the focus-appropriate set.
     const heroVariant = v.hero || pickHeroForHierarchy(hierarchy, listVariants("hero"), seed);
-    html += renderComponent("hero", heroVariant, ctx, heroContent);
+    html += await renderCached("hero", heroVariant, heroContent);
   }
   if (content.dashboard) {
     const d = pickComponentForHierarchy("dashboard", hierarchy, listVariants("dashboard"), seed, niche);
-    html += renderComponent("dashboard", v.dashboard || d.variant, ctx, content.dashboard);
+    html += await renderCached("dashboard", v.dashboard || d.variant, content.dashboard);
   }
   if (content.features) {
     const items = (content.features.items || []).map((it: any) => ({ ...it, imageUrl: it.imageUrl || nextImg() }));
     const d = pickComponentForHierarchy("features", hierarchy, listVariants("features"), seed, niche);
-    html += renderComponent("features", v.features || d.variant, ctx, { ...content.features, items });
+    html += await renderCached("features", v.features || d.variant, { ...content.features, items });
   }
   if (content.testimonials) {
     const d = pickComponentForHierarchy("testimonials", hierarchy, listVariants("testimonials"), seed, niche);
-    html += renderComponent("testimonials", v.testimonials || d.variant, ctx, content.testimonials);
+    html += await renderCached("testimonials", v.testimonials || d.variant, content.testimonials);
   }
   if (content.pricing) {
     const d = pickComponentForHierarchy("pricing", hierarchy, listVariants("pricing"), seed, niche);
-    html += renderComponent("pricing", v.pricing || d.variant, ctx, content.pricing);
+    html += await renderCached("pricing", v.pricing || d.variant, content.pricing);
   }
   if (content.faq) {
     const d = pickComponentForHierarchy("faq", hierarchy, listVariants("faq"), seed, niche);
-    html += renderComponent("faq", v.faq || d.variant, ctx, content.faq);
+    html += await renderCached("faq", v.faq || d.variant, content.faq);
   }
   if (content.portfolio) {
     const d = pickComponentForHierarchy("portfolio", hierarchy, listVariants("portfolio"), seed, niche);
-    html += renderComponent("portfolio", v.portfolio || d.variant, ctx, content.portfolio);
+    html += await renderCached("portfolio", v.portfolio || d.variant, content.portfolio);
   }
   if (content.ecommerce) {
     const d = pickComponentForHierarchy("ecommerce", hierarchy, listVariants("ecommerce"), seed, niche);
-    html += renderComponent("ecommerce", v.ecommerce || d.variant, ctx, content.ecommerce);
+    html += await renderCached("ecommerce", v.ecommerce || d.variant, content.ecommerce);
   }
   if (content.stats) {
     const d = pickComponentForHierarchy("stats", hierarchy, listVariants("stats"), seed, niche);
-    html += renderComponent("stats", v.stats || d.variant, ctx, content.stats);
+    html += await renderCached("stats", v.stats || d.variant, content.stats);
   }
   if (content.cta) {
     const d = pickComponentForHierarchy("cta", hierarchy, listVariants("cta"), seed, niche);
-    html += renderComponent("cta", v.cta || d.variant, ctx, content.cta);
+    html += await renderCached("cta", v.cta || d.variant, content.cta);
   }
   if (content.footer) {
     const d = pickComponentForHierarchy("footer", hierarchy, listVariants("footer"), seed, niche);
-    html += renderComponent("footer", v.footer || d.variant, ctx, content.footer);
+    html += await renderCached("footer", v.footer || d.variant, content.footer);
   }
 
   return html;
-}
+ }
