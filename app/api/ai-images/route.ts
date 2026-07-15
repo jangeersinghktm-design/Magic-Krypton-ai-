@@ -9,6 +9,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { estimateImageCost, resolveBudget } from "@/lib/cost-guard";
+import { callFluxImage, callIdeogramImage } from "@/lib/image-providers";
 
 export const runtime    = "nodejs";
 export const maxDuration = 60;
@@ -80,6 +82,17 @@ Ultra high quality, photorealistic, 8K. Professional photography.
 No text, no watermarks, no UI elements, no logos, no borders.
 Clean, modern aesthetic. ${type === "background" ? "Very subtle, not distracting." : ""}`;
 
+  // Real Cost Guard check — before the actual DALL-E call, not after.
+  const imageCost = estimateImageCost(1, "openai_dalle3");
+  const budgetLimit = resolveBudget();
+  if (imageCost > budgetLimit) {
+    return NextResponse.json({
+      error: `Cost Guard aborted: this image would cost an estimated $${imageCost.toFixed(4)}, exceeding the configured budget of $${budgetLimit.toFixed(4)}. No API credits were spent.`,
+      code: "COST_GUARD_ABORT",
+    }, { status: 402 });
+  }
+  console.log(`[cost-guard] Estimated Image Cost: $${imageCost.toFixed(4)} (openai_dalle3) -> budget $${budgetLimit.toFixed(4)} -> ALLOWED -> Proceed`);
+
   // Generate image
   const res = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
@@ -98,20 +111,48 @@ Clean, modern aesthetic. ${type === "background" ? "Very subtle, not distracting
     signal: AbortSignal.timeout(45000),
   });
 
+  let imageUrl: string | null = null;
+  let usedProvider = "openai_dalle3";
+
   if (!res.ok) {
     const err = await res.text();
-    // Content policy or other DALL-E error
+    // Content policy — never retried on a different provider, since a
+    // rejected prompt would likely be rejected everywhere; ask the user
+    // to change the description instead.
     if (res.status === 400) {
       return NextResponse.json({
         error: "Image prompt was rejected. Try a different description.",
         code: "CONTENT_POLICY",
       }, { status: 400 });
     }
-    return NextResponse.json({ error: `Image generation failed: ${res.status}` }, { status: 500 });
+    // Real fallback — DALL-E hit a rate-limit/server error (not content
+    // policy), so genuinely try Flux, then Ideogram, using the real
+    // functions in lib/image-providers.ts. Each already has its own
+    // Cost Guard check before it runs.
+    console.log(`[ai-images] DALL-E failed (${res.status}: ${err.slice(0,200)}) -> falling back to Flux`);
+    try {
+      imageUrl = await callFluxImage(prompt, 1024, 1024);
+      usedProvider = "flux";
+    } catch (fluxErr: any) {
+      console.log(`[ai-images] Flux failed (${fluxErr?.message}) -> falling back to Ideogram`);
+      try {
+        imageUrl = await callIdeogramImage(prompt);
+        usedProvider = "ideogram";
+      } catch (ideogramErr: any) {
+        console.log(`[ai-images] Ideogram also failed (${ideogramErr?.message}) -> no provider available`);
+        return NextResponse.json({ error: `Image generation failed on all providers: DALL-E (${res.status}), Flux, Ideogram.` }, { status: 500 });
+      }
+    }
   }
 
-  const data = await res.json();
-  const imageUrl = data.data?.[0]?.url;
+  if (res.ok && !imageUrl) {
+    // DALL-E succeeded — extract its result. If the fallback path above
+    // already set imageUrl, this is skipped entirely (res.json() would
+    // fail anyway since res.text() already consumed the failed
+    // response's body earlier).
+    const data = await res.json();
+    imageUrl = data.data?.[0]?.url || null;
+  }
   if (!imageUrl) {
     return NextResponse.json({ error: "No image returned" }, { status: 500 });
   }
@@ -134,6 +175,7 @@ Clean, modern aesthetic. ${type === "background" ? "Very subtle, not distracting
     url:      imageUrl,
     type,
     prompt,
+    provider: usedProvider,
     // Hint for client: cache this URL and reuse for same type
     cacheKey: `${authedUserId}:${type}:${sitePrompt.slice(0, 30)}`,
   });
