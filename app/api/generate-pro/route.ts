@@ -19,7 +19,7 @@ import { kryptonGenerate } from "@/lib/ai-providers";
 import { generationSeedFromId } from "@/lib/design-engine";
 
 export const maxDuration = 120;
-export const runtime     = "edge";
+export const runtime     = "nodejs"; // FIXED: was "edge" — Edge can't resolve Node's crypto module (used by component-cache.ts)
 
 // ── AI Providers ─────────────────────────────────────────────────
 // callClaude/callOpenAI/callGemini/generate()/cleanHTML/BASE_RULES/GENERATORS
